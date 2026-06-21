@@ -1,0 +1,438 @@
+[gd_scene load_steps=12 format=3 uid="uid://bth5hfbmp82qx"]
+
+[ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
+bg_color = Color(0.06, 0.06, 0.1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
+bg_color = Color(0.08, 0.08, 0.14, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
+bg_color = Color(0.24, 0.14, 0.42, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.28, 0.18, 0.48, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.42, 0.25, 0.92, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.38, 0.98, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_pressed"]
+bg_color = Color(0.22, 0.08, 0.6, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.32, 0.14, 0.75, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_normal"]
+bg_color = Color(0.33, 0.15, 0.85, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.25, 0.92, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
+bg_color = Color(0.08, 0.08, 0.14, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_hover"]
+bg_color = Color(0.16, 0.16, 0.28, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.3, 0.5, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_pressed"]
+bg_color = Color(0.08, 0.08, 0.15, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.4, 0.4, 0.7, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_normal"]
+bg_color = Color(0.12, 0.12, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.35, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="BounceLabel" type="Label" parent="."]
+offset_left = 1240.0
+offset_top = 16.0
+offset_right = 1516.0
+offset_bottom = 42.0
+theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "Bounces: 0"
+horizontal_alignment = 2
+
+[node name="CornerLabel" type="Label" parent="."]
+offset_left = 1240.0
+offset_top = 42.0
+offset_right = 1516.0
+offset_bottom = 68.0
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 18
+text = "★ Corners: 0"
+horizontal_alignment = 2
+
+[node name="CornerAnnounce" type="Label" parent="."]
+modulate = Color(1, 1, 1, 0)
+offset_left = 468.0
+offset_top = 460.0
+offset_right = 1068.0
+offset_bottom = 560.0
+pivot_offset = Vector2(300, 50)
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Sidebar" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -256.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="SidebarLayout" type="VBoxContainer" parent="Sidebar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderSection" type="PanelContainer" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 53)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_footer")
+
+[node name="CenterContainer" type="CenterContainer" parent="Sidebar/SidebarLayout/HeaderSection"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Sidebar/SidebarLayout/HeaderSection/CenterContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 16
+text = "⚙️ メニュー / 設定"
+
+[node name="SeparatorHeader" type="ColorRect" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.35, 1)
+
+[node name="TopSection" type="PanelContainer" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 340)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_top")
+
+[node name="MarginContainer" type="MarginContainer" parent="Sidebar/SidebarLayout/TopSection"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="UpgradeList" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UpgradeButton1" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 2
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+
+[node name="Content" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "ロゴ追加"
+horizontal_alignment = 1
+
+[node name="CostLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "🪙 100"
+horizontal_alignment = 1
+
+[node name="UpgradeButton2" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 2
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+
+[node name="Content" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton2/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "速度強化"
+horizontal_alignment = 1
+
+[node name="CostLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton2/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "🪙 10"
+horizontal_alignment = 1
+
+[node name="UpgradeButton3" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 2
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+
+[node name="Content" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "ゴールド・トークン増加"
+horizontal_alignment = 1
+
+[node name="CostLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "🪙 20"
+horizontal_alignment = 1
+
+[node name="UpgradeButton4" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
+custom_minimum_size = Vector2(0, 75)
+layout_mode = 2
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+
+[node name="Content" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "アセンション"
+horizontal_alignment = 1
+
+[node name="CostLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+text = "🪙 1,000"
+horizontal_alignment = 1
+
+[node name="Separator1" type="ColorRect" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.35, 1)
+
+[node name="BottomSection" type="PanelContainer" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 574)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bottom")
+
+[node name="MarginContainer" type="MarginContainer" parent="Sidebar/SidebarLayout/BottomSection"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="GridContainer" type="GridContainer" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="Slot1" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 1"
+
+[node name="Slot2" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 2"
+
+[node name="Slot3" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 3"
+
+[node name="Slot4" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 4"
+
+[node name="Slot5" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 5"
+
+[node name="Slot6" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/GridContainer"]
+custom_minimum_size = Vector2(240, 72)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
+text = "Slot 6"
+
+[node name="Separator2" type="ColorRect" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.35, 1)
+
+[node name="FooterTopSection" type="PanelContainer" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_footer")
+
+[node name="CenterContainer" type="CenterContainer" parent="Sidebar/SidebarLayout/FooterTopSection"]
+layout_mode = 2
+
+[node name="TokenLabel" type="Label" parent="Sidebar/SidebarLayout/FooterTopSection/CenterContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 0.9, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 22
+text = "💎 0"
+
+[node name="Separator3" type="ColorRect" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.35, 1)
+
+[node name="FooterBottomSection" type="PanelContainer" parent="Sidebar/SidebarLayout"]
+custom_minimum_size = Vector2(0, 53)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_footer")
+
+[node name="CenterContainer" type="CenterContainer" parent="Sidebar/SidebarLayout/FooterBottomSection"]
+layout_mode = 2
+
+[node name="GoldLabel" type="Label" parent="Sidebar/SidebarLayout/FooterBottomSection/CenterContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.843, 0, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 22
+text = "🪙 0"
