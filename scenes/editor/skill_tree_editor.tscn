@@ -1,0 +1,231 @@
+[gd_scene load_steps=2 format=3 uid="uid://c6opxphk7xe78"]
+
+[ext_resource type="Script" uid="uid://omh1o5eg5ts7" path="res://scripts/editor/skill_tree_editor.gd" id="1_editor"]
+
+[node name="SkillTreeEditor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_editor")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="AddBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "➕ 新規スキル追加"
+
+[node name="SaveBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "💾 保存"
+
+[node name="LoadBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "🔄 ロード"
+
+[node name="StatusLabel" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ステータス: 準備完了"
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="GraphEdit" type="GraphEdit" parent="VBoxContainer/HBoxContainer2"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Sidebar" type="PanelContainer" parent="VBoxContainer/HBoxContainer2"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+
+[node name="SidebarVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HelpPanel" type="PanelContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox"]
+layout_mode = 2
+
+[node name="HelpLabel" type="RichTextLabel" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/HelpPanel"]
+layout_mode = 2
+bbcode_enabled = true
+text = "[center]💡 [b]接続のルール[/b][/center]
+• [color=#33b3ff]左の青い点[/color] ＝ 必要とする前提 (入力)
+• [color=#ff801a]右の橙の点[/color] ＝ 次の解放先 (出力)
+※ [color=#ff801a]右(橙)[/color] から [color=#33b3ff]左(青)[/color] へドラッグして繋ぎます。"
+fit_content = true
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox"]
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PropertiesVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="PlaceholderLabel" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "ノードを選択すると
+ここに編集画面が表示されます。"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EditorForm" type="VBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🛠️ スキルパラメータ編集"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="IdRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IdRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "スキルID:"
+
+[node name="SidebarIdEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IdRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "ex: root_gold"
+
+[node name="NameRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/NameRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "スキル名:"
+
+[node name="SidebarNameEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/NameRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "ex: ゴールドの心得"
+
+[node name="IconRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "アイコン:"
+
+[node name="SidebarIconEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "ex: 🪙"
+max_length = 2
+
+[node name="DescRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/DescRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "説明文:"
+
+[node name="SidebarDescEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/DescRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MaxRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "最大レベル:"
+
+[node name="SidebarMaxSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+value = 5.0
+
+[node name="CostRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "初期コスト:"
+
+[node name="SidebarCostSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 9999.0
+value = 1.0
+
+[node name="MultRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+text = "上昇倍率:"
+
+[node name="SidebarMultSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 1.0
+max_value = 10.0
+step = 0.1
+value = 1.5
+
+[node name="HSeparator3" type="HSeparator" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="PrereqLabel" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+text = "前提スキル (接続設定):"
+
+[node name="PrereqScroll" type="ScrollContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="PrereqListVBox" type="VBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/PrereqScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="SidebarDeleteBtn" type="Button" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.901961, 0.301961, 0.301961, 1)
+text = "❌ このスキルノードを削除"
+flat = true
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/AddBtn" to="." method="_on_add_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/SaveBtn" to="." method="save_data"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/LoadBtn" to="." method="load_data"]

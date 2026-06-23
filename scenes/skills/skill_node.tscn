@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1c447l7qh87x"]
+
+[ext_resource type="Script" uid="uid://cjopxphk7xe77" path="res://scripts/skills/skill_node.gd" id="1_skill"]
+
+[node name="SkillNode" type="Button"]
+custom_minimum_size = Vector2(80, 80)
+offset_right = 80.0
+offset_bottom = 80.0
+theme_override_font_sizes/font_size = 32
+text = "❓"
+script = ExtResource("1_skill")

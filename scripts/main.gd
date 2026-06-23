@@ -52,10 +52,17 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 	var label_color: Color
 	
 	var mult := GameData.get_ascension_multiplier()
+	# Apply root_gold skill (+10% gold per level)
+	var gold_skill_mult := 1.0 + GameData.get_skill_level("root_gold") * 0.1
 
 	if is_corner:
-		var gold_amount := int((50 + GameData.boost_level * 10) * mult)
+		var gold_amount := int((50 + GameData.boost_level * 10) * mult * gold_skill_mult)
 		var token_amount := int((1 + GameData.boost_level) * mult)
+		
+		# Apply token_luck skill (30% chance for +1 token per level)
+		var token_luck_level := GameData.get_skill_level("token_luck")
+		if token_luck_level > 0 and randf() < token_luck_level * 0.3:
+			token_amount += 1
 		
 		label_text = "★ 🪙 +%d / 💎 +%d ★" % [gold_amount, token_amount]
 		label_color = Color(1.0, 1.0, 1.0)
@@ -65,7 +72,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 		GameData.add_tokens(token_amount)
 		_flash_background()
 	else:
-		var gold_amount := int((1 + GameData.boost_level) * mult)
+		var gold_amount := int((1 + GameData.boost_level) * mult * gold_skill_mult)
 		
 		label_text = "🪙 +%d" % gold_amount
 		label_color = Color(1.0, 1.0, 1.0, 0.9)

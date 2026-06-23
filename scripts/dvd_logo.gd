@@ -129,5 +129,5 @@ func _play_bounce_effect(is_corner: bool) -> void:
 
 
 func _update_speed() -> void:
-	var current_speed := base_speed + GameData.speed_level * 20.0
+	var current_speed := base_speed + GameData.speed_level * 20.0 + GameData.get_skill_level("speed_boost") * 20.0
 	velocity = velocity.normalized() * current_speed

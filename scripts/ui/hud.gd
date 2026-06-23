@@ -12,6 +12,20 @@ extends CanvasLayer
 @onready var btn_boost: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3
 @onready var btn_ascend: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4
 
+# Tab UI references
+@onready var btn_equipment_tab: Button = %EquipmentTabBtn
+@onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
+@onready var grid_equipment: GridContainer = %GridContainer
+@onready var skill_tree_viewport: Control = %SkillTreeViewport
+@onready var skill_tree_window: PanelContainer = %SkillTreeWindow
+@onready var btn_close_window: Button = %CloseWindowBtn
+
+var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
+var _skill_tree_instance: Control
+var _tab_style_active: StyleBoxFlat
+var _tab_style_inactive: StyleBoxFlat
+var _is_skill_tree_open: bool = false
+
 
 func _ready() -> void:
 	# Configure StyleBoxFlat for button states programmatically
@@ -77,6 +91,44 @@ func _ready() -> void:
 		btn.get_node("Content/TitleLabel").add_theme_font_size_override("font_size", 18)
 		btn.get_node("Content/CostLabel").add_theme_font_size_override("font_size", 16)
 
+	# Tab button styles setup
+	_tab_style_active = StyleBoxFlat.new()
+	_tab_style_active.bg_color = Color(0.33, 0.15, 0.85, 1)
+	_tab_style_active.border_width_left = 2
+	_tab_style_active.border_width_top = 2
+	_tab_style_active.border_width_right = 2
+	_tab_style_active.border_width_bottom = 2
+	_tab_style_active.border_color = Color(0.45, 0.25, 0.92, 1)
+	_tab_style_active.corner_radius_top_left = 3
+	_tab_style_active.corner_radius_top_right = 3
+	_tab_style_active.corner_radius_bottom_right = 3
+	_tab_style_active.corner_radius_bottom_left = 3
+
+	_tab_style_inactive = StyleBoxFlat.new()
+	_tab_style_inactive.bg_color = Color(0.12, 0.12, 0.2, 1)
+	_tab_style_inactive.border_width_left = 2
+	_tab_style_inactive.border_width_top = 2
+	_tab_style_inactive.border_width_right = 2
+	_tab_style_inactive.border_width_bottom = 2
+	_tab_style_inactive.border_color = Color(0.2, 0.2, 0.35, 1)
+	_tab_style_inactive.corner_radius_top_left = 3
+	_tab_style_inactive.corner_radius_top_right = 3
+	_tab_style_inactive.corner_radius_bottom_right = 3
+	_tab_style_inactive.corner_radius_bottom_left = 3
+
+	btn_equipment_tab.add_theme_stylebox_override("focus", style_focus)
+	btn_skill_tree_tab.add_theme_stylebox_override("focus", style_focus)
+	
+	btn_equipment_tab.pressed.connect(_on_equipment_tab_pressed)
+	btn_skill_tree_tab.pressed.connect(_on_skill_tree_tab_pressed)
+
+	# Instantiate and add skill tree container to viewport
+	_skill_tree_instance = _skill_tree_scene.instantiate()
+	skill_tree_viewport.add_child(_skill_tree_instance)
+	
+	# Load skills dynamically from JSON
+	_load_skills_from_json()
+
 	GameData.gold_changed.connect(_on_gold_changed)
 	GameData.tokens_changed.connect(_on_tokens_changed)
 	GameData.stats_changed.connect(_on_stats_changed)
@@ -87,7 +139,11 @@ func _ready() -> void:
 	btn_speed.pressed.connect(_on_speed_pressed)
 	btn_boost.pressed.connect(_on_boost_pressed)
 	btn_ascend.pressed.connect(_on_ascend_pressed)
+	btn_close_window.pressed.connect(close_skill_tree)
 	
+	skill_tree_window.visible = false
+	
+	_on_equipment_tab_pressed() 
 	_update_all()
 
 
@@ -98,6 +154,7 @@ func _on_gold_changed(_amount: int) -> void:
 
 func _on_tokens_changed(_amount: int) -> void:
 	token_label.text = "💎 " + _format_number(GameData.tokens)
+	_update_skill_nodes()
 
 
 func _on_stats_changed() -> void:
@@ -205,3 +262,127 @@ func _format_number(n: int) -> String:
 		if count % 3 == 0 and i > 0:
 			result = "," + result
 	return result
+
+
+func _on_equipment_tab_pressed() -> void:
+	# Equipment tab is always shown now. If clicked, close the skill tree if it's open.
+	if _is_skill_tree_open:
+		close_skill_tree()
+	
+	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
+	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+
+
+func _on_skill_tree_tab_pressed() -> void:
+	# Toggle skill tree window open/close
+	if _is_skill_tree_open:
+		close_skill_tree()
+	else:
+		open_skill_tree()
+
+
+func open_skill_tree() -> void:
+	if _is_skill_tree_open:
+		return
+	
+	_is_skill_tree_open = true
+	skill_tree_window.visible = true
+	_update_skill_nodes()
+	
+	# Update tab buttons styling
+	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active)
+
+
+func close_skill_tree() -> void:
+	if not _is_skill_tree_open:
+		return
+	
+	_is_skill_tree_open = false
+	skill_tree_window.visible = false
+	
+	# Update tab buttons styling (back to active equipment)
+	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
+	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+
+
+func _on_skill_node_pressed(node: SkillNode) -> void:
+	var current_lvl = GameData.get_skill_level(node.skill_id)
+	if current_lvl >= node.max_level:
+		return
+	
+	var cost = node.get_upgrade_cost(current_lvl)
+	if GameData.buy_skill_upgrade(node.skill_id, cost, node.max_level):
+		_update_skill_nodes()
+
+
+func _update_skill_nodes() -> void:
+	if not _skill_tree_instance:
+		return
+	for child in _skill_tree_instance.get_children():
+		if child is SkillNode:
+			child.refresh()
+
+
+func _load_skills_from_json() -> void:
+	if not _skill_tree_instance:
+		return
+		
+	var json_path = "res://data/skills.json"
+	if not FileAccess.file_exists(json_path):
+		printerr("スキルデータファイルが見つかりません: ", json_path)
+		return
+		
+	var file = FileAccess.open(json_path, FileAccess.READ)
+	if not file:
+		printerr("スキルデータファイルのオープンに失敗しました: ", json_path)
+		return
+		
+	var text = file.get_as_text()
+	file.close()
+	
+	var json = JSON.new()
+	if json.parse(text) != OK:
+		printerr("スキルデータファイルのJSONパースに失敗しました。")
+		return
+		
+	var data = json.get_data()
+	if not data is Dictionary or not data.has("skills"):
+		printerr("スキルデータのフォーマットが不正です。")
+		return
+		
+	var skills = data["skills"] as Dictionary
+	var skill_node_scene = preload("res://scenes/skills/skill_node.tscn")
+	var created_nodes: Array[SkillNode] = []
+	
+	# 1. すべてのノードをインスタンス化して追加
+	for skill_id in skills:
+		var s = skills[skill_id]
+		var node = skill_node_scene.instantiate() as SkillNode
+		node.skill_id = skill_id
+		node.skill_name = s.get("name", "")
+		node.icon_char = s.get("icon", "❓")
+		node.description = s.get("description", "")
+		node.max_level = int(s.get("max_level", 5))
+		node.base_cost = int(s.get("base_cost", 1))
+		node.cost_multiplier = float(s.get("cost_multiplier", 1.5))
+		node.position = Vector2(s.get("x", 0), s.get("y", 0))
+		
+		# prerequisites の変換 (Array -> Array[String])
+		var prereqs_raw = s.get("prerequisites", [])
+		var prereqs: Array[String] = []
+		for p in prereqs_raw:
+			prereqs.append(str(p))
+		node.prerequisites = prereqs
+		
+		_skill_tree_instance.add_child(node)
+		created_nodes.append(node)
+		
+	# 2. すべてのノードが追加された後、シグナルを接続し初期描画を行う
+	for node in created_nodes:
+		node.pressed.connect(_on_skill_node_pressed.bind(node))
+		GameData.skill_upgraded.connect(func(id, lvl):
+			node.refresh()
+		)
+		# 初期表示の更新（他ノードとの接続線を引く処理を含む）
+		node.refresh()

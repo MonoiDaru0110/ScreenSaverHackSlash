@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7k447l7qh87y"]
+
+[ext_resource type="Script" uid="uid://dsyixolvvxuwp" path="res://scripts/skills/skill_tree_data.gd" id="2_tree"]
+
+[node name="SkillTreeData" type="Control"]
+custom_minimum_size = Vector2(600, 600)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 600.0
+offset_bottom = 600.0
+script = ExtResource("2_tree")
+metadata/_edit_use_snap_ = true
+metadata/_edit_snap_step_ = Vector2(80, 80)
