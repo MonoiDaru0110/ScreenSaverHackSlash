@@ -481,13 +481,13 @@ text = "🪙 0"
 [node name="SkillTreeWindow" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(600, 574)
+custom_minimum_size = Vector2(1200, 861)
 anchors_preset = 11
 anchor_left = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -872.0
-offset_top = 397.0
+offset_left = -1472.0
+offset_top = 110.0
 offset_right = -272.0
 offset_bottom = -109.0
 grow_horizontal = 0

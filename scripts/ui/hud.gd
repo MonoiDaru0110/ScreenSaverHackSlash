@@ -18,6 +18,7 @@ extends CanvasLayer
 @onready var grid_equipment: GridContainer = %GridContainer
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
+@onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
 
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
@@ -25,6 +26,7 @@ var _skill_tree_instance: Control
 var _tab_style_active: StyleBoxFlat
 var _tab_style_inactive: StyleBoxFlat
 var _is_skill_tree_open: bool = false
+var _has_centered_on_startup: bool = false
 
 
 func _ready() -> void:
@@ -292,6 +294,19 @@ func open_skill_tree() -> void:
 	# Update tab buttons styling
 	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
 	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active)
+	
+	# ゲーム起動時（初回オープン時）のみ中央位置合わせを行う
+	if not _has_centered_on_startup:
+		_has_centered_on_startup = true
+		# サイズが完全に解決するまで最大10フレーム待つ
+		for i in range(10):
+			await get_tree().process_frame
+			if skill_tree_window.size.x > 100 and skill_tree_scroll.size.x > 100:
+				break
+		# トランスフォームの整合性を確実にするためにもう1フレーム待つ
+		await get_tree().process_frame
+		if is_instance_valid(skill_tree_scroll):
+			skill_tree_scroll.center_on_root(skill_tree_window)
 
 
 func close_skill_tree() -> void:
@@ -366,7 +381,8 @@ func _load_skills_from_json() -> void:
 		node.max_level = int(s.get("max_level", 5))
 		node.base_cost = int(s.get("base_cost", 1))
 		node.cost_multiplier = float(s.get("cost_multiplier", 1.5))
-		node.position = Vector2(s.get("x", 0), s.get("y", 0))
+		# パネル間の隙間を微調整（元の0.7倍、ピッチを0.85倍）して辺の長さを調整する
+		node.position = Vector2(s.get("x", 0), s.get("y", 0)) * 0.85
 		
 		# prerequisites の変換 (Array -> Array[String])
 		var prereqs_raw = s.get("prerequisites", [])

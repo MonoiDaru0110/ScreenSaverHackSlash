@@ -1,7 +1,7 @@
 extends Control
 class_name SkillTreeController
 
-@export var min_zoom := 0.5
+@export var min_zoom := 0.3
 @export var max_zoom := 2.0
 @export var zoom_speed := 0.1
 
@@ -86,3 +86,58 @@ func _zoom_at_mouse(factor: float) -> void:
 	# Adjust position to keep the mouse point stable
 	var shift = mouse_local * (_zoom - old_zoom)
 	viewport.position -= shift
+
+
+func center_on_root(window: Control = null) -> void:
+	# Reset zoom to 1.0 when centering
+	_zoom = 1.0
+	if viewport:
+		viewport.scale = Vector2.ONE
+		
+	# 前提スキル（prerequisites）がないスキルを「ルートスキル」として自動探索する（子孫から検索）
+	var root_node: SkillNode = null
+	var skill_nodes = viewport.find_children("*", "SkillNode", true, false)
+	for node in skill_nodes:
+		if node.prerequisites.is_empty():
+			root_node = node
+			break
+			
+	if root_node:
+		# 1. ターゲット（ウィンドウまたは自身）のグローバル中心を求める
+		var target_global_center = Vector2.ZERO
+		if window:
+			var w_size = window.size
+			if w_size.x <= 100 or w_size.y <= 100:
+				w_size = window.custom_minimum_size
+			if w_size.x <= 100 or w_size.y <= 100:
+				w_size = Vector2(1200, 861) # 最終フォールバック
+			target_global_center = window.global_position + w_size / 2.0
+		else:
+			var parent_size = size
+			if parent_size.x <= 0 or parent_size.y <= 0:
+				parent_size = Vector2(1168, 764)
+			target_global_center = global_position + parent_size / 2.0
+			
+		# 2. ルートノードのグローバル中心を求める
+		var node_size = root_node.size
+		if node_size.x <= 0 or node_size.y <= 0:
+			node_size = root_node.custom_minimum_size
+		if node_size.x <= 0 or node_size.y <= 0:
+			node_size = Vector2(60, 60) # 60x60 が SkillNode の正しいデフォルトサイズ
+			
+		var node_global_center = root_node.global_position + node_size / 2.0
+		
+		# 3. グローバル差分を計算し、viewport の位置に加算する（中間オフセットやトランスフォームのずれを自動吸収）
+		var diff = target_global_center - node_global_center
+		viewport.position += diff
+	else:
+		# ルートノードが見つからない場合のフォールバック（全体の中央揃え）
+		var child_size = Vector2(600, 600)
+		for child in viewport.get_children():
+			if not child is SkillNode and child is Control:
+				child_size = child.size
+				break
+		var parent_size = size
+		if parent_size.x <= 0 or parent_size.y <= 0:
+			parent_size = Vector2(1168, 764)
+		viewport.position = (parent_size - child_size) / 2.0

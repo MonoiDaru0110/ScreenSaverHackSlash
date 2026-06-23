@@ -39,6 +39,136 @@
 			"x": -480.0,
 			"y": -800.0
 		},
+		"new_skill_100": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 100",
+			"prerequisites": [
+				"new_skill_101"
+			],
+			"x": 1120.0,
+			"y": -320.0
+		},
+		"new_skill_101": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 101",
+			"prerequisites": [
+				"new_skill_88"
+			],
+			"x": 960.0,
+			"y": -320.0
+		},
+		"new_skill_102": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 102",
+			"prerequisites": [
+				"new_skill_98"
+			],
+			"x": 1280.0,
+			"y": 0.0
+		},
+		"new_skill_103": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 103",
+			"prerequisites": [
+				"new_skill_114"
+			],
+			"x": 960.0,
+			"y": -640.0
+		},
+		"new_skill_104": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 104",
+			"prerequisites": [
+				"new_skill_106"
+			],
+			"x": 640.0,
+			"y": 160.0
+		},
+		"new_skill_105": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 105",
+			"prerequisites": [
+				"new_skill_106"
+			],
+			"x": 640.0,
+			"y": 0.0
+		},
+		"new_skill_106": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 106",
+			"prerequisites": [
+				"new_skill_107"
+			],
+			"x": 480.0,
+			"y": 160.0
+		},
+		"new_skill_107": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 107",
+			"prerequisites": [
+				"new_skill_108"
+			],
+			"x": 480.0,
+			"y": 0.0
+		},
+		"new_skill_108": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 108",
+			"prerequisites": [
+				"new_skill_87"
+			],
+			"x": 640.0,
+			"y": -160.0
+		},
+		"new_skill_109": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 109",
+			"prerequisites": [
+				"new_skill_99"
+			],
+			"x": 1280.0,
+			"y": -480.0
+		},
 		"new_skill_11": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -51,6 +181,136 @@
 			],
 			"x": 480.0,
 			"y": -800.0
+		},
+		"new_skill_110": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 110",
+			"prerequisites": [
+				"new_skill_100"
+			],
+			"x": 1120.0,
+			"y": -480.0
+		},
+		"new_skill_111": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 111",
+			"prerequisites": [
+				"new_skill_101"
+			],
+			"x": 960.0,
+			"y": -480.0
+		},
+		"new_skill_112": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 112",
+			"prerequisites": [
+				"new_skill_44"
+			],
+			"x": -640.0,
+			"y": 160.0
+		},
+		"new_skill_113": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 113",
+			"prerequisites": [
+				"new_skill_114"
+			],
+			"x": 960.0,
+			"y": -800.0
+		},
+		"new_skill_114": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 114",
+			"prerequisites": [
+				"new_skill_115"
+			],
+			"x": 1120.0,
+			"y": -800.0
+		},
+		"new_skill_115": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 115",
+			"prerequisites": [
+				"new_skill_76"
+			],
+			"x": 1280.0,
+			"y": -800.0
+		},
+		"new_skill_116": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 116",
+			"prerequisites": [
+				"new_skill_109"
+			],
+			"x": 1120.0,
+			"y": -640.0
+		},
+		"new_skill_117": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 117",
+			"prerequisites": [
+				"new_skill_119"
+			],
+			"x": 1920.0,
+			"y": -960.0
+		},
+		"new_skill_118": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 118",
+			"prerequisites": [
+				"new_skill_121"
+			],
+			"x": 1760.0,
+			"y": -1280.0
+		},
+		"new_skill_119": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 119",
+			"prerequisites": [
+				"new_skill_122"
+			],
+			"x": 1760.0,
+			"y": -960.0
 		},
 		"new_skill_12": {
 			"base_cost": 1,
@@ -65,6 +325,136 @@
 			"x": -640.0,
 			"y": -960.0
 		},
+		"new_skill_120": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 120",
+			"prerequisites": [
+				"new_skill_121"
+			],
+			"x": 1760.0,
+			"y": -1120.0
+		},
+		"new_skill_121": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 121",
+			"prerequisites": [
+				"new_skill_123"
+			],
+			"x": 1600.0,
+			"y": -1120.0
+		},
+		"new_skill_122": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 122",
+			"prerequisites": [
+				"new_skill_123"
+			],
+			"x": 1600.0,
+			"y": -960.0
+		},
+		"new_skill_123": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 123",
+			"prerequisites": [
+				"new_skill_75"
+			],
+			"x": 1440.0,
+			"y": -960.0
+		},
+		"new_skill_124": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 124",
+			"prerequisites": [
+				"new_skill_31"
+			],
+			"x": -640.0,
+			"y": 480.0
+		},
+		"new_skill_125": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 125",
+			"prerequisites": [
+				"new_skill_126"
+			],
+			"x": -1440.0,
+			"y": 480.0
+		},
+		"new_skill_126": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 126",
+			"prerequisites": [
+				"new_skill_127"
+			],
+			"x": -1280.0,
+			"y": 480.0
+		},
+		"new_skill_127": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 127",
+			"prerequisites": [
+				"new_skill_128"
+			],
+			"x": -1120.0,
+			"y": 480.0
+		},
+		"new_skill_128": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 128",
+			"prerequisites": [
+				"new_skill_129"
+			],
+			"x": -960.0,
+			"y": 480.0
+		},
+		"new_skill_129": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 129",
+			"prerequisites": [
+				"new_skill_124"
+			],
+			"x": -800.0,
+			"y": 480.0
+		},
 		"new_skill_13": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -77,6 +467,97 @@
 			],
 			"x": 640.0,
 			"y": -960.0
+		},
+		"new_skill_130": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 130",
+			"prerequisites": [
+				"new_skill_131"
+			],
+			"x": 1280.0,
+			"y": 560.0
+		},
+		"new_skill_131": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 131",
+			"prerequisites": [
+				"new_skill_132"
+			],
+			"x": 1120.0,
+			"y": 560.0
+		},
+		"new_skill_132": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 132",
+			"prerequisites": [
+				"new_skill_133"
+			],
+			"x": 960.0,
+			"y": 480.0
+		},
+		"new_skill_133": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 133",
+			"prerequisites": [
+				"new_skill_135"
+			],
+			"x": 800.0,
+			"y": 480.0
+		},
+		"new_skill_134": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 134",
+			"prerequisites": [
+				"new_skill_136"
+			],
+			"x": 800.0,
+			"y": 320.0
+		},
+		"new_skill_135": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 135",
+			"prerequisites": [
+				"new_skill_29"
+			],
+			"x": 640.0,
+			"y": 480.0
+		},
+		"new_skill_136": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 136",
+			"prerequisites": [
+				"new_skill_29"
+			],
+			"x": 640.0,
+			"y": 320.0
 		},
 		"new_skill_14": {
 			"base_cost": 1,
@@ -384,9 +865,63 @@
 			"icon": "❓",
 			"max_level": 5,
 			"name": "新しいスキル 35",
-			"prerequisites": [],
-			"x": 960.0,
-			"y": -960.0
+			"prerequisites": [
+				"new_skill_12"
+			],
+			"x": -800.0,
+			"y": -800.0
+		},
+		"new_skill_36": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 36",
+			"prerequisites": [
+				"new_skill_37"
+			],
+			"x": -1440.0,
+			"y": -480.0
+		},
+		"new_skill_37": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 37",
+			"prerequisites": [
+				"new_skill_38"
+			],
+			"x": -1440.0,
+			"y": -320.0
+		},
+		"new_skill_38": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 38",
+			"prerequisites": [
+				"new_skill_39"
+			],
+			"x": -1440.0,
+			"y": -160.0
+		},
+		"new_skill_39": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 39",
+			"prerequisites": [
+				"new_skill_40"
+			],
+			"x": -1440.0,
+			"y": 0.0
 		},
 		"new_skill_4": {
 			"base_cost": 1,
@@ -401,6 +936,136 @@
 			"x": 320.0,
 			"y": -320.0
 		},
+		"new_skill_40": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 40",
+			"prerequisites": [
+				"new_skill_41"
+			],
+			"x": -1440.0,
+			"y": 160.0
+		},
+		"new_skill_41": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 41",
+			"prerequisites": [
+				"new_skill_42"
+			],
+			"x": -1280.0,
+			"y": 160.0
+		},
+		"new_skill_42": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 42",
+			"prerequisites": [
+				"new_skill_43"
+			],
+			"x": -1120.0,
+			"y": 160.0
+		},
+		"new_skill_43": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 43",
+			"prerequisites": [
+				"new_skill_44"
+			],
+			"x": -960.0,
+			"y": 160.0
+		},
+		"new_skill_44": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 44",
+			"prerequisites": [
+				"new_skill_45"
+			],
+			"x": -800.0,
+			"y": 0.0
+		},
+		"new_skill_45": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 45",
+			"prerequisites": [
+				"new_skill_46"
+			],
+			"x": -800.0,
+			"y": -160.0
+		},
+		"new_skill_46": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 46",
+			"prerequisites": [
+				"new_skill_47"
+			],
+			"x": -800.0,
+			"y": -320.0
+		},
+		"new_skill_47": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 47",
+			"prerequisites": [
+				"new_skill_48"
+			],
+			"x": -800.0,
+			"y": -480.0
+		},
+		"new_skill_48": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 48",
+			"prerequisites": [
+				"new_skill_35"
+			],
+			"x": -800.0,
+			"y": -640.0
+		},
+		"new_skill_49": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 49",
+			"prerequisites": [
+				"new_skill_21"
+			],
+			"x": 0.0,
+			"y": -160.0
+		},
 		"new_skill_5": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -413,6 +1078,136 @@
 			],
 			"x": -320.0,
 			"y": -320.0
+		},
+		"new_skill_50": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 50",
+			"prerequisites": [
+				"new_skill_21"
+			],
+			"x": 0.0,
+			"y": -320.0
+		},
+		"new_skill_51": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 51",
+			"prerequisites": [
+				"new_skill_20"
+			],
+			"x": 0.0,
+			"y": -640.0
+		},
+		"new_skill_52": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 52",
+			"prerequisites": [
+				"new_skill_53"
+			],
+			"x": -1120.0,
+			"y": -640.0
+		},
+		"new_skill_53": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 53",
+			"prerequisites": [
+				"new_skill_48"
+			],
+			"x": -960.0,
+			"y": -640.0
+		},
+		"new_skill_54": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 54",
+			"prerequisites": [
+				"new_skill_55"
+			],
+			"x": -1280.0,
+			"y": -960.0
+		},
+		"new_skill_55": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 55",
+			"prerequisites": [
+				"new_skill_56"
+			],
+			"x": -1440.0,
+			"y": -960.0
+		},
+		"new_skill_56": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 56",
+			"prerequisites": [
+				"new_skill_57"
+			],
+			"x": -1440.0,
+			"y": -800.0
+		},
+		"new_skill_57": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 57",
+			"prerequisites": [
+				"new_skill_36"
+			],
+			"x": -1440.0,
+			"y": -640.0
+		},
+		"new_skill_58": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 58",
+			"prerequisites": [
+				"new_skill_35"
+			],
+			"x": -960.0,
+			"y": -800.0
+		},
+		"new_skill_59": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 59",
+			"prerequisites": [
+				"new_skill_22"
+			],
+			"x": 0.0,
+			"y": -480.0
 		},
 		"new_skill_6": {
 			"base_cost": 1,
@@ -427,6 +1222,136 @@
 			"x": 0.0,
 			"y": 0.0
 		},
+		"new_skill_60": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 60",
+			"prerequisites": [
+				"new_skill_62"
+			],
+			"x": -1120.0,
+			"y": 0.0
+		},
+		"new_skill_61": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 61",
+			"prerequisites": [
+				"new_skill_63"
+			],
+			"x": -1120.0,
+			"y": -160.0
+		},
+		"new_skill_62": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 62",
+			"prerequisites": [
+				"new_skill_45"
+			],
+			"x": -960.0,
+			"y": -160.0
+		},
+		"new_skill_63": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 63",
+			"prerequisites": [
+				"new_skill_37"
+			],
+			"x": -1280.0,
+			"y": -320.0
+		},
+		"new_skill_64": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 64",
+			"prerequisites": [
+				"new_skill_65"
+			],
+			"x": -1120.0,
+			"y": -320.0
+		},
+		"new_skill_65": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 65",
+			"prerequisites": [
+				"new_skill_47"
+			],
+			"x": -960.0,
+			"y": -480.0
+		},
+		"new_skill_66": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 66",
+			"prerequisites": [
+				"new_skill_67"
+			],
+			"x": -1120.0,
+			"y": -480.0
+		},
+		"new_skill_67": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 67",
+			"prerequisites": [
+				"new_skill_57"
+			],
+			"x": -1280.0,
+			"y": -640.0
+		},
+		"new_skill_68": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 68",
+			"prerequisites": [
+				"new_skill_58"
+			],
+			"x": -1120.0,
+			"y": -960.0
+		},
+		"new_skill_69": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 69",
+			"prerequisites": [
+				"new_skill_55"
+			],
+			"x": -1280.0,
+			"y": -800.0
+		},
 		"new_skill_7": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -439,6 +1364,136 @@
 			],
 			"x": -320.0,
 			"y": -480.0
+		},
+		"new_skill_70": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 70",
+			"prerequisites": [
+				"new_skill_62"
+			],
+			"x": -960.0,
+			"y": 0.0
+		},
+		"new_skill_71": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 71",
+			"prerequisites": [
+				"new_skill_40"
+			],
+			"x": -1600.0,
+			"y": 320.0
+		},
+		"new_skill_72": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 72",
+			"prerequisites": [
+				"new_skill_73"
+			],
+			"x": -1920.0,
+			"y": -1280.0
+		},
+		"new_skill_73": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 73",
+			"prerequisites": [
+				"new_skill_74"
+			],
+			"x": -1760.0,
+			"y": -1280.0
+		},
+		"new_skill_74": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 74",
+			"prerequisites": [
+				"new_skill_55"
+			],
+			"x": -1600.0,
+			"y": -1120.0
+		},
+		"new_skill_75": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 75",
+			"prerequisites": [
+				"new_skill_76"
+			],
+			"x": 1280.0,
+			"y": -960.0
+		},
+		"new_skill_76": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 76",
+			"prerequisites": [
+				"new_skill_77"
+			],
+			"x": 1440.0,
+			"y": -800.0
+		},
+		"new_skill_77": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 77",
+			"prerequisites": [
+				"new_skill_78"
+			],
+			"x": 1440.0,
+			"y": -640.0
+		},
+		"new_skill_78": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 78",
+			"prerequisites": [
+				"new_skill_79"
+			],
+			"x": 1440.0,
+			"y": -480.0
+		},
+		"new_skill_79": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 79",
+			"prerequisites": [
+				"new_skill_99"
+			],
+			"x": 1440.0,
+			"y": -320.0
 		},
 		"new_skill_8": {
 			"base_cost": 1,
@@ -453,6 +1508,136 @@
 			"x": -320.0,
 			"y": -640.0
 		},
+		"new_skill_80": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 80",
+			"prerequisites": [
+				"new_skill_79"
+			],
+			"x": 1440.0,
+			"y": -160.0
+		},
+		"new_skill_81": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 81",
+			"prerequisites": [
+				"new_skill_80"
+			],
+			"x": 1440.0,
+			"y": 0.0
+		},
+		"new_skill_82": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 82",
+			"prerequisites": [
+				"new_skill_81"
+			],
+			"x": 1280.0,
+			"y": 160.0
+		},
+		"new_skill_83": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 83",
+			"prerequisites": [
+				"new_skill_82"
+			],
+			"x": 1120.0,
+			"y": 160.0
+		},
+		"new_skill_84": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 84",
+			"prerequisites": [
+				"new_skill_83"
+			],
+			"x": 960.0,
+			"y": 160.0
+		},
+		"new_skill_85": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 85",
+			"prerequisites": [
+				"new_skill_84"
+			],
+			"x": 800.0,
+			"y": 160.0
+		},
+		"new_skill_86": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 86",
+			"prerequisites": [
+				"new_skill_85"
+			],
+			"x": 800.0,
+			"y": 0.0
+		},
+		"new_skill_87": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 87",
+			"prerequisites": [
+				"new_skill_86"
+			],
+			"x": 800.0,
+			"y": -160.0
+		},
+		"new_skill_88": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 88",
+			"prerequisites": [
+				"new_skill_89"
+			],
+			"x": 800.0,
+			"y": -320.0
+		},
+		"new_skill_89": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 89",
+			"prerequisites": [
+				"new_skill_90"
+			],
+			"x": 800.0,
+			"y": -480.0
+		},
 		"new_skill_9": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -465,6 +1650,136 @@
 			],
 			"x": 320.0,
 			"y": -640.0
+		},
+		"new_skill_90": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 90",
+			"prerequisites": [
+				"new_skill_91"
+			],
+			"x": 800.0,
+			"y": -640.0
+		},
+		"new_skill_91": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 91",
+			"prerequisites": [
+				"new_skill_92"
+			],
+			"x": 800.0,
+			"y": -800.0
+		},
+		"new_skill_92": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 92",
+			"prerequisites": [
+				"new_skill_13"
+			],
+			"x": 800.0,
+			"y": -960.0
+		},
+		"new_skill_93": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 93",
+			"prerequisites": [
+				"new_skill_94"
+			],
+			"x": 960.0,
+			"y": -960.0
+		},
+		"new_skill_94": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 94",
+			"prerequisites": [
+				"new_skill_75"
+			],
+			"x": 1120.0,
+			"y": -960.0
+		},
+		"new_skill_95": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 95",
+			"prerequisites": [
+				"new_skill_96"
+			],
+			"x": 960.0,
+			"y": 0.0
+		},
+		"new_skill_96": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 96",
+			"prerequisites": [
+				"new_skill_98"
+			],
+			"x": 1120.0,
+			"y": 0.0
+		},
+		"new_skill_97": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 97",
+			"prerequisites": [
+				"new_skill_98"
+			],
+			"x": 1120.0,
+			"y": -160.0
+		},
+		"new_skill_98": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 98",
+			"prerequisites": [
+				"new_skill_80"
+			],
+			"x": 1280.0,
+			"y": -160.0
+		},
+		"new_skill_99": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "説明を入力してください",
+			"icon": "❓",
+			"max_level": 5,
+			"name": "新しいスキル 99",
+			"prerequisites": [
+				"new_skill_100"
+			],
+			"x": 1280.0,
+			"y": -320.0
 		},
 		"root_gold": {
 			"base_cost": 1,
