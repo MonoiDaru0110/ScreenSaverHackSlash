@@ -238,30 +238,22 @@ func _update_ui_actual() -> void:
 	]
 	
 	# 解放可能状態（前提スキルがすべてレベル1以上）
-	var is_playable = true
-	for prereq_id in prerequisites:
-		var req_lvl = GameData.skill_levels.get(prereq_id, 0)
-		if req_lvl == 0:
-			is_playable = false
-			break
+	var playable = is_playable()
 			
 	# トークンが足りるかどうかの判定
 	var player_tokens = GameData.tokens
 	var is_affordable = player_tokens >= cost
 	
-	# 枠線の色決定 (購入可能なら緑、不可能なら赤。MAX状態は完了なので緑とする)
+	# 枠線の色決定 (購入可能なら緑、不可能なら赤。MAX状態は完了なので金色っぽくする)
 	var border_color = Color(0.9, 0.2, 0.2) # 赤
 	if current_level >= max_level:
 		border_color = Color(1.0, 0.82, 0.0) # MAX: 金色っぽく
-		disabled = false
-	elif is_playable:
-		disabled = false
+	elif playable:
 		if is_affordable:
 			border_color = Color(0.2, 0.9, 0.2) # 購入可能: 緑
 		else:
 			border_color = Color(0.9, 0.2, 0.2) # トークン不足: 赤
 	else:
-		disabled = true
 		border_color = Color(0.9, 0.2, 0.2) # ロック中: 赤
 		
 	# 枠線の適用
@@ -287,6 +279,16 @@ func _update_ui_actual() -> void:
 
 func get_upgrade_cost(level: int) -> int:
 	return int(base_cost * pow(cost_multiplier, level))
+
+
+func is_playable() -> bool:
+	for prereq_id in prerequisites:
+		if prereq_id.is_empty():
+			continue
+		var req_lvl = GameData.skill_levels.get(prereq_id, 0)
+		if req_lvl == 0:
+			return false
+	return true
 
 
 # 外部（HUDなど）からレベル変更通知を受け取って再描画するための関数

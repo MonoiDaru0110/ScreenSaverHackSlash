@@ -321,6 +321,9 @@ func close_skill_tree() -> void:
 
 
 func _on_skill_node_pressed(node: SkillNode) -> void:
+	if not node.is_playable():
+		return
+		
 	var current_lvl = GameData.get_skill_level(node.skill_id)
 	if current_lvl >= node.max_level:
 		return
