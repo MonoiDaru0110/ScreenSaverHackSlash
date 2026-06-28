@@ -33,6 +33,8 @@ func _ready() -> void:
 		# Center the viewport initially
 		var parent_size = size
 		viewport.position = (parent_size - child_size) / 2.0
+		
+	visibility_changed.connect(update_culling)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -64,6 +66,7 @@ func _gui_input(event: InputEvent) -> void:
 			# Directly shift the viewport coordinate system for panning
 			if viewport:
 				viewport.position += diff
+				update_culling()
 			_last_mouse_pos = event.global_position
 			accept_event()
 
@@ -86,6 +89,7 @@ func _zoom_at_mouse(factor: float) -> void:
 	# Adjust position to keep the mouse point stable
 	var shift = mouse_local * (_zoom - old_zoom)
 	viewport.position -= shift
+	update_culling()
 
 
 func center_on_root(window: Control = null) -> void:
@@ -141,3 +145,36 @@ func center_on_root(window: Control = null) -> void:
 		if parent_size.x <= 0 or parent_size.y <= 0:
 			parent_size = Vector2(1168, 764)
 		viewport.position = (parent_size - child_size) / 2.0
+	update_culling()
+
+
+func update_culling() -> void:
+	if not viewport or not is_inside_tree() or not is_visible_in_tree():
+		return
+		
+	var container_rect = get_global_rect()
+	var skill_nodes = viewport.find_children("*", "SkillNode", true, false)
+	
+	# 1. 各 SkillNode の表示状態更新
+	for node in skill_nodes:
+		if not node is SkillNode:
+			continue
+			
+		var node_rect = node.get_global_rect()
+		# 枠線9px分やズームを考慮して余裕を持たせる
+		var expanded_rect = node_rect.grow(15.0 * _zoom)
+		var is_visible = container_rect.intersects(expanded_rect)
+		
+		if node.visible != is_visible:
+			node.visible = is_visible
+			
+	# 2. 各 Line2D 接続線の表示状態更新
+	var lines = viewport.find_children("*", "Line2D", true, false)
+	for line in lines:
+		if line is Line2D and line.points.size() >= 2:
+			var p1_global = line.to_global(line.points[0])
+			var p2_global = line.to_global(line.points[1])
+			var line_rect = Rect2(p1_global, Vector2.ZERO).expand(p2_global).grow(5.0 * _zoom)
+			var is_visible = container_rect.intersects(line_rect)
+			if line.visible != is_visible:
+				line.visible = is_visible

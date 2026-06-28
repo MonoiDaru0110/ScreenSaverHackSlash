@@ -1,11 +1,24 @@
-[gd_scene load_steps=2 format=3 uid="uid://d1c447l7qh87x"]
+[gd_scene load_steps=3 format=3 uid="uid://d1c447l7qh87x"]
 
 [ext_resource type="Script" uid="uid://cjopxphk7xe77" path="res://scripts/skills/skill_node.gd" id="1_skill"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_522ik"]
+bg_color = Color(0.12, 0.12, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.2, 0.35, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [node name="SkillNode" type="Button"]
 custom_minimum_size = Vector2(80, 80)
 offset_right = 80.0
 offset_bottom = 80.0
 theme_override_font_sizes/font_size = 32
+theme_override_styles/disabled = SubResource("StyleBoxFlat_522ik")
 text = "❓"
 script = ExtResource("1_skill")

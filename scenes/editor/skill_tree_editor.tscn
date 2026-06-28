@@ -116,7 +116,7 @@ text = "スキルID:"
 [node name="SidebarIdEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IdRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ex: root_gold"
+placeholder_text = "ex: gold_boost_1"
 
 [node name="NameRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2
@@ -142,8 +142,11 @@ text = "アイコン:"
 [node name="SidebarIconEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "ex: 🪙"
-max_length = 2
+placeholder_text = "ex: 🪙 または res://..."
+
+[node name="SelectIconBtn" type="Button" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow"]
+layout_mode = 2
+text = "選択..."
 
 [node name="DescRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2

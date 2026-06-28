@@ -12,27 +12,77 @@ class_name SkillNode
 @export var prerequisites: Array[String] = []
 var _lines: Array[Line2D] = []
 
+var _icon_texture: Texture2D = null
+var _icon_loaded: bool = false
+var _last_loaded_icon_char: String = ""
+var _is_dirty: bool = true
+var _deferred_pending: bool = false
+
+func _load_icon_if_needed() -> void:
+	if _icon_loaded and _last_loaded_icon_char == icon_char:
+		return
+	
+	_icon_loaded = true
+	_last_loaded_icon_char = icon_char
+	_icon_texture = null
+	
+	if icon_char.begins_with("res://") and ResourceLoader.exists(icon_char):
+		var tex = load(icon_char)
+		if tex is Texture2D:
+			_icon_texture = tex
+
+var _style_normal: StyleBoxFlat
+var _style_hover: StyleBoxFlat
+var _style_pressed: StyleBoxFlat
+var _style_disabled: StyleBoxFlat
+
 func _ready() -> void:
 	# item_rect_changedシグナルに接続して、ドラッグ時に接続線を更新する
 	if Engine.is_editor_hint():
 		item_rect_changed.connect(_update_connections)
 	
-	# 無効状態 (disabled) のときに半透明になるのを防ぐため、不透過のStyleBoxをオーバーライド設定する
-	var style_disabled = StyleBoxFlat.new()
-	style_disabled.bg_color = Color(0.12, 0.12, 0.2, 1.0)
-	style_disabled.border_width_left = 2
-	style_disabled.border_width_top = 2
-	style_disabled.border_width_right = 2
-	style_disabled.border_width_bottom = 2
-	style_disabled.border_color = Color(0.2, 0.2, 0.35, 1.0)
-	style_disabled.corner_radius_top_left = 3
-	style_disabled.corner_radius_top_right = 3
-	style_disabled.corner_radius_bottom_right = 3
-	style_disabled.corner_radius_bottom_left = 3
-	add_theme_stylebox_override("disabled", style_disabled)
+	# スタイルボックスを動的に初期化して外側の枠（フチ）を構成する（太さ3倍：9px）
+	_style_normal = StyleBoxFlat.new()
+	_style_normal.bg_color = Color(0.12, 0.12, 0.2, 1.0)
+	_style_normal.border_width_left = 9
+	_style_normal.border_width_top = 9
+	_style_normal.border_width_right = 9
+	_style_normal.border_width_bottom = 9
+	_style_normal.expand_margin_left = 9
+	_style_normal.expand_margin_top = 9
+	_style_normal.expand_margin_right = 9
+	_style_normal.expand_margin_bottom = 9
+	_style_normal.corner_radius_top_left = 3
+	_style_normal.corner_radius_top_right = 3
+	_style_normal.corner_radius_bottom_right = 3
+	_style_normal.corner_radius_bottom_left = 3
+	
+	_style_hover = _style_normal.duplicate()
+	_style_hover.bg_color = Color(0.18, 0.18, 0.28, 1.0)
+	
+	_style_pressed = _style_normal.duplicate()
+	_style_pressed.bg_color = Color(0.08, 0.08, 0.15, 1.0)
+	
+	_style_disabled = _style_normal.duplicate()
+	_style_disabled.bg_color = Color(0.1, 0.1, 0.15, 1.0)
+	
+	add_theme_stylebox_override("normal", _style_normal)
+	add_theme_stylebox_override("hover", _style_hover)
+	add_theme_stylebox_override("pressed", _style_pressed)
+	add_theme_stylebox_override("disabled", _style_disabled)
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	focus_mode = Control.FOCUS_NONE
+	
+	# トークン変化やスキル解放状況の変化による購入可能状態の変化をリアルタイムに更新反映する
+	# (永続シングルトンのシグナルに接続するため、リークやフリーズを防ぐようメンバー関数に直接接続する)
+	if not Engine.is_editor_hint():
+		GameData.tokens_changed.connect(_on_tokens_changed)
+		GameData.skill_upgraded.connect(_on_skill_upgraded)
+		visibility_changed.connect(_on_visibility_changed)
 	
 	_update_connections()
-	_update_ui()
+	queue_update_ui()
 
 
 func _process(_delta: float) -> void:
@@ -127,7 +177,27 @@ func _get_connection_points(node_a: Control, node_b: Control) -> Array[Vector2]:
 
 
 func _update_ui_editor() -> void:
-	text = icon_char
+	_load_icon_if_needed()
+	
+	if _icon_texture:
+		icon = _icon_texture
+		text = ""
+		expand_icon = true
+	else:
+		icon = null
+		text = icon_char
+		
+	# エディタ上でのデフォルト枠色を設定 (青/グレー)
+	var border_color = Color(0.35, 0.4, 0.55)
+	if _style_normal:
+		_style_normal.border_color = border_color
+	if _style_hover:
+		_style_hover.border_color = border_color
+	if _style_pressed:
+		_style_pressed.border_color = border_color
+	if _style_disabled:
+		_style_disabled.border_color = border_color
+		
 	tooltip_text = "%s\n%s\nMax Lvl: %d\nBase Cost: 💎 %d" % [
 		skill_name if not skill_name.is_empty() else (skill_id if not skill_id.is_empty() else name),
 		description,
@@ -136,11 +206,22 @@ func _update_ui_editor() -> void:
 	]
 
 
-func _update_ui() -> void:
-	if Engine.is_editor_hint():
+func _update_ui_actual() -> void:
+	_deferred_pending = false
+	if not is_inside_tree() or not is_visible_in_tree():
 		return
 	
-	text = icon_char
+	_is_dirty = false
+	
+	_load_icon_if_needed()
+	
+	if _icon_texture:
+		icon = _icon_texture
+		text = ""
+		expand_icon = true
+	else:
+		icon = null
+		text = icon_char
 	
 	# ゲーム実行時のUI更新
 	var current_level = GameData.skill_levels.get(skill_id, 0)
@@ -156,28 +237,52 @@ func _update_ui() -> void:
 		cost_str
 	]
 	
-	# 解放可能状態（前提スキルがすべてレベル1以上）かつトークンが足りるか判定
+	# 解放可能状態（前提スキルがすべてレベル1以上）
 	var is_playable = true
 	for prereq_id in prerequisites:
 		var req_lvl = GameData.skill_levels.get(prereq_id, 0)
 		if req_lvl == 0:
 			is_playable = false
 			break
+			
+	# トークンが足りるかどうかの判定
+	var player_tokens = GameData.tokens
+	var is_affordable = player_tokens >= cost
 	
+	# 枠線の色決定 (購入可能なら緑、不可能なら赤。MAX状態は完了なので緑とする)
+	var border_color = Color(0.9, 0.2, 0.2) # 赤
 	if current_level >= max_level:
+		border_color = Color(1.0, 0.82, 0.0) # MAX: 金色っぽく
 		disabled = false
-		self_modulate = Color(0.5, 1.0, 0.5) # MAXレベルは緑っぽく
-	elif not is_playable:
-		disabled = true
-		self_modulate = Color(0.3, 0.3, 0.3, 1.0) # ロック中は暗い完全不透過に変更
-	else:
+	elif is_playable:
 		disabled = false
-		# トークンが足りるかどうかで見た目を変える
-		var player_tokens = GameData.tokens
-		if player_tokens >= cost:
-			self_modulate = Color(1.0, 1.0, 1.0) # 解放可能
+		if is_affordable:
+			border_color = Color(0.2, 0.9, 0.2) # 購入可能: 緑
 		else:
-			self_modulate = Color(1.0, 0.7, 0.7) # 解放可能だがトークン不足（少し赤っぽく）
+			border_color = Color(0.9, 0.2, 0.2) # トークン不足: 赤
+	else:
+		disabled = true
+		border_color = Color(0.9, 0.2, 0.2) # ロック中: 赤
+		
+	# 枠線の適用
+	if _style_normal:
+		_style_normal.border_color = border_color
+	if _style_hover:
+		_style_hover.border_color = border_color
+	if _style_pressed:
+		_style_pressed.border_color = border_color
+	if _style_disabled:
+		_style_disabled.border_color = border_color
+		
+	# 未購入スキルのグレーアウト (modulate を使用して追加した枠の上からかける)
+	self_modulate = Color(1.0, 1.0, 1.0) # self_modulateをクリア
+	
+	if current_level > 0:
+		# 1回以上購入済み
+		modulate = Color(1.0, 1.0, 1.0)
+	else:
+		# 未購入 (current_level == 0) は一律でグレーアウト
+		modulate = Color(0.65, 0.65, 0.65, 1.0)
 
 
 func get_upgrade_cost(level: int) -> int:
@@ -186,5 +291,32 @@ func get_upgrade_cost(level: int) -> int:
 
 # 外部（HUDなど）からレベル変更通知を受け取って再描画するための関数
 func refresh() -> void:
-	_update_ui()
+	queue_update_ui()
 	_update_connections()
+
+
+func queue_update_ui() -> void:
+	_is_dirty = true
+	if _deferred_pending:
+		return
+	if is_inside_tree() and is_visible_in_tree():
+		if not is_queued_for_deletion():
+			_deferred_pending = true
+			call_deferred(&"_update_ui_actual")
+
+
+func _on_visibility_changed() -> void:
+	if is_visible_in_tree() and _is_dirty:
+		_update_ui_actual()
+
+
+func _on_tokens_changed(_new_tokens: int) -> void:
+	queue_update_ui()
+
+
+func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
+	queue_update_ui()
+
+
+func _update_ui() -> void:
+	queue_update_ui()

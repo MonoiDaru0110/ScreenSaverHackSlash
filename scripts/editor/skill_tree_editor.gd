@@ -15,10 +15,12 @@ extends Control
 @onready var sidebar_mult_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow/SidebarMultSpin
 @onready var prereq_list_vbox: VBoxContainer = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/PrereqScroll/PrereqListVBox
 @onready var sidebar_delete_btn: Button = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/SidebarDeleteBtn
+@onready var select_icon_btn: Button = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow/SelectIconBtn
 
 const SAVE_PATH = "res://data/skills.json"
 var _selected_node: GraphNode = null
 var _updating_sidebar: bool = false
+var _file_dialog: FileDialog = null
 
 func _ready() -> void:
 	# Configure GraphEdit snapping and line curvature
@@ -51,6 +53,7 @@ func _ready() -> void:
 	sidebar_mult_spin.value_changed.connect(_on_sidebar_value_changed)
 	
 	sidebar_delete_btn.pressed.connect(_on_sidebar_delete_pressed)
+	select_icon_btn.pressed.connect(_on_select_icon_btn_pressed)
 	
 	# Load existing data on start
 	load_data()
@@ -130,10 +133,7 @@ func _on_sidebar_text_changed(_new_text: String) -> void:
 	_selected_node.set_meta("icon_char", icon_val)
 	_selected_node.set_meta("description", sidebar_desc_edit.text)
 	
-	# Update visual label on node
-	var lbl = _selected_node.get_node_or_null("IconLabel") as Label
-	if lbl:
-		lbl.text = icon_val if not icon_val.is_empty() else "❓"
+	_update_node_icon_preview(_selected_node, icon_val)
 
 
 func _on_sidebar_value_changed(_value: float) -> void:
@@ -233,17 +233,32 @@ func add_new_node(id := "", name_str := "", icon := "❓", desc := "", max_lvl :
 	node.add_theme_stylebox_override("titlebar", empty_box)
 	node.add_theme_stylebox_override("titlebar_selected", empty_box)
 	
-	# Single child: Label for the emoji icon
+	# Single child container
+	var container = CenterContainer.new()
+	container.name = "IconContainer"
+	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.add_child(container)
+	
+	# Label for the emoji icon
 	var lbl = Label.new()
 	lbl.name = "IconLabel"
 	lbl.text = icon
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lbl.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	lbl.add_theme_font_size_override("font_size", 32)
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	node.add_child(lbl)
+	container.add_child(lbl)
+
+	# TextureRect for PNG icon
+	var tex_rect = TextureRect.new()
+	tex_rect.name = "IconTexture"
+	tex_rect.custom_minimum_size = Vector2(48, 48)
+	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	container.add_child(tex_rect)
 	
 	# Store references in metadata
 	node.set_meta("skill_id", id)
@@ -253,6 +268,8 @@ func add_new_node(id := "", name_str := "", icon := "❓", desc := "", max_lvl :
 	node.set_meta("max_level", max_lvl)
 	node.set_meta("base_cost", cost)
 	node.set_meta("cost_multiplier", mult)
+	
+	_update_node_icon_preview(node, icon)
 	
 	graph_edit.add_child(node)
 	
@@ -407,3 +424,51 @@ func load_data() -> void:
 				graph_edit.connect_node(from_node_name, 0, to_node_name, 0)
 				
 	status_label.text = "データを読み込みました。"
+
+
+func _update_node_icon_preview(node: GraphNode, icon_val: String) -> void:
+	var container = node.get_node_or_null("IconContainer")
+	if not container:
+		return
+	var lbl = container.get_node_or_null("IconLabel") as Label
+	var tex_rect = container.get_node_or_null("IconTexture") as TextureRect
+	
+	if not lbl or not tex_rect:
+		return
+		
+	if icon_val.begins_with("res://") and ResourceLoader.exists(icon_val):
+		var tex = load(icon_val)
+		if tex is Texture2D:
+			tex_rect.texture = tex
+			tex_rect.visible = true
+			lbl.visible = false
+			return
+			
+	# Fallback to emoji label
+	tex_rect.texture = null
+	tex_rect.visible = false
+	lbl.text = icon_val if not icon_val.is_empty() else "❓"
+	lbl.visible = true
+
+
+func _on_select_icon_btn_pressed() -> void:
+	if not _file_dialog:
+		_file_dialog = FileDialog.new()
+		_file_dialog.title = "アイコン画像を選択"
+		_file_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+		_file_dialog.access = FileDialog.ACCESS_RESOURCES
+		_file_dialog.add_filter("*.png", "PNG Images")
+		_file_dialog.add_filter("*.jpg,*.jpeg", "JPEG Images")
+		_file_dialog.add_filter("*.svg", "SVG Images")
+		_file_dialog.file_selected.connect(_on_file_selected)
+		add_child(_file_dialog)
+	
+	# Reset current dir to resources root
+	_file_dialog.current_dir = "res://"
+	_file_dialog.popup_centered(Vector2i(800, 600))
+
+
+func _on_file_selected(path: String) -> void:
+	if _selected_node:
+		sidebar_icon_edit.text = path
+		_on_sidebar_text_changed(path)

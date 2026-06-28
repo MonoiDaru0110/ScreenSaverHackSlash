@@ -156,7 +156,6 @@ func _on_gold_changed(_amount: int) -> void:
 
 func _on_tokens_changed(_amount: int) -> void:
 	token_label.text = "💎 " + _format_number(GameData.tokens)
-	_update_skill_nodes()
 
 
 func _on_stats_changed() -> void:
@@ -327,8 +326,9 @@ func _on_skill_node_pressed(node: SkillNode) -> void:
 		return
 	
 	var cost = node.get_upgrade_cost(current_lvl)
-	if GameData.buy_skill_upgrade(node.skill_id, cost, node.max_level):
-		_update_skill_nodes()
+	# シグナル（tokens_changed, skill_upgraded）を介して各ノードの見た目は自動更新されるため、
+	# ここで手動で全ノードを走査し直す必要はありません
+	GameData.buy_skill_upgrade(node.skill_id, cost, node.max_level)
 
 
 func _update_skill_nodes() -> void:
@@ -336,7 +336,7 @@ func _update_skill_nodes() -> void:
 		return
 	for child in _skill_tree_instance.get_children():
 		if child is SkillNode:
-			child.refresh()
+			child._update_ui()
 
 
 func _load_skills_from_json() -> void:
@@ -381,8 +381,8 @@ func _load_skills_from_json() -> void:
 		node.max_level = int(s.get("max_level", 5))
 		node.base_cost = int(s.get("base_cost", 1))
 		node.cost_multiplier = float(s.get("cost_multiplier", 1.5))
-		# パネル間の隙間を微調整（元の0.7倍、ピッチを0.85倍）して辺の長さを調整する
-		node.position = Vector2(s.get("x", 0), s.get("y", 0)) * 0.85
+		# パネル間の隙間を微調整（枠のさらなる太枠化に伴い、元の0.95倍から1.1倍に変更）して辺の長さを調整する
+		node.position = Vector2(s.get("x", 0), s.get("y", 0)) * 1.1
 		
 		# prerequisites の変換 (Array -> Array[String])
 		var prereqs_raw = s.get("prerequisites", [])
@@ -397,8 +397,5 @@ func _load_skills_from_json() -> void:
 	# 2. すべてのノードが追加された後、シグナルを接続し初期描画を行う
 	for node in created_nodes:
 		node.pressed.connect(_on_skill_node_pressed.bind(node))
-		GameData.skill_upgraded.connect(func(id, lvl):
-			node.refresh()
-		)
 		# 初期表示の更新（他ノードとの接続線を引く処理を含む）
 		node.refresh()
