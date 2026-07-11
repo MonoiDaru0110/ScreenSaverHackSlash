@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://po700h2el1hf"
-path="res://.godot/imported/token_gold_over_time_boost.png-47c92e748d1c8a6744343d9e8640e511.ctex"
+uid="uid://d3m3vywenhh3c"
+path="res://.godot/imported/get_token__over_time.png-7bc6a19f54aeebd8554fa7f910d2b487.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/token_gold_over_time_boost.png"
-dest_files=["res://.godot/imported/token_gold_over_time_boost.png-47c92e748d1c8a6744343d9e8640e511.ctex"]
+source_file="res://images/skill_icon/get_token__over_time.png"
+dest_files=["res://.godot/imported/get_token__over_time.png-7bc6a19f54aeebd8554fa7f910d2b487.ctex"]
 
 [params]
 

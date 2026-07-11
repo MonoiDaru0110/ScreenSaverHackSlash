@@ -18,6 +18,7 @@ var _sound_corner := preload("res://sound/sound_effect/角衝突音.wav")
 var _bg_default_color := Color(0.02, 0.02, 0.06)
 
 var _over_time_timer: Timer = null
+var _token_over_time_timer: Timer = null
 
 
 func _ready() -> void:
@@ -26,6 +27,7 @@ func _ready() -> void:
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
 	
 	_setup_over_time_timer()
+	_setup_token_over_time_timer()
 	_spawn_initial_logos()
 
 
@@ -82,7 +84,9 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 		if token_is_direct:
 			token_mult *= GameData.get_token_direct_multiplier()
 
-		var base_tokens := (1 + GameData.boost_level) * mult
+		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
+		var token_skill_mult := pow(1.1, GameData.total_token_boost_level)
+		var base_tokens := (1 + GameData.boost_level) * mult * token_skill_mult
 		# Apply token_luck skill (30% chance for +1 token per level)
 		var token_luck_level := GameData.get_skill_level("token_luck")
 		if token_luck_level > 0 and randf() < token_luck_level * 0.3:
@@ -147,8 +151,35 @@ func _update_over_time_timer() -> void:
 		_over_time_timer.stop()
 
 
+func _setup_token_over_time_timer() -> void:
+	_token_over_time_timer = Timer.new()
+	_token_over_time_timer.name = "TokenOverTimeTimer"
+	_token_over_time_timer.timeout.connect(_on_token_over_time_timeout)
+	add_child(_token_over_time_timer)
+	_update_token_over_time_timer()
+
+
+func _update_token_over_time_timer() -> void:
+	if not _token_over_time_timer:
+		return
+		
+	var has_skill := GameData.get_skill_level("get_token_over_time_1") >= 1
+	if has_skill:
+		var cooldown := 5.0 * pow(0.9, GameData.total_token_cooltime_boost_level)
+		if not _token_over_time_timer.is_stopped():
+			if not is_equal_approx(_token_over_time_timer.wait_time, cooldown):
+				_token_over_time_timer.wait_time = cooldown
+				_token_over_time_timer.start()
+		else:
+			_token_over_time_timer.wait_time = cooldown
+			_token_over_time_timer.start()
+	else:
+		_token_over_time_timer.stop()
+
+
 func _on_upgrades_changed() -> void:
 	_update_over_time_timer()
+	_update_token_over_time_timer()
 
 
 func _on_over_time_timeout() -> void:
@@ -179,3 +210,24 @@ func _play_sound(stream: AudioStream) -> void:
 	add_child(player)
 	player.play()
 	player.finished.connect(player.queue_free)
+
+
+func _on_token_over_time_timeout() -> void:
+	var logos := logo_container.get_children()
+	if logos.is_empty():
+		return
+		
+	var mult := GameData.get_ascension_multiplier()
+	
+	# Base amount is 10% of normal corner bounce tokens
+	var base_corner_tokens := (1 + GameData.boost_level) * mult * pow(1.1, GameData.total_token_boost_level)
+	var base_over_time_token := base_corner_tokens * 0.1
+	
+	var boost_mult := pow(1.1, GameData.total_get_token_over_time_boost_level)
+	var final_amount := int(base_over_time_token * boost_mult)
+	final_amount = max(1, final_amount)
+	
+	for logo in logos:
+		if logo is Node2D:
+			_spawn_drop_label(logo.global_position, "💎 +%d" % final_amount, Color(0.3, 0.75, 1.0, 0.7), false)
+			GameData.add_tokens(final_amount)

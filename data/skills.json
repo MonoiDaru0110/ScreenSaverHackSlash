@@ -1,25 +1,12 @@
 {
 	"skills": {
-		"extra_logo": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "初期ロゴ数 +1",
-			"icon": "💿",
-			"max_level": 5,
-			"name": "複製回路",
-			"prerequisites": [
-				"speed_boost"
-			],
-			"x": -320.0,
-			"y": -160.0
-		},
 		"get_gold_over_time": {
 			"base_cost": 10,
 			"cost_multiplier": 1.5,
 			"description": "一定時間ごとに少量のゴールドを獲得するようになる",
 			"icon": "res://images/skill_icon/get_gold_over_time.png",
 			"max_level": 1,
-			"name": "ゴールド継続獲得",
+			"name": "ゴールド自動獲得",
 			"prerequisites": [
 				"gold_boost_2"
 			],
@@ -29,10 +16,10 @@
 		"get_gold_over_time_boost_1": {
 			"base_cost": 30,
 			"cost_multiplier": 1.5,
-			"description": "ゴールド継続獲得量+10%",
+			"description": "ゴールド自動獲得量+10%",
 			"icon": "res://images/skill_icon/get_gold_over_time_boost.png",
 			"max_level": 5,
-			"name": "ゴールド継続獲得量+",
+			"name": "ゴールド自動獲得量+",
 			"prerequisites": [
 				"gold_cooltime_boost_1"
 			],
@@ -42,14 +29,53 @@
 		"get_gold_over_time_boost_2": {
 			"base_cost": 30,
 			"cost_multiplier": 1.5,
-			"description": "ゴールド継続獲得量+10%",
+			"description": "ゴールド自動獲得量+10%",
 			"icon": "res://images/skill_icon/get_gold_over_time_boost.png",
 			"max_level": 5,
-			"name": "ゴールド継続獲得量+",
+			"name": "ゴールド自動獲得量+",
 			"prerequisites": [
 				"gold_cooltime_boost_2"
 			],
 			"x": 160.0,
+			"y": -480.0
+		},
+		"get_token_over_time_1": {
+			"base_cost": 7,
+			"cost_multiplier": 1.5,
+			"description": "一定時間ごとに少量のトークンを獲得するようになる",
+			"icon": "res://images/skill_icon/get_token__over_time.png",
+			"max_level": 5,
+			"name": "トークン自動獲得",
+			"prerequisites": [
+				"token_boost_2"
+			],
+			"x": -320.0,
+			"y": -160.0
+		},
+		"get_token_over_time_boost_1": {
+			"base_cost": 30,
+			"cost_multiplier": 1.5,
+			"description": "トークン自動獲得量+10%",
+			"icon": "res://images/skill_icon/get_token_over_time_boost.png",
+			"max_level": 5,
+			"name": "トークン自動獲得量+",
+			"prerequisites": [
+				"token_cooltime_boost_1"
+			],
+			"x": -160.0,
+			"y": -320.0
+		},
+		"get_token_over_time_boost_2": {
+			"base_cost": 30,
+			"cost_multiplier": 1.5,
+			"description": "トークン自動獲得量+10%",
+			"icon": "res://images/skill_icon/get_token_over_time_boost.png",
+			"max_level": 5,
+			"name": "トークン自動獲得量+",
+			"prerequisites": [
+				"token_cooltime_boost_2"
+			],
+			"x": -160.0,
 			"y": -480.0
 		},
 		"gold_boost_1": {
@@ -66,7 +92,7 @@
 		"gold_boost_2": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
-			"description": "ゴールド獲得量+10％",
+			"description": "ゴールド獲得量+10%",
 			"icon": "res://images/skill_icon/gold_boost_icon.png",
 			"max_level": 5,
 			"name": "ゴールド獲得量+",
@@ -76,13 +102,26 @@
 			"x": 160.0,
 			"y": 0.0
 		},
+		"gold_boost_3": {
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"description": "ゴールド獲得量+10%",
+			"icon": "res://images/skill_icon/gold_boost_icon.png",
+			"max_level": 5,
+			"name": "ゴールド獲得量+",
+			"prerequisites": [
+				"token_boost_1"
+			],
+			"x": 0.0,
+			"y": -160.0
+		},
 		"gold_cooltime_boost_1": {
 			"base_cost": 15,
 			"cost_multiplier": 1.5,
-			"description": "ゴールド継続獲得のクールタイム-10％",
+			"description": "ゴールド自動獲得のクールタイム-10％",
 			"icon": "res://images/skill_icon/gold_cooltime_boost.png",
 			"max_level": 5,
-			"name": "ゴールド獲得時間短縮",
+			"name": "ゴールドクールタイム短縮",
 			"prerequisites": [
 				"get_gold_over_time"
 			],
@@ -92,10 +131,10 @@
 		"gold_cooltime_boost_2": {
 			"base_cost": 30,
 			"cost_multiplier": 1.5,
-			"description": "ゴールド継続獲得のクールタイム-10％",
+			"description": "ゴールド自動獲得のクールタイム-10％",
 			"icon": "res://images/skill_icon/gold_cooltime_boost.png",
 			"max_level": 5,
-			"name": "ゴールド獲得時間短縮",
+			"name": "ゴールドクールタイム短縮",
 			"prerequisites": [
 				"gold_cooltime_boost_1"
 			],
@@ -103,12 +142,12 @@
 			"y": -480.0
 		},
 		"gold_critical_hit_boost_1": {
-			"base_cost": 1,
+			"base_cost": 35,
 			"cost_multiplier": 1.5,
 			"description": "ゴールドのクリティカルヒット係数+10%",
 			"icon": "res://images/skill_icon/gold_critical_hit_boost.png",
 			"max_level": 5,
-			"name": "ゴールドクリティカルヒット係数+",
+			"name": "ゴールドクリティカルヒット+",
 			"prerequisites": [
 				"get_gold_over_time_boost_1"
 			],
@@ -140,19 +179,6 @@
 			],
 			"x": 0.0,
 			"y": 320.0
-		},
-		"new_skill_10": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 10",
-			"prerequisites": [
-				"new_skill_8"
-			],
-			"x": -480.0,
-			"y": -640.0
 		},
 		"new_skill_100": {
 			"base_cost": 1,
@@ -396,7 +422,7 @@
 			"max_level": 5,
 			"name": "新しいスキル 12",
 			"prerequisites": [
-				"new_skill_10"
+				"token_direct_hit_boost_1"
 			],
 			"x": -640.0,
 			"y": -800.0
@@ -700,45 +726,6 @@
 			"x": 160.0,
 			"y": -640.0
 		},
-		"new_skill_23": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 23",
-			"prerequisites": [
-				"new_skill_7"
-			],
-			"x": -160.0,
-			"y": -320.0
-		},
-		"new_skill_24": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 24",
-			"prerequisites": [
-				"new_skill_8"
-			],
-			"x": -160.0,
-			"y": -480.0
-		},
-		"new_skill_25": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 25",
-			"prerequisites": [
-				"new_skill_24"
-			],
-			"x": 0.0,
-			"y": -640.0
-		},
 		"new_skill_26": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -1012,19 +999,6 @@
 			"x": -800.0,
 			"y": -640.0
 		},
-		"new_skill_49": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 49",
-			"prerequisites": [
-				"new_skill_6"
-			],
-			"x": 0.0,
-			"y": -160.0
-		},
 		"new_skill_52": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -1115,19 +1089,6 @@
 			],
 			"x": -960.0,
 			"y": -800.0
-		},
-		"new_skill_6": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 6",
-			"prerequisites": [
-				"gold_boost_1"
-			],
-			"x": 0.0,
-			"y": 0.0
 		},
 		"new_skill_60": {
 			"base_cost": 1,
@@ -1232,19 +1193,6 @@
 			],
 			"x": -1280.0,
 			"y": -800.0
-		},
-		"new_skill_7": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 7",
-			"prerequisites": [
-				"extra_logo"
-			],
-			"x": -320.0,
-			"y": -320.0
 		},
 		"new_skill_70": {
 			"base_cost": 1,
@@ -1361,19 +1309,6 @@
 				"new_skill_99"
 			],
 			"x": 1440.0,
-			"y": -480.0
-		},
-		"new_skill_8": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 8",
-			"prerequisites": [
-				"new_skill_7"
-			],
-			"x": -320.0,
 			"y": -480.0
 		},
 		"new_skill_80": {
@@ -1623,18 +1558,83 @@
 			"x": 1280.0,
 			"y": -480.0
 		},
-		"speed_boost": {
+		"token_boost_1": {
+			"base_cost": 5,
+			"cost_multiplier": 1.5,
+			"description": "トークン獲得量+10%",
+			"icon": "res://images/skill_icon/token_boost.png",
+			"max_level": 5,
+			"name": "トークン獲得量+",
+			"prerequisites": [
+				"gold_boost_1"
+			],
+			"x": 0.0,
+			"y": 0.0
+		},
+		"token_boost_2": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
-			"description": "DVDロゴの基本移動速度 +20",
-			"icon": "⚡",
+			"description": "トークン獲得量+10%",
+			"icon": "res://images/skill_icon/token_boost.png",
 			"max_level": 5,
-			"name": "超速の紋章",
+			"name": "トークン獲得量+",
 			"prerequisites": [
 				"gold_boost_1"
 			],
 			"x": -160.0,
 			"y": 0.0
+		},
+		"token_cooltime_boost_1": {
+			"base_cost": 15,
+			"cost_multiplier": 1.5,
+			"description": "トークン自動獲得のクールタイム-10％",
+			"icon": "res://images/skill_icon/token_cooltime_boost.png",
+			"max_level": 5,
+			"name": "トークンクールタイム短縮",
+			"prerequisites": [
+				"get_token_over_time_1"
+			],
+			"x": -320.0,
+			"y": -320.0
+		},
+		"token_cooltime_boost_2": {
+			"base_cost": 30,
+			"cost_multiplier": 1.5,
+			"description": "トークン自動獲得のクールタイム-10％",
+			"icon": "res://images/skill_icon/token_cooltime_boost.png",
+			"max_level": 5,
+			"name": "トークンクールタイム短縮",
+			"prerequisites": [
+				"token_cooltime_boost_1"
+			],
+			"x": -320.0,
+			"y": -480.0
+		},
+		"token_critical_hit_boost_1": {
+			"base_cost": 35,
+			"cost_multiplier": 1.5,
+			"description": "ゴールドのクリティカルヒット係数+10%",
+			"icon": "res://images/skill_icon/token_critical_hit_boost.png",
+			"max_level": 5,
+			"name": "トークンクリティカルヒット+",
+			"prerequisites": [
+				"get_token_over_time_boost_2"
+			],
+			"x": 0.0,
+			"y": -640.0
+		},
+		"token_direct_hit_boost_1": {
+			"base_cost": 35,
+			"cost_multiplier": 1.5,
+			"description": "トークンのダイレクトヒット係数+10%",
+			"icon": "res://images/skill_icon/token_direct_hit_boost.png",
+			"max_level": 5,
+			"name": "トークンダイレクトヒット+",
+			"prerequisites": [
+				"token_cooltime_boost_2"
+			],
+			"x": -480.0,
+			"y": -640.0
 		}
 	}
 }

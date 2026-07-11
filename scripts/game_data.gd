@@ -23,6 +23,11 @@ var total_gold_cooltime_boost_level: int = 0
 var total_get_gold_over_time_boost_level: int = 0
 var total_gold_crit_boost_level: int = 0
 var total_gold_direct_boost_level: int = 0
+var total_token_boost_level: int = 0
+var total_token_cooltime_boost_level: int = 0
+var total_get_token_over_time_boost_level: int = 0
+var total_token_crit_boost_level: int = 0
+var total_token_direct_boost_level: int = 0
 
 # --- Critical and Direct Hit Parameters ---
 var gold_critical_parameter: float = 1.0
@@ -144,11 +149,11 @@ func get_gold_direct_hit_parameter() -> float:
 
 
 func get_token_critical_parameter() -> float:
-	return token_critical_parameter
+	return token_critical_parameter * pow(1.1, total_token_crit_boost_level)
 
 
 func get_token_direct_hit_parameter() -> float:
-	return token_direct_hit_parameter
+	return token_direct_hit_parameter * pow(1.1, total_token_direct_boost_level)
 
 
 func get_gold_crit_chance() -> float:
@@ -201,6 +206,11 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_get_gold_over_time_boost_level = _recalculate_total_level("get_gold_over_time_boost_")
 	total_gold_crit_boost_level = _recalculate_total_level("gold_critical_hit_boost_")
 	total_gold_direct_boost_level = _recalculate_total_level("gold_direct_hit_boost_")
+	total_token_boost_level = _recalculate_total_level("token_boost_")
+	total_token_cooltime_boost_level = _recalculate_total_level("token_cooltime_boost_")
+	total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
+	total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
+	total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
 
 
 func _recalculate_total_level(prefix: String) -> int:
@@ -235,6 +245,26 @@ func _update_cumulative_levels(skill_id: String) -> void:
 		var suffix: String = skill_id.substr(22) # "gold_direct_hit_boost_".length() = 22
 		if suffix.is_valid_int() and suffix.to_int() > 0:
 			total_gold_direct_boost_level = _recalculate_total_level("gold_direct_hit_boost_")
+	elif skill_id.begins_with("token_boost_"):
+		var suffix: String = skill_id.substr(12) # "token_boost_".length() = 12
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_token_boost_level = _recalculate_total_level("token_boost_")
+	elif skill_id.begins_with("token_cooltime_boost_"):
+		var suffix: String = skill_id.substr(21) # "token_cooltime_boost_".length() = 21
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_token_cooltime_boost_level = _recalculate_total_level("token_cooltime_boost_")
+	elif skill_id.begins_with("get_token_over_time_boost_"):
+		var suffix: String = skill_id.substr(26) # "get_token_over_time_boost_".length() = 26
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
+	elif skill_id.begins_with("token_critical_hit_boost_"):
+		var suffix: String = skill_id.substr(25) # "token_critical_hit_boost_".length() = 25
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
+	elif skill_id.begins_with("token_direct_hit_boost_"):
+		var suffix: String = skill_id.substr(23) # "token_direct_hit_boost_".length() = 23
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
 
 
 func buy_skill_upgrade(skill_id: String, cost: int, max_level: int) -> bool:
