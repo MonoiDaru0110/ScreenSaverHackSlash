@@ -10,6 +10,7 @@ var _dvd_logo_scene: PackedScene = preload("res://scenes/dvd_logo.tscn")
 
 var _sound_corner := preload("res://sound/sound_effect/角衝突音.wav")
 
+@onready var hud: CanvasLayer = $HUD
 @onready var logo_container: Node2D = $LogoContainer
 @onready var drop_container: Node2D = $DropContainer
 @onready var background: ColorRect = $Background
@@ -109,6 +110,15 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 		GameData.add_gold(gold_amount)
 
 		_spawn_drop_label(pos, "🪙 +%d" % gold_amount, Color(1.0, 1.0, 0.95), false, gold_is_crit, gold_is_direct)
+
+	# --- Equipment Drop Logic ---
+	var dropped_item := GameData.roll_equipment_drop(is_corner)
+	if not dropped_item.is_empty():
+		var item_name: String = dropped_item.get("name", "")
+		var item_type: String = dropped_item.get("type", "")
+		if hud:
+			hud.show_equipment_drop_pop(item_name, item_type)
+
 
 
 func _spawn_drop_label(pos: Vector2, text_content: String, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false) -> void:

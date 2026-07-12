@@ -1,7 +1,8 @@
-[gd_scene load_steps=14 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=15 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
+[ext_resource type="Script" uid="uid://bh7yajm1axoto" path="res://scripts/ui/slot_button.gd" id="3_slot_btn"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
@@ -368,7 +369,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 1"
+text = "Main: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "main"
+allowed_type = "main"
 
 [node name="Slot2" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
 custom_minimum_size = Vector2(240, 72)
@@ -377,7 +381,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 2"
+text = "Sub: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "sub"
+allowed_type = "sub"
 
 [node name="Slot3" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
 custom_minimum_size = Vector2(240, 72)
@@ -386,7 +393,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 3"
+text = "Accessory 1: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "accessory_1"
+allowed_type = "accessory"
 
 [node name="Slot4" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
 custom_minimum_size = Vector2(240, 72)
@@ -395,7 +405,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 4"
+text = "Accessory 2: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "accessory_2"
+allowed_type = "accessory"
 
 [node name="Slot5" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
 custom_minimum_size = Vector2(240, 72)
@@ -404,7 +417,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 5"
+text = "Accessory 3: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "accessory_3"
+allowed_type = "accessory"
 
 [node name="Slot6" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
 custom_minimum_size = Vector2(240, 72)
@@ -413,7 +429,10 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
 theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Slot 6"
+text = "Accessory 4: (Empty)"
+script = ExtResource("3_slot_btn")
+slot_key = "accessory_4"
+allowed_type = "accessory"
 
 [node name="TabButtons" type="HBoxContainer" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout"]
 custom_minimum_size = Vector2(0, 40)
@@ -547,3 +566,73 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
 anchors_preset = 0
+
+[node name="InventoryWindow" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1472.0
+offset_top = 110.0
+offset_right = -272.0
+offset_bottom = -109.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bottom")
+
+[node name="MarginContainer" type="MarginContainer" parent="InventoryWindow"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="InventoryWindow/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="HBoxContainer" parent="InventoryWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="InventoryWindow/MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "🎒 インベントリ (0 / 50)"
+
+[node name="CloseInventoryBtn" type="Button" parent="InventoryWindow/MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "×"
+
+[node name="Separator" type="ColorRect" parent="InventoryWindow/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.2, 0.2, 0.35, 1)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="InventoryWindow/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryGrid" type="GridContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 4
+
+[node name="EquipmentLogContainer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+offset_top = 200.0
+offset_right = 1662.0
+offset_bottom = 880.0
+mouse_filter = 2
+theme_override_constants/separation = 8

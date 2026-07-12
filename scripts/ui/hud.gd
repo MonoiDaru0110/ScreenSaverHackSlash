@@ -21,12 +21,21 @@ extends CanvasLayer
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
 
+# Inventory UI references
+@onready var inventory_window: PanelContainer = %InventoryWindow
+@onready var inventory_title: Label = %TitleLabel
+@onready var btn_close_inventory: Button = %CloseInventoryBtn
+@onready var inventory_grid: GridContainer = %InventoryGrid
+@onready var equipment_log_container: VBoxContainer = %EquipmentLogContainer
+
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
 var _skill_tree_instance: Control
 var _tab_style_active: StyleBoxFlat
 var _tab_style_inactive: StyleBoxFlat
 var _is_skill_tree_open: bool = false
+var _is_inventory_open: bool = false
 var _has_centered_on_startup: bool = false
+var _slot_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -145,7 +154,11 @@ func _ready() -> void:
 	
 	skill_tree_window.visible = false
 	
-	_on_equipment_tab_pressed() 
+	_init_slot_buttons()
+	GameData.equipment_changed.connect(_on_equipment_changed)
+	btn_close_inventory.pressed.connect(close_inventory)
+	
+	close_inventory()
 	_update_all()
 
 
@@ -266,16 +279,44 @@ func _format_number(n: int) -> String:
 
 
 func _on_equipment_tab_pressed() -> void:
-	# Equipment tab is always shown now. If clicked, close the skill tree if it's open.
 	if _is_skill_tree_open:
 		close_skill_tree()
+	
+	if _is_inventory_open:
+		close_inventory()
+	else:
+		open_inventory()
+
+
+func open_inventory() -> void:
+	if _is_inventory_open:
+		return
+		
+	_is_inventory_open = true
+	inventory_window.visible = true
+	_update_inventory_ui()
 	
 	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
 	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
 
 
+func close_inventory() -> void:
+	if not _is_inventory_open:
+		return
+		
+	_is_inventory_open = false
+	inventory_window.visible = false
+	
+	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+	# If skill tree is also closed, keep equipment tab highlighted as default idle state
+	if not _is_skill_tree_open:
+		btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
+
+
 func _on_skill_tree_tab_pressed() -> void:
-	# Toggle skill tree window open/close
+	if _is_inventory_open:
+		close_inventory()
+		
 	if _is_skill_tree_open:
 		close_skill_tree()
 	else:
@@ -290,7 +331,6 @@ func open_skill_tree() -> void:
 	skill_tree_window.visible = true
 	_update_skill_nodes()
 	
-	# Update tab buttons styling
 	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
 	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active)
 	
@@ -315,7 +355,6 @@ func close_skill_tree() -> void:
 	_is_skill_tree_open = false
 	skill_tree_window.visible = false
 	
-	# Update tab buttons styling (back to active equipment)
 	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
 	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
 
@@ -402,3 +441,108 @@ func _load_skills_from_json() -> void:
 		node.pressed.connect(_on_skill_node_pressed.bind(node))
 		# 初期表示の更新（他ノードとの接続線を引く処理を含む）
 		node.refresh()
+
+
+# --- Equipment UI Logic ---
+
+func _init_slot_buttons() -> void:
+	for child in grid_equipment.get_children():
+		if child is SlotButton:
+			_slot_buttons[child.slot_key] = child
+	_update_slots_ui()
+
+
+func _update_slots_ui() -> void:
+	for slot_key in _slot_buttons:
+		var btn = _slot_buttons[slot_key] as SlotButton
+		var eq = GameData.equipped_items.get(slot_key)
+		
+		var slot_name := "Main"
+		if slot_key == "sub":
+			slot_name = "Sub"
+		elif slot_key.begins_with("accessory_"):
+			slot_name = "Accessory " + slot_key.substr(10)
+			
+		if eq != null:
+			var item_name: String = eq.get("name", "")
+			var item_type: String = eq.get("type", "")
+			var type_icon := "⚔️"
+			if item_type == "sub":
+				type_icon = "🛡️"
+			elif item_type == "accessory":
+				type_icon = "💍"
+				
+			btn.text = "%s: %s %s" % [slot_name, type_icon, item_name]
+			btn.modulate = Color(0.6, 1.0, 0.6)
+		else:
+			btn.text = "%s: (Empty)" % slot_name
+			btn.modulate = Color.WHITE
+
+
+func _update_inventory_ui() -> void:
+	if not _is_inventory_open:
+		return
+		
+	inventory_title.text = "🎒 インベントリ (%d / %d)" % [GameData.inventory.size(), GameData.MAX_INVENTORY_SIZE]
+	
+	for child in inventory_grid.get_children():
+		inventory_grid.remove_child(child)
+		child.queue_free()
+		
+	for item in GameData.inventory:
+		var item_btn := Button.new()
+		item_btn.set_script(preload("res://scripts/ui/inventory_item_ui.gd"))
+		inventory_grid.add_child(item_btn)
+		item_btn.setup(item)
+
+
+func _on_equipment_changed() -> void:
+	_update_slots_ui()
+	_update_inventory_ui()
+
+
+func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
+	var type_icon := "⚔️"
+	if item_type == "sub":
+		type_icon = "🛡️"
+	elif item_type == "accessory":
+		type_icon = "💍"
+		
+	var pop := PanelContainer.new()
+	pop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pop.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.7) # Slightly transparent black
+	style.content_margin_left = 20
+	style.content_margin_right = 20
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0.4, 0.2, 0.6, 0.8) # Purple border for hack & slash vibe
+	pop.add_theme_stylebox_override("panel", style)
+	
+	var label := Label.new()
+	label.text = "%s %s を手に入れた！" % [type_icon, item_name]
+	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_color_override("font_color", Color(0.9, 0.8, 1.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pop.add_child(label)
+	
+	equipment_log_container.add_child(pop)
+	equipment_log_container.move_child(pop, 0)
+	
+	# Animate popup (fade in, wait, fade out, then queue_free)
+	pop.modulate.a = 0.0
+	var tween := pop.create_tween()
+	tween.tween_property(pop, "modulate:a", 1.0, 0.15)
+	tween.tween_property(pop, "modulate:a", 0.0, 1.0).set_delay(3.0)
+	tween.chain().tween_callback(pop.queue_free)
+
