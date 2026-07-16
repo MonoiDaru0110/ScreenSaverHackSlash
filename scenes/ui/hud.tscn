@@ -620,14 +620,68 @@ color = Color(0.2, 0.2, 0.35, 1)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="InventoryGrid" type="GridContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer"]
-unique_name_in_owner = true
+[node name="InventoriesLayout" type="HBoxContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 4
+theme_override_constants/separation = 24
+
+[node name="MainInventorySection" type="VBoxContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MainTitleLabel" type="Label" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/MainInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "⚔️ メイン (0/50)"
+horizontal_alignment = 1
+
+[node name="MainGrid" type="GridContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/MainInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="SubInventorySection" type="VBoxContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SubTitleLabel" type="Label" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/SubInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "🛡️ サブ (0/50)"
+horizontal_alignment = 1
+
+[node name="SubGrid" type="GridContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/SubInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="AccessoryInventorySection" type="VBoxContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AccessoryTitleLabel" type="Label" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "💍 アクセサリー (0/50)"
+horizontal_alignment = 1
+
+[node name="AccessoryGrid" type="GridContainer" parent="InventoryWindow/MarginContainer/VBoxContainer/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
 
 [node name="EquipmentLogContainer" type="VBoxContainer" parent="."]
 unique_name_in_owner = true

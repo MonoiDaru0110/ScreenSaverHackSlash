@@ -28,7 +28,7 @@ var colors: Array[Color] = [
 	Color("#82E0AA"),  # Mint
 ]
 
-signal wall_hit(pos: Vector2, is_corner: bool)
+signal wall_hit(pos: Vector2, is_corner: bool, direction: Vector2)
 
 
 func _ready() -> void:
@@ -69,35 +69,40 @@ func _check_bounds() -> void:
 	var bottom := play_area.end.y
 	var hit_x := false
 	var hit_y := false
+	var hit_dir := Vector2.ZERO
 
 	# Horizontal bounds
 	if position.x - half_w <= left:
 		position.x = left + half_w
 		velocity.x = absf(velocity.x)
 		hit_x = true
+		hit_dir.x = -1.0
 	elif position.x + half_w >= right:
 		position.x = right - half_w
 		velocity.x = -absf(velocity.x)
 		hit_x = true
+		hit_dir.x = 1.0
 
 	# Vertical bounds
 	if position.y - half_h <= top:
 		position.y = top + half_h
 		velocity.y = absf(velocity.y)
 		hit_y = true
+		hit_dir.y = -1.0
 	elif position.y + half_h >= bottom:
 		position.y = bottom - half_h
 		velocity.y = -absf(velocity.y)
 		hit_y = true
+		hit_dir.y = 1.0
 
 	if hit_x or hit_y:
-		_on_bounce(hit_x and hit_y)
+		_on_bounce(hit_x and hit_y, hit_dir)
 
 
-func _on_bounce(is_corner: bool) -> void:
+func _on_bounce(is_corner: bool, direction: Vector2) -> void:
 	_change_color()
 	_play_bounce_effect(is_corner)
-	wall_hit.emit(position, is_corner)
+	wall_hit.emit(position, is_corner, direction)
 
 
 func _change_color() -> void:

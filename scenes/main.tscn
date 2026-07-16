@@ -17,8 +17,16 @@ offset_right = 1664.0
 offset_bottom = 1080.0
 color = Color(0.2, 0.2, 0.35, 1)
 
-[node name="LogoContainer" type="Node2D" parent="."]
+[node name="PlayArea" type="Node2D" parent="."]
 
-[node name="DropContainer" type="Node2D" parent="."]
+[node name="PlayAreaBorder" type="Panel" parent="PlayArea"]
+offset_left = 60.0
+offset_top = 60.0
+offset_right = 1602.0
+offset_bottom = 1020.0
+
+[node name="LogoContainer" type="Node2D" parent="PlayArea"]
+
+[node name="DropContainer" type="Node2D" parent="PlayArea"]
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]

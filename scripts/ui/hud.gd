@@ -23,9 +23,13 @@ extends CanvasLayer
 
 # Inventory UI references
 @onready var inventory_window: PanelContainer = %InventoryWindow
-@onready var inventory_title: Label = %TitleLabel
 @onready var btn_close_inventory: Button = %CloseInventoryBtn
-@onready var inventory_grid: GridContainer = %InventoryGrid
+@onready var main_title_label: Label = %MainTitleLabel
+@onready var sub_title_label: Label = %SubTitleLabel
+@onready var accessory_title_label: Label = %AccessoryTitleLabel
+@onready var main_grid: GridContainer = %MainGrid
+@onready var sub_grid: GridContainer = %SubGrid
+@onready var accessory_grid: GridContainer = %AccessoryGrid
 @onready var equipment_log_container: VBoxContainer = %EquipmentLogContainer
 
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
@@ -483,17 +487,51 @@ func _update_inventory_ui() -> void:
 	if not _is_inventory_open:
 		return
 		
-	inventory_title.text = "🎒 インベントリ (%d / %d)" % [GameData.inventory.size(), GameData.MAX_INVENTORY_SIZE]
+	var inv_main: Array = GameData.inventories.get("main", [])
+	var inv_sub: Array = GameData.inventories.get("sub", [])
+	var inv_acc: Array = GameData.inventories.get("accessory", [])
 	
-	for child in inventory_grid.get_children():
-		inventory_grid.remove_child(child)
+	main_title_label.text = "⚔️ メイン (%d / %d)" % [inv_main.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
+	sub_title_label.text = "🛡️ サブ (%d / %d)" % [inv_sub.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
+	accessory_title_label.text = "💍 アクセサリー (%d / %d)" % [inv_acc.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
+	
+	_populate_grid(main_grid, inv_main)
+	_populate_grid(sub_grid, inv_sub)
+	_populate_grid(accessory_grid, inv_acc)
+
+
+func _populate_grid(grid: GridContainer, items: Array) -> void:
+	for child in grid.get_children():
+		grid.remove_child(child)
 		child.queue_free()
 		
-	for item in GameData.inventory:
-		var item_btn := Button.new()
-		item_btn.set_script(preload("res://scripts/ui/inventory_item_ui.gd"))
-		inventory_grid.add_child(item_btn)
-		item_btn.setup(item)
+	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
+		var slot_btn := Button.new()
+		slot_btn.custom_minimum_size = Vector2(60, 60)
+		slot_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		slot_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+		if i < items.size():
+			slot_btn.set_script(preload("res://scripts/ui/inventory_item_ui.gd"))
+			grid.add_child(slot_btn)
+			slot_btn.setup(items[i])
+		else:
+			grid.add_child(slot_btn)
+			slot_btn.disabled = true
+			slot_btn.text = ""
+			
+			var style_empty = StyleBoxFlat.new()
+			style_empty.bg_color = Color(0.08, 0.08, 0.12, 0.6)
+			style_empty.border_width_left = 1
+			style_empty.border_width_top = 1
+			style_empty.border_width_right = 1
+			style_empty.border_width_bottom = 1
+			style_empty.border_color = Color(0.18, 0.18, 0.25, 0.8)
+			style_empty.corner_radius_top_left = 4
+			style_empty.corner_radius_top_right = 4
+			style_empty.corner_radius_bottom_right = 4
+			style_empty.corner_radius_bottom_left = 4
+			slot_btn.add_theme_stylebox_override("disabled", style_empty)
 
 
 func _on_equipment_changed() -> void:
@@ -537,12 +575,11 @@ func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
 	pop.add_child(label)
 	
 	equipment_log_container.add_child(pop)
-	equipment_log_container.move_child(pop, 0)
 	
 	# Animate popup (fade in, wait, fade out, then queue_free)
 	pop.modulate.a = 0.0
 	var tween := pop.create_tween()
 	tween.tween_property(pop, "modulate:a", 1.0, 0.15)
-	tween.tween_property(pop, "modulate:a", 0.0, 1.0).set_delay(3.0)
+	tween.tween_property(pop, "modulate:a", 0.0, 0.3).set_delay(3.0)
 	tween.chain().tween_callback(pop.queue_free)
 

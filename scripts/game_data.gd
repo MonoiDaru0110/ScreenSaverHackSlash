@@ -36,7 +36,11 @@ var token_critical_parameter: float = 1.0
 var token_direct_hit_parameter: float = 1.0
 
 # --- Equipment ---
-var inventory: Array[Dictionary] = []
+var inventories: Dictionary = {
+	"main": [],
+	"sub": [],
+	"accessory": []
+}
 var equipped_items: Dictionary = {
 	"main": null,
 	"sub": null,
@@ -45,7 +49,7 @@ var equipped_items: Dictionary = {
 	"accessory_3": null,
 	"accessory_4": null
 }
-const MAX_INVENTORY_SIZE: int = 50
+const MAX_TYPE_INVENTORY_SIZE: int = 50
 
 # --- Signals ---
 signal gold_changed(new_amount: int)
@@ -344,20 +348,25 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 		drop_chance = 0.15
 		
 	if randf() < drop_chance:
-		if inventory.size() < MAX_INVENTORY_SIZE:
-			var item := generate_random_equipment()
-			inventory.append(item)
+		var item := generate_random_equipment()
+		var type = item.get("type", "")
+		var inv: Array = inventories.get(type, [])
+		if inv.size() < MAX_TYPE_INVENTORY_SIZE:
+			inv.append(item)
 			equipment_changed.emit()
 			return item
 	return {}
 
 
 func equip_item_by_id(item_id: String, slot_key: String) -> bool:
-	# Find item in inventory
+	# Find item in inventories
 	var found_item: Dictionary = {}
-	for item in inventory:
-		if item.get("id") == item_id:
-			found_item = item
+	for type in inventories:
+		for item in inventories[type]:
+			if item.get("id") == item_id:
+				found_item = item
+				break
+		if not found_item.is_empty():
 			break
 			
 	if found_item.is_empty():

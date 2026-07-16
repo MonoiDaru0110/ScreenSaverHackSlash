@@ -2,18 +2,20 @@ extends Node2D
 ## Main game scene.
 ## Orchestrates the DVD logo bouncing and gold drops.
 
-const PLAY_AREA_WIDTH := 1662.0
-const PLAY_AREA_HEIGHT := 1080.0
-
 var _drop_label_scene: PackedScene = preload("res://scenes/drop_label.tscn")
 var _dvd_logo_scene: PackedScene = preload("res://scenes/dvd_logo.tscn")
 
 var _sound_corner := preload("res://sound/sound_effect/角衝突音.wav")
 
 @onready var hud: CanvasLayer = $HUD
-@onready var logo_container: Node2D = $LogoContainer
-@onready var drop_container: Node2D = $DropContainer
+@onready var play_area: Node2D = $PlayArea
+@onready var play_area_border: Panel = $PlayArea/PlayAreaBorder
+@onready var logo_container: Node2D = $PlayArea/LogoContainer
+@onready var drop_container: Node2D = $PlayArea/DropContainer
 @onready var background: ColorRect = $Background
+
+var _border_style: StyleBoxFlat
+var _base_border_color := Color(0.4, 0.6, 1.0, 0.8)
 
 # Default background color (dark navy)
 var _bg_default_color := Color(0.02, 0.02, 0.06)
@@ -23,6 +25,23 @@ var _token_over_time_timer: Timer = null
 
 
 func _ready() -> void:
+	# 境界線のスタイルを動的に設定
+	_border_style = StyleBoxFlat.new()
+	_border_style.bg_color = Color(0, 0, 0, 0) # 透明
+	_border_style.border_width_left = 4
+	_border_style.border_width_top = 4
+	_border_style.border_width_right = 4
+	_border_style.border_width_bottom = 4
+	_border_style.border_color = _base_border_color
+	_border_style.corner_radius_top_left = 8
+	_border_style.corner_radius_top_right = 8
+	_border_style.corner_radius_bottom_right = 8
+	_border_style.corner_radius_bottom_left = 8
+	play_area_border.add_theme_stylebox_override("panel", _border_style)
+	
+	# 拡大縮小が中心基準で行われるようにピボットを設定
+	play_area_border.pivot_offset = play_area_border.size / 2.0
+
 	GameData.logo_spawn_requested.connect(_on_logo_spawn_requested)
 	GameData.logo_reset_requested.connect(_on_logo_reset_requested)
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
@@ -38,7 +57,7 @@ func _spawn_initial_logos() -> void:
 
 
 func _spawn_one_logo() -> void:
-	var play_area := Rect2(0, 0, PLAY_AREA_WIDTH, PLAY_AREA_HEIGHT)
+	var play_area := play_area_border.get_rect()
 	var logo := _dvd_logo_scene.instantiate()
 	logo.play_area = play_area
 	logo_container.add_child(logo)
@@ -57,7 +76,7 @@ func _on_logo_reset_requested() -> void:
 	_spawn_one_logo()
 
 
-func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
+func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	var mult := GameData.get_ascension_multiplier()
 	# Apply gold_boost_n skill (1.1^n multiplier where n is total level of all gold_boost_n)
 	var gold_skill_mult := pow(1.1, GameData.total_gold_boost_level)
@@ -102,6 +121,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 		# Spawn separate labels for Gold and Tokens
 		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%d" % gold_amount, Color(1.0, 0.95, 0.3), true, gold_is_crit, gold_is_direct)
 		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%d" % token_amount, Color(0.3, 0.75, 1.0), true, token_is_crit, token_is_direct)
+		_start_shake(direction.normalized(), 15.0)
 	else:
 		var base_gold := (1 + GameData.boost_level) * mult * gold_skill_mult
 		var gold_amount := int(base_gold * gold_mult)
@@ -110,6 +130,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool) -> void:
 		GameData.add_gold(gold_amount)
 
 		_spawn_drop_label(pos, "🪙 +%d" % gold_amount, Color(1.0, 1.0, 0.95), false, gold_is_crit, gold_is_direct)
+		_start_shake(direction, 5.0)
 
 	# --- Equipment Drop Logic ---
 	var dropped_item := GameData.roll_equipment_drop(is_corner)
@@ -125,6 +146,49 @@ func _spawn_drop_label(pos: Vector2, text_content: String, color: Color, is_corn
 	var label := _drop_label_scene.instantiate()
 	drop_container.add_child(label)
 	label.setup(text_content, pos, color, is_corner, is_crit, is_direct)
+
+
+func _set_border_width(w: int) -> void:
+	if _border_style:
+		_border_style.border_width_left = w
+		_border_style.border_width_top = w
+		_border_style.border_width_right = w
+		_border_style.border_width_bottom = w
+
+
+func _start_shake(direction: Vector2, strength: float) -> void:
+	# 画面の移動は行わない (平行移動による酔いを完全に防止)
+	
+	# 衝撃強度に応じて境界線パネルを一瞬拡大
+	var scale_factor = 1.0 + (strength * 0.0015)
+	play_area_border.scale = Vector2(scale_factor, scale_factor)
+	
+	# 枠線の太さを一時的に太くする
+	var target_width = int(4 + strength * 0.6)
+	_set_border_width(target_width)
+	
+	# 枠線の色を一瞬真っ白にする
+	if _border_style:
+		_border_style.border_color = Color(1.0, 1.0, 1.0, 1.0)
+
+
+func _process(delta: float) -> void:
+	# スケールを 1.0 に戻す
+	if play_area_border.scale != Vector2.ONE:
+		play_area_border.scale = play_area_border.scale.lerp(Vector2.ONE, 12.0 * delta)
+		if (play_area_border.scale - Vector2.ONE).length() < 0.001:
+			play_area_border.scale = Vector2.ONE
+			
+	# 枠線の太さを 4 に戻す
+	if _border_style and _border_style.border_width_left > 4:
+		var cur_w = lerp(float(_border_style.border_width_left), 4.0, 12.0 * delta)
+		_set_border_width(int(cur_w))
+		if _border_style.border_width_left <= 4:
+			_set_border_width(4)
+			
+	# 境界線の色をネオンブルーに戻す (フラッシュの減衰)
+	if _border_style and _border_style.border_color != _base_border_color:
+		_border_style.border_color = _border_style.border_color.lerp(_base_border_color, 12.0 * delta)
 
 
 func _flash_background() -> void:
