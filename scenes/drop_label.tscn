@@ -2,10 +2,25 @@
 
 [ext_resource type="Script" path="res://scripts/drop_label.gd" id="1_drop"]
 
-[node name="DropLabel" type="Label"]
+[node name="DropLabel" type="Node2D"]
 script = ExtResource("1_drop")
+
+[node name="Label" type="Label" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -20.0
+offset_right = 100.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(100, 20)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
+theme_override_constants/shadow_override_y = 1
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
+vertical_alignment = 1

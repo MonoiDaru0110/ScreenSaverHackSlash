@@ -60,6 +60,7 @@ func _spawn_one_logo() -> void:
 	var play_area := play_area_border.get_rect()
 	var logo := _dvd_logo_scene.instantiate()
 	logo.play_area = play_area
+	logo.set_size_multiplier(GameData.get_logo_size_multiplier())
 	logo_container.add_child(logo)
 	logo.wall_hit.connect(_on_wall_hit)
 
@@ -72,8 +73,9 @@ func _on_logo_reset_requested() -> void:
 	# Clear all logo instances
 	for child in logo_container.get_children():
 		child.queue_free()
-	# Spawn 1 logo
-	_spawn_one_logo()
+	# Spawn logos based on current logo_count
+	for i in GameData.logo_count:
+		_spawn_one_logo()
 
 
 func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
@@ -81,9 +83,9 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	# Apply gold_boost_n skill (1.1^n multiplier where n is total level of all gold_boost_n)
 	var gold_skill_mult := pow(1.1, GameData.total_gold_boost_level)
 
-	# --- Gold Critical & Direct Hit Logic ---
-	var gold_is_crit := randf() < GameData.get_gold_crit_chance()
-	var gold_is_direct := randf() < GameData.get_gold_direct_chance()
+	# デバッグ用: レベル100による確率100%を防ぎ、演出を確認するために確率を50%にする
+	var gold_is_crit := randf() < 0.5
+	var gold_is_direct := randf() < 0.5
 	var gold_mult := 1.0
 	if gold_is_crit:
 		gold_mult *= GameData.get_gold_crit_multiplier()
@@ -95,9 +97,9 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		var base_gold := (50 + GameData.boost_level * 10) * mult * gold_skill_mult
 		var gold_amount := int(base_gold * gold_mult)
 		
-		# --- Token Critical & Direct Hit Logic ---
-		var token_is_crit := randf() < GameData.get_token_crit_chance()
-		var token_is_direct := randf() < GameData.get_token_direct_chance()
+		# デバッグ用: 演出検証用に確率を50%にする
+		var token_is_crit := randf() < 0.5
+		var token_is_direct := randf() < 0.5
 		var token_mult := 1.0
 		if token_is_crit:
 			token_mult *= GameData.get_token_crit_multiplier()
@@ -254,6 +256,14 @@ func _update_token_over_time_timer() -> void:
 func _on_upgrades_changed() -> void:
 	_update_over_time_timer()
 	_update_token_over_time_timer()
+	_update_logo_sizes()
+
+
+func _update_logo_sizes() -> void:
+	var mult := GameData.get_logo_size_multiplier()
+	for logo in logo_container.get_children():
+		if logo.has_method("set_size_multiplier"):
+			logo.set_size_multiplier(mult)
 
 
 func _on_over_time_timeout() -> void:

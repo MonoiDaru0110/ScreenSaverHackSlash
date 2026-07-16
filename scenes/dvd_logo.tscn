@@ -1,20 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://bkx2g8ad7kstp"]
+[gd_scene load_steps=3 format=3 uid="uid://bkx2g8ad7kstp"]
 
 [ext_resource type="Script" uid="uid://cjgyjivmrb5wa" path="res://scripts/dvd_logo.gd" id="1_dvd"]
+[ext_resource type="Texture2D" uid="uid://cmmgd5xn4180n" path="res://images/DVD_logos/DVD_logo1.png" id="2_texture"]
 
 [node name="DVDLogo" type="Node2D"]
 script = ExtResource("1_dvd")
 
-[node name="Label" type="Label" parent="."]
-offset_left = -100.0
-offset_top = -50.0
-offset_right = 100.0
-offset_bottom = 50.0
-pivot_offset = Vector2(100, 50)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
-theme_override_constants/shadow_offset_x = 2
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 64
-text = "DVD"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_texture")

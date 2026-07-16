@@ -7,7 +7,7 @@ extends CanvasLayer
 @onready var corner_label: Label = $CornerLabel
 @onready var corner_announce: Label = $CornerAnnounce
 
-@onready var btn_logo: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1
+@onready var btn_size: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1
 @onready var btn_speed: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton2
 @onready var btn_boost: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3
 @onready var btn_ascend: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4
@@ -95,7 +95,7 @@ func _ready() -> void:
 
 	var style_focus := StyleBoxEmpty.new() # Removes focus outline border highlighting
 
-	for btn in [btn_logo, btn_speed, btn_boost, btn_ascend]:
+	for btn in [btn_size, btn_speed, btn_boost, btn_ascend]:
 		btn.add_theme_stylebox_override("normal", style_normal)
 		btn.add_theme_stylebox_override("hover", style_hover)
 		btn.add_theme_stylebox_override("pressed", style_pressed)
@@ -150,7 +150,7 @@ func _ready() -> void:
 	GameData.corner_hit_occurred.connect(_on_corner_hit)
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
 	
-	btn_logo.pressed.connect(_on_logo_pressed)
+	btn_size.pressed.connect(_on_size_pressed)
 	btn_speed.pressed.connect(_on_speed_pressed)
 	btn_boost.pressed.connect(_on_boost_pressed)
 	btn_ascend.pressed.connect(_on_ascend_pressed)
@@ -207,16 +207,16 @@ func _update_all() -> void:
 func _update_upgrade_buttons() -> void:
 	var gold := GameData.gold
 
-	# --- Upgrade 1: Logo ---
-	var cost_logo := GameData.get_logo_upgrade_cost()
-	var logo_ok := gold >= cost_logo
-	btn_logo.disabled = !logo_ok
-	var lbl_title_logo: Label = btn_logo.get_node("Content/TitleLabel")
-	lbl_title_logo.text = "ロゴ追加  Lv. %d" % GameData.logo_count
-	lbl_title_logo.add_theme_color_override("font_color", Color.WHITE if logo_ok else Color(1, 1, 1, 0.4))
-	var lbl_cost_logo: Label = btn_logo.get_node("Content/CostLabel")
-	lbl_cost_logo.text = "🪙 " + _format_number(cost_logo)
-	lbl_cost_logo.add_theme_color_override("font_color", Color.RED if !logo_ok else Color(0.85, 0.85, 0.85))
+	# --- Upgrade 1: Logo Size ---
+	var cost_size := GameData.get_size_upgrade_cost()
+	var size_ok := gold >= cost_size
+	btn_size.disabled = !size_ok
+	var lbl_title_size: Label = btn_size.get_node("Content/TitleLabel")
+	lbl_title_size.text = "ロゴサイズ強化  Lv. %d" % GameData.size_level
+	lbl_title_size.add_theme_color_override("font_color", Color.WHITE if size_ok else Color(1, 1, 1, 0.4))
+	var lbl_cost_size: Label = btn_size.get_node("Content/CostLabel")
+	lbl_cost_size.text = "🪙 " + _format_number(cost_size)
+	lbl_cost_size.add_theme_color_override("font_color", Color.RED if !size_ok else Color(0.85, 0.85, 0.85))
 
 	# --- Upgrade 2: Speed ---
 	var cost_speed := GameData.get_speed_upgrade_cost()
@@ -251,8 +251,7 @@ func _update_upgrade_buttons() -> void:
 	lbl_cost_ascend.add_theme_color_override("font_color", Color.RED if !ascend_ok else Color(0.85, 0.85, 0.85))
 
 
-func _on_logo_pressed() -> void:
-	GameData.buy_logo_upgrade()
+
 
 
 func _on_speed_pressed() -> void:
@@ -261,6 +260,10 @@ func _on_speed_pressed() -> void:
 
 func _on_boost_pressed() -> void:
 	GameData.buy_boost_upgrade()
+
+
+func _on_size_pressed() -> void:
+	GameData.buy_size_upgrade()
 
 
 func _on_ascend_pressed() -> void:
@@ -582,4 +585,3 @@ func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
 	tween.tween_property(pop, "modulate:a", 1.0, 0.15)
 	tween.tween_property(pop, "modulate:a", 0.0, 0.3).set_delay(3.0)
 	tween.chain().tween_callback(pop.queue_free)
-

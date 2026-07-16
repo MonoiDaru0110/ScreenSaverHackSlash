@@ -11,10 +11,11 @@ var total_bounces: int = 0
 var corner_hits: int = 0
 
 # --- Upgrade Levels ---
-var logo_count: int = 1
-var speed_level: int = 0
-var boost_level: int = 0
-var ascension_level: int = 0
+var logo_count: int = 100
+var speed_level: int = 100
+var boost_level: int = 100
+var size_level: int = 100
+var ascension_level: int = 100
 var skill_levels: Dictionary = {} # { "skill_id": level_int }
 
 # --- Cumulative Skill Levels ---
@@ -137,14 +138,34 @@ func buy_boost_upgrade() -> bool:
 	return false
 
 
+func buy_size_upgrade() -> bool:
+	var cost := get_size_upgrade_cost()
+	if gold >= cost:
+		gold -= cost
+		gold_changed.emit(gold)
+		size_level += 1
+		upgrades_changed.emit()
+		return true
+	return false
+
+
+func get_size_upgrade_cost() -> int:
+	return int(15 + size_level * 20)
+
+
+func get_logo_size_multiplier() -> float:
+	return clampf(1.0 + size_level * 0.1, 0.5, 3.0)
+
+
 func perform_ascension() -> bool:
 	if can_ascend():
 		gold = 0
 		# Do not reset tokens or skill_levels on ascension
-		logo_count = 1 + get_skill_level("extra_logo")
+		ascension_level += 1
+		logo_count = 1 + ascension_level + get_skill_level("extra_logo")
 		speed_level = 0
 		boost_level = 0
-		ascension_level += 1
+		size_level = 0
 		
 		gold_changed.emit(gold)
 		upgrades_changed.emit()

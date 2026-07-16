@@ -5,6 +5,14 @@ extends Node2D
 const LOGO_WIDTH := 200.0
 const LOGO_HEIGHT := 100.0
 
+var size_multiplier: float = 1.0 : set = set_size_multiplier
+
+func get_logo_width() -> float:
+	return LOGO_WIDTH * size_multiplier
+
+func get_logo_height() -> float:
+	return LOGO_HEIGHT * size_multiplier
+
 @export var base_speed: float = 150.0
 
 ## The area in which the logo can move (set by Main scene)
@@ -13,6 +21,7 @@ var play_area := Rect2(0, 0, 1662, 1080)
 var velocity: Vector2
 var current_color: Color
 var _color_index: int = 0
+var _base_sprite_scale: Vector2 = Vector2.ONE
 
 # Vibrant, screensaver-style color palette
 var colors: Array[Color] = [
@@ -34,6 +43,12 @@ signal wall_hit(pos: Vector2, is_corner: bool, direction: Vector2)
 func _ready() -> void:
 	GameData.upgrades_changed.connect(_update_speed)
 
+	# Sprite2Dのサイズが200x100になるように初期スケールを設定
+	var tex_size: Vector2 = $Sprite2D.texture.get_size()
+	if tex_size.x > 0 and tex_size.y > 0:
+		_base_sprite_scale = Vector2(LOGO_WIDTH / tex_size.x, LOGO_HEIGHT / tex_size.y)
+		$Sprite2D.scale = _base_sprite_scale
+
 	# Random initial direction (avoid near-horizontal/vertical angles)
 	var angle := randf_range(PI / 6.0, PI / 3.0)
 	if randi() % 2:
@@ -50,9 +65,25 @@ func _ready() -> void:
 
 	# Random initial position within play area
 	position = Vector2(
-		randf_range(play_area.position.x + LOGO_WIDTH / 2.0 + 20.0, play_area.end.x - LOGO_WIDTH / 2.0 - 20.0),
-		randf_range(play_area.position.y + LOGO_HEIGHT / 2.0 + 20.0, play_area.end.y - LOGO_HEIGHT / 2.0 - 20.0)
+		randf_range(play_area.position.x + get_logo_width() / 2.0 + 20.0, play_area.end.x - get_logo_width() / 2.0 - 20.0),
+		randf_range(play_area.position.y + get_logo_height() / 2.0 + 20.0, play_area.end.y - get_logo_height() / 2.0 - 20.0)
 	)
+
+
+func set_size_multiplier(mult: float) -> void:
+	size_multiplier = mult
+	scale = Vector2(size_multiplier, size_multiplier)
+	
+	# プレイエリア内に安全に収まるようクランプ (衝突判定はトリガーしない)
+	var half_w := get_logo_width() / 2.0
+	var half_h := get_logo_height() / 2.0
+	var left := play_area.position.x
+	var right := play_area.end.x
+	var top := play_area.position.y
+	var bottom := play_area.end.y
+	
+	position.x = clampf(position.x, left + half_w, right - half_w)
+	position.y = clampf(position.y, top + half_h, bottom - half_h)
 
 
 func _process(delta: float) -> void:
@@ -61,8 +92,8 @@ func _process(delta: float) -> void:
 
 
 func _check_bounds() -> void:
-	var half_w := LOGO_WIDTH / 2.0
-	var half_h := LOGO_HEIGHT / 2.0
+	var half_w := get_logo_width() / 2.0
+	var half_h := get_logo_height() / 2.0
 	var left := play_area.position.x
 	var right := play_area.end.x
 	var top := play_area.position.y
@@ -114,22 +145,20 @@ func _change_color() -> void:
 
 
 func _apply_color() -> void:
-	$Label.modulate = current_color
+	$Sprite2D.modulate = current_color
 
 
 func _play_bounce_effect(is_corner: bool) -> void:
-	var label := $Label as Label
+	var sprite := $Sprite2D
 	if is_corner:
-		# Big elastic bounce for corner hits
-		label.scale = Vector2(1.4, 1.4)
+		sprite.scale = _base_sprite_scale * 1.4
 		var tween := create_tween()
-		tween.tween_property(label, "scale", Vector2.ONE, 0.4)\
+		tween.tween_property(sprite, "scale", _base_sprite_scale, 0.4)\
 			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	else:
-		# Subtle bump for wall hits
-		label.scale = Vector2(1.1, 1.1)
+		sprite.scale = _base_sprite_scale * 1.1
 		var tween := create_tween()
-		tween.tween_property(label, "scale", Vector2.ONE, 0.15)\
+		tween.tween_property(sprite, "scale", _base_sprite_scale, 0.15)\
 			.set_ease(Tween.EASE_OUT)
 
 
