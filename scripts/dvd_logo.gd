@@ -6,6 +6,8 @@ const LOGO_WIDTH := 200.0
 const LOGO_HEIGHT := 100.0
 
 var size_multiplier: float = 1.0 : set = set_size_multiplier
+var _cached_half_w: float = LOGO_WIDTH / 2.0
+var _cached_half_h: float = LOGO_HEIGHT / 2.0
 
 func get_logo_width() -> float:
 	return LOGO_WIDTH * size_multiplier
@@ -73,6 +75,8 @@ func _ready() -> void:
 func set_size_multiplier(mult: float) -> void:
 	size_multiplier = mult
 	scale = Vector2(size_multiplier, size_multiplier)
+	_cached_half_w = get_logo_width() / 2.0
+	_cached_half_h = get_logo_height() / 2.0
 	
 	# プレイエリア内に安全に収まるようクランプ (衝突判定はトリガーしない)
 	var half_w := get_logo_width() / 2.0
@@ -92,8 +96,8 @@ func _process(delta: float) -> void:
 
 
 func _check_bounds() -> void:
-	var half_w := get_logo_width() / 2.0
-	var half_h := get_logo_height() / 2.0
+	var half_w := _cached_half_w
+	var half_h := _cached_half_h
 	var left := play_area.position.x
 	var right := play_area.end.x
 	var top := play_area.position.y

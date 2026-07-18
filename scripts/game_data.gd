@@ -36,6 +36,13 @@ var gold_direct_hit_parameter: float = 1.0
 var token_critical_parameter: float = 1.0
 var token_direct_hit_parameter: float = 1.0
 
+# --- Cached Multipliers (invalidated on skill upgrade) ---
+var _cached_gold_skill_mult: float = 1.0
+var _cached_token_skill_mult: float = 1.0
+var _cached_gold_over_time_boost_mult: float = 1.0
+var _cached_token_over_time_boost_mult: float = 1.0
+var _cached_ascension_mult: float = 1.0
+
 # --- Equipment ---
 var inventories: Dictionary = {
 	"main": [],
@@ -236,6 +243,7 @@ func get_token_direct_multiplier() -> float:
 
 func _ready() -> void:
 	_recalculate_all_cumulative_levels()
+	_recalculate_cached_multipliers()
 
 
 func _recalculate_all_cumulative_levels() -> void:
@@ -249,6 +257,15 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
 	total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
 	total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
+	_recalculate_cached_multipliers()
+
+
+func _recalculate_cached_multipliers() -> void:
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level)
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level)
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level)
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level)
+	_cached_ascension_mult = get_ascension_multiplier()
 
 
 func _recalculate_total_level(prefix: String) -> int:
@@ -303,6 +320,7 @@ func _update_cumulative_levels(skill_id: String) -> void:
 		var suffix: String = skill_id.substr(23) # "token_direct_hit_boost_".length() = 23
 		if suffix.is_valid_int() and suffix.to_int() > 0:
 			total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
+	_recalculate_cached_multipliers()
 
 
 func buy_skill_upgrade(skill_id: String, cost: int, max_level: int) -> bool:
@@ -329,8 +347,26 @@ func buy_skill_upgrade(skill_id: String, cost: int, max_level: int) -> bool:
 
 # --- Equipment Logic ---
 
+func get_rarity_color(rarity: String) -> Color:
+	match rarity:
+		"ノーマル":
+			return Color.from_hsv(0.0, 0.0, 0.75)      # Light Muted Gray
+		"アンコモン":
+			return Color.from_hsv(0.333, 0.85, 0.9)    # Bright Green (Hue ~120)
+		"レア":
+			return Color.from_hsv(0.583, 0.85, 0.9)    # Bright Blue (Hue ~210)
+		"エピック":
+			return Color.from_hsv(0.778, 0.85, 0.9)    # Bright Purple (Hue ~280)
+		"レジェンド":
+			return Color.from_hsv(0.097, 0.85, 0.9)    # Bright Orange (Hue ~35)
+		"ミシック":
+			return Color.from_hsv(0.0, 0.85, 0.9)      # Bright Red (Hue 0)
+		_:
+			return Color(1.0, 1.0, 1.0)
+
+
 func generate_random_equipment() -> Dictionary:
-	var types := ["main", "sub", "accessory"]
+	var types: Array[String] = ["main", "sub", "accessory"]
 	var type: String = types[randi() % types.size()]
 	var name := ""
 	
@@ -338,28 +374,42 @@ func generate_random_equipment() -> Dictionary:
 	var base := ""
 	
 	if type == "main":
-		var main_prefixes := ["錆びた", "鋼鉄の", "魔力の", "勇者の", "伝説の", "暗黒の", "輝く"]
-		var main_bases := ["ソード", "ブレード", "カタナ", "レイピア", "大剣"]
+		var main_prefixes: Array[String] = ["錆びた", "鋼鉄の", "魔力の", "勇者の", "伝説の", "暗黒の", "輝く"]
+		var main_bases: Array[String] = ["ソード", "ブレード", "カタナ", "レイピア", "大剣"]
 		prefix = main_prefixes[randi() % main_prefixes.size()]
 		base = main_bases[randi() % main_bases.size()]
 	elif type == "sub":
-		var sub_prefixes := ["壊れた", "鉄の", "守護の", "ルーンの", "聖なる", "要塞の", "重厚な"]
-		var sub_bases := ["シールド", "タワーシールド", "バックラー", "魔導書", "オーブ"]
+		var sub_prefixes: Array[String] = ["壊れた", "鉄の", "守護の", "ルーンの", "聖なる", "要塞の", "重厚な"]
+		var sub_bases: Array[String] = ["シールド", "タワーシールド", "バックラー", "魔導書", "オーブ"]
 		prefix = sub_prefixes[randi() % sub_prefixes.size()]
 		base = sub_bases[randi() % sub_bases.size()]
 	else:
-		var acc_prefixes := ["古びた", "幸運の", "魔導の", "疾風の", "王家の", "守りの", "天使の"]
-		var acc_bases := ["リング", "アミュレット", "ネックレス", "ブレスレット", "ブローチ"]
+		var acc_prefixes: Array[String] = ["古びた", "幸運の", "魔導の", "疾風の", "王家の", "守りの", "天使の"]
+		var acc_bases: Array[String] = ["リング", "アミュレット", "ネックレス", "ブレスレット", "ブローチ"]
 		prefix = acc_prefixes[randi() % acc_prefixes.size()]
 		base = acc_bases[randi() % acc_bases.size()]
 		
 	name = prefix + base
 	var id := "eq_" + str(Time.get_ticks_usec()) + "_" + str(randi() % 1000)
 	
+	# Generate random icon path (1 or 2)
+	var icon_num := (randi() % 2) + 1
+	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
+	
+	# Generate random level (1 to 100)
+	var level := randi_range(1, 100)
+	
+	# Generate random rarity
+	var rarities: Array[String] = ["ノーマル", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
+	var rarity: String = rarities[randi() % rarities.size()]
+	
 	return {
 		"id": id,
 		"name": name,
-		"type": type
+		"type": type,
+		"icon": icon_path,
+		"level": level,
+		"rarity": rarity
 	}
 
 

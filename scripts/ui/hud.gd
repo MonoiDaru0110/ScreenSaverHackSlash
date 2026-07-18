@@ -41,6 +41,20 @@ var _is_inventory_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 
+# パフォーマンス最適化: アップグレードボタン更新のスロットリング
+var _upgrade_buttons_dirty: bool = false
+var _upgrade_update_timer: Timer = null
+
+# パフォーマンス最適化: ボタン子ラベルのキャッシュ
+var _lbl_title_size: Label
+var _lbl_cost_size: Label
+var _lbl_title_speed: Label
+var _lbl_cost_speed: Label
+var _lbl_title_boost: Label
+var _lbl_cost_boost: Label
+var _lbl_title_ascend: Label
+var _lbl_cost_ascend: Label
+
 
 func _ready() -> void:
 	# Configure StyleBoxFlat for button states programmatically
@@ -162,13 +176,42 @@ func _ready() -> void:
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	btn_close_inventory.pressed.connect(close_inventory)
 	
+	# アップグレードボタン更新スロットリングタイマーの初期化 (0.2秒間隔 = 5回/秒)
+	_upgrade_update_timer = Timer.new()
+	_upgrade_update_timer.wait_time = 0.2
+	_upgrade_update_timer.one_shot = true
+	_upgrade_update_timer.timeout.connect(_on_upgrade_update_timer)
+	add_child(_upgrade_update_timer)
+	
+	# Initialize equipment grid frames and adjust separation spacing
+	_setup_grid_frames()
+	
+	# ボタン子ラベルのキャッシュ
+	_lbl_title_size = btn_size.get_node("Content/TitleLabel")
+	_lbl_cost_size = btn_size.get_node("Content/CostLabel")
+	_lbl_title_speed = btn_speed.get_node("Content/TitleLabel")
+	_lbl_cost_speed = btn_speed.get_node("Content/CostLabel")
+	_lbl_title_boost = btn_boost.get_node("Content/TitleLabel")
+	_lbl_cost_boost = btn_boost.get_node("Content/CostLabel")
+	_lbl_title_ascend = btn_ascend.get_node("Content/TitleLabel")
+	_lbl_cost_ascend = btn_ascend.get_node("Content/CostLabel")
+	
 	close_inventory()
 	_update_all()
 
 
 func _on_gold_changed(_amount: int) -> void:
 	gold_label.text = "🪙 " + _format_number(GameData.gold)
-	_update_upgrade_buttons()
+	# アップグレードボタンの更新をスロットリング (0.2秒に1回に制限)
+	if not _upgrade_buttons_dirty:
+		_upgrade_buttons_dirty = true
+		_upgrade_update_timer.start()
+
+
+func _on_upgrade_update_timer() -> void:
+	if _upgrade_buttons_dirty:
+		_upgrade_buttons_dirty = false
+		_update_upgrade_buttons()
 
 
 func _on_tokens_changed(_amount: int) -> void:
@@ -211,44 +254,36 @@ func _update_upgrade_buttons() -> void:
 	var cost_size := GameData.get_size_upgrade_cost()
 	var size_ok := gold >= cost_size
 	btn_size.disabled = !size_ok
-	var lbl_title_size: Label = btn_size.get_node("Content/TitleLabel")
-	lbl_title_size.text = "ロゴサイズ強化  Lv. %d" % GameData.size_level
-	lbl_title_size.add_theme_color_override("font_color", Color.WHITE if size_ok else Color(1, 1, 1, 0.4))
-	var lbl_cost_size: Label = btn_size.get_node("Content/CostLabel")
-	lbl_cost_size.text = "🪙 " + _format_number(cost_size)
-	lbl_cost_size.add_theme_color_override("font_color", Color.RED if !size_ok else Color(0.85, 0.85, 0.85))
+	_lbl_title_size.text = "ロゴサイズ強化  Lv. %d" % GameData.size_level
+	_lbl_title_size.add_theme_color_override("font_color", Color.WHITE if size_ok else Color(1, 1, 1, 0.4))
+	_lbl_cost_size.text = "🪙 " + _format_number(cost_size)
+	_lbl_cost_size.add_theme_color_override("font_color", Color.RED if !size_ok else Color(0.85, 0.85, 0.85))
 
 	# --- Upgrade 2: Speed ---
 	var cost_speed := GameData.get_speed_upgrade_cost()
 	var speed_ok := gold >= cost_speed
 	btn_speed.disabled = !speed_ok
-	var lbl_title_speed: Label = btn_speed.get_node("Content/TitleLabel")
-	lbl_title_speed.text = "速度強化  Lv. %d" % GameData.speed_level
-	lbl_title_speed.add_theme_color_override("font_color", Color.WHITE if speed_ok else Color(1, 1, 1, 0.4))
-	var lbl_cost_speed: Label = btn_speed.get_node("Content/CostLabel")
-	lbl_cost_speed.text = "🪙 " + _format_number(cost_speed)
-	lbl_cost_speed.add_theme_color_override("font_color", Color.RED if !speed_ok else Color(0.85, 0.85, 0.85))
+	_lbl_title_speed.text = "速度強化  Lv. %d" % GameData.speed_level
+	_lbl_title_speed.add_theme_color_override("font_color", Color.WHITE if speed_ok else Color(1, 1, 1, 0.4))
+	_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed)
+	_lbl_cost_speed.add_theme_color_override("font_color", Color.RED if !speed_ok else Color(0.85, 0.85, 0.85))
 
 	# --- Upgrade 3: Gold/Token Boost ---
 	var cost_boost := GameData.get_boost_upgrade_cost()
 	var boost_ok := gold >= cost_boost
 	btn_boost.disabled = !boost_ok
-	var lbl_title_boost: Label = btn_boost.get_node("Content/TitleLabel")
-	lbl_title_boost.text = "ゴールド・トークン増加  Lv. %d" % GameData.boost_level
-	lbl_title_boost.add_theme_color_override("font_color", Color.WHITE if boost_ok else Color(1, 1, 1, 0.4))
-	var lbl_cost_boost: Label = btn_boost.get_node("Content/CostLabel")
-	lbl_cost_boost.text = "🪙 " + _format_number(cost_boost)
-	lbl_cost_boost.add_theme_color_override("font_color", Color.RED if !boost_ok else Color(0.85, 0.85, 0.85))
+	_lbl_title_boost.text = "ゴールド・トークン増加  Lv. %d" % GameData.boost_level
+	_lbl_title_boost.add_theme_color_override("font_color", Color.WHITE if boost_ok else Color(1, 1, 1, 0.4))
+	_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost)
+	_lbl_cost_boost.add_theme_color_override("font_color", Color.RED if !boost_ok else Color(0.85, 0.85, 0.85))
 
 	# --- Upgrade 4: Ascension ---
 	var ascend_ok := GameData.can_ascend()
 	btn_ascend.disabled = !ascend_ok
-	var lbl_title_ascend: Label = btn_ascend.get_node("Content/TitleLabel")
-	lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
-	lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
-	var lbl_cost_ascend: Label = btn_ascend.get_node("Content/CostLabel")
-	lbl_cost_ascend.text = "🪙 1,000"
-	lbl_cost_ascend.add_theme_color_override("font_color", Color.RED if !ascend_ok else Color(0.85, 0.85, 0.85))
+	_lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
+	_lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
+	_lbl_cost_ascend.text = "🪙 1,000"
+	_lbl_cost_ascend.add_theme_color_override("font_color", Color.RED if !ascend_ok else Color(0.85, 0.85, 0.85))
 
 
 
@@ -470,20 +505,121 @@ func _update_slots_ui() -> void:
 		elif slot_key.begins_with("accessory_"):
 			slot_name = "Accessory " + slot_key.substr(10)
 			
+		# Check for custom IconRect child
+		var icon_rect: TextureRect = btn.get_node_or_null("IconRect")
+		if not icon_rect:
+			icon_rect = TextureRect.new()
+			icon_rect.name = "IconRect"
+			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			# Button height is 72. 70% of 72 is ~50. Centered vertically: (72-50)/2 = 11. Left margin = 10.
+			icon_rect.custom_minimum_size = Vector2(50, 50)
+			icon_rect.position = Vector2(10, 11)
+			btn.add_child(icon_rect)
+			
+		# Check for custom GlossPanel child
+		var gloss_panel: Panel = btn.get_node_or_null("GlossPanel")
+		if not gloss_panel:
+			gloss_panel = Panel.new()
+			gloss_panel.name = "GlossPanel"
+			gloss_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			gloss_panel.anchor_left = 0.0
+			gloss_panel.anchor_top = 0.0
+			gloss_panel.anchor_right = 1.0
+			gloss_panel.anchor_bottom = 0.5
+			gloss_panel.offset_left = 0
+			gloss_panel.offset_top = 0
+			gloss_panel.offset_right = 0
+			gloss_panel.offset_bottom = 0
+			
+			var gloss_style := StyleBoxFlat.new()
+			gloss_style.bg_color = Color(1.0, 1.0, 1.0, 0.12) # 12% opacity white
+			gloss_style.corner_radius_top_left = 6
+			gloss_style.corner_radius_top_right = 6
+			gloss_style.corner_radius_bottom_left = 0
+			gloss_style.corner_radius_bottom_right = 0
+			gloss_panel.add_theme_stylebox_override("panel", gloss_style)
+			btn.add_child(gloss_panel)
+			
 		if eq != null:
+			gloss_panel.visible = true
 			var item_name: String = eq.get("name", "")
 			var item_type: String = eq.get("type", "")
-			var type_icon := "⚔️"
-			if item_type == "sub":
-				type_icon = "🛡️"
-			elif item_type == "accessory":
-				type_icon = "💍"
+			var item_icon: String = eq.get("icon", "")
+			var item_level: int = eq.get("level", 1)
+			var item_rarity: String = eq.get("rarity", "ノーマル")
+			
+			# Load and set texture icon
+			if item_icon != "":
+				var tex := load(item_icon)
+				if tex:
+					icon_rect.texture = tex
+					icon_rect.visible = true
+				else:
+					icon_rect.texture = null
+					icon_rect.visible = false
+			else:
+				icon_rect.texture = null
+				icon_rect.visible = false
 				
-			btn.text = "%s: %s %s" % [slot_name, type_icon, item_name]
-			btn.modulate = Color(0.6, 1.0, 0.6)
+			btn.icon = null # Clear native button icon
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			# Indent text slightly to avoid overlapping with the icon
+			btn.text = "        %s: %s (Lv.%d)" % [slot_name, item_name, item_level]
+			
+			# Style normal: rarity color background, blended to be dark and blue-ish
+			var rarity_color := GameData.get_rarity_color(item_rarity)
+			var bg_color := rarity_color.lerp(Color(0.1, 0.1, 0.25), 0.12)
+			bg_color.a = 0.95
+			
+			var style_normal = StyleBoxFlat.new()
+			style_normal.bg_color = bg_color
+			style_normal.border_width_left = 2
+			style_normal.border_width_top = 2
+			style_normal.border_width_right = 2
+			style_normal.border_width_bottom = 2
+			style_normal.border_color = Color(1.0, 1.0, 1.0, 0.6) # Translucent white border for equipped slots
+			style_normal.corner_radius_top_left = 6
+			style_normal.corner_radius_top_right = 6
+			style_normal.corner_radius_bottom_right = 6
+			style_normal.corner_radius_bottom_left = 6
+			
+			var style_hover = style_normal.duplicate() as StyleBoxFlat
+			style_hover.bg_color = bg_color.lightened(0.15)
+			
+			var style_pressed = style_normal.duplicate() as StyleBoxFlat
+			style_pressed.bg_color = bg_color.darkened(0.15)
+			
+			btn.add_theme_stylebox_override("normal", style_normal)
+			btn.add_theme_stylebox_override("hover", style_hover)
+			btn.add_theme_stylebox_override("pressed", style_pressed)
+			btn.modulate = Color.WHITE
 		else:
+			gloss_panel.visible = false
+			icon_rect.texture = null
+			icon_rect.visible = false
+			btn.icon = null
+			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
 			btn.text = "%s: (Empty)" % slot_name
 			btn.modulate = Color.WHITE
+			
+			# Restore empty slot style boxes
+			var style_empty = StyleBoxFlat.new()
+			style_empty.bg_color = Color(0.08, 0.08, 0.12, 0.6)
+			style_empty.border_width_left = 1
+			style_empty.border_width_top = 1
+			style_empty.border_width_right = 1
+			style_empty.border_width_bottom = 1
+			style_empty.border_color = Color(0.18, 0.18, 0.25, 0.8)
+			style_empty.corner_radius_top_left = 6
+			style_empty.corner_radius_top_right = 6
+			style_empty.corner_radius_bottom_right = 6
+			style_empty.corner_radius_bottom_left = 6
+			
+			btn.add_theme_stylebox_override("normal", style_empty)
+			btn.add_theme_stylebox_override("hover", null)
+			btn.add_theme_stylebox_override("pressed", null)
 
 
 func _update_inventory_ui() -> void:
@@ -508,17 +644,17 @@ func _populate_grid(grid: GridContainer, items: Array) -> void:
 		grid.remove_child(child)
 		child.queue_free()
 		
+	var item_scene := preload("res://scenes/ui/inventory_item_ui.tscn")
 	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
-		var slot_btn := Button.new()
-		slot_btn.custom_minimum_size = Vector2(60, 60)
-		slot_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		slot_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		
 		if i < items.size():
-			slot_btn.set_script(preload("res://scripts/ui/inventory_item_ui.gd"))
-			grid.add_child(slot_btn)
-			slot_btn.setup(items[i])
+			var item_ui := item_scene.instantiate()
+			grid.add_child(item_ui)
+			item_ui.setup(items[i])
 		else:
+			var slot_btn := Button.new()
+			slot_btn.custom_minimum_size = Vector2(64, 64)
+			slot_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			slot_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			grid.add_child(slot_btn)
 			slot_btn.disabled = true
 			slot_btn.text = ""
@@ -542,23 +678,25 @@ func _on_equipment_changed() -> void:
 	_update_inventory_ui()
 
 
-func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
-	var type_icon := "⚔️"
-	if item_type == "sub":
-		type_icon = "🛡️"
-	elif item_type == "accessory":
-		type_icon = "💍"
-		
+func show_equipment_drop_pop(item_data: Dictionary) -> void:
+	var item_name: String = item_data.get("name", "")
+	var item_type: String = item_data.get("type", "")
+	var item_icon: String = item_data.get("icon", "")
+	var item_level: int = item_data.get("level", 1)
+	var item_rarity: String = item_data.get("rarity", "ノーマル")
+	
 	var pop := PanelContainer.new()
 	pop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pop.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	
+	var rarity_color := GameData.get_rarity_color(item_rarity)
+	
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.7) # Slightly transparent black
-	style.content_margin_left = 20
-	style.content_margin_right = 20
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	style.bg_color = Color(0.0, 0.0, 0.0, 0.8) # Slightly transparent black
+	style.content_margin_left = 15
+	style.content_margin_right = 15
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
 	style.corner_radius_top_left = 6
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_left = 6
@@ -567,15 +705,31 @@ func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
 	style.border_width_top = 1
 	style.border_width_right = 1
 	style.border_width_bottom = 1
-	style.border_color = Color(0.4, 0.2, 0.6, 0.8) # Purple border for hack & slash vibe
+	style.border_color = rarity_color
 	pop.add_theme_stylebox_override("panel", style)
 	
+	var hbox := HBoxContainer.new()
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_theme_constant_override("separation", 10)
+	pop.add_child(hbox)
+	
+	# Add texture icon if available
+	if item_icon != "":
+		var tex := load(item_icon)
+		if tex:
+			var rect := TextureRect.new()
+			rect.texture = tex
+			rect.custom_minimum_size = Vector2(32, 32)
+			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			hbox.add_child(rect)
+			
 	var label := Label.new()
-	label.text = "%s %s を手に入れた！" % [type_icon, item_name]
-	label.add_theme_font_size_override("font_size", 22)
-	label.add_theme_color_override("font_color", Color(0.9, 0.8, 1.0))
+	label.text = "[%s] %s (Lv.%d) を手に入れた！" % [item_rarity, item_name, item_level]
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", rarity_color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	pop.add_child(label)
+	hbox.add_child(label)
 	
 	equipment_log_container.add_child(pop)
 	
@@ -585,3 +739,44 @@ func show_equipment_drop_pop(item_name: String, item_type: String) -> void:
 	tween.tween_property(pop, "modulate:a", 1.0, 0.15)
 	tween.tween_property(pop, "modulate:a", 0.0, 0.3).set_delay(3.0)
 	tween.chain().tween_callback(pop.queue_free)
+
+
+func _setup_grid_frames() -> void:
+	# Define flat style for slot frames (distinct from main window BG)
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0.04, 0.04, 0.08, 0.9) # Very dark slot background
+	frame_style.border_width_left = 1
+	frame_style.border_width_top = 1
+	frame_style.border_width_right = 1
+	frame_style.border_width_bottom = 1
+	frame_style.border_color = Color(0.15, 0.15, 0.22, 0.8) # Muted frame border
+	frame_style.corner_radius_top_left = 6
+	frame_style.corner_radius_top_right = 6
+	frame_style.corner_radius_bottom_right = 6
+	frame_style.corner_radius_bottom_left = 6
+	frame_style.content_margin_left = 6
+	frame_style.content_margin_top = 8
+	frame_style.content_margin_right = 6
+	frame_style.content_margin_bottom = 8
+	
+	# Adjust separation spacing (4px) and dynamically inject PanelContainer wrapper frames
+	for grid in [main_grid, sub_grid, accessory_grid]:
+		if grid:
+			grid.add_theme_constant_override("h_separation", 4)
+			grid.add_theme_constant_override("v_separation", 4)
+			grid.size_flags_vertical = Control.SIZE_FILL
+			
+			var parent = grid.get_parent()
+			if parent:
+				var index = grid.get_index()
+				parent.remove_child(grid)
+				
+				var frame := PanelContainer.new()
+				frame.name = grid.name + "Frame"
+				frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+				frame.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+				frame.add_theme_stylebox_override("panel", frame_style)
+				
+				frame.add_child(grid)
+				parent.add_child(frame)
+				parent.move_child(frame, index)

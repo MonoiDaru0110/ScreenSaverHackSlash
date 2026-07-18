@@ -23,6 +23,11 @@ var _bg_default_color := Color(0.02, 0.02, 0.06)
 var _over_time_timer: Timer = null
 var _token_over_time_timer: Timer = null
 
+# パフォーマンス最適化
+var _is_border_animating: bool = false
+var _audio_pool: Array[AudioStreamPlayer] = []
+const AUDIO_POOL_SIZE: int = 4
+
 
 func _ready() -> void:
 	# 境界線のスタイルを動的に設定
@@ -49,6 +54,11 @@ func _ready() -> void:
 	_setup_over_time_timer()
 	_setup_token_over_time_timer()
 	_spawn_initial_logos()
+	# オーディオプールの初期化
+	for i in AUDIO_POOL_SIZE:
+		var player := AudioStreamPlayer.new()
+		add_child(player)
+		_audio_pool.append(player)
 
 
 func _spawn_initial_logos() -> void:
@@ -79,9 +89,9 @@ func _on_logo_reset_requested() -> void:
 
 
 func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
-	var mult := GameData.get_ascension_multiplier()
-	# Apply gold_boost_n skill (1.1^n multiplier where n is total level of all gold_boost_n)
-	var gold_skill_mult := pow(1.1, GameData.total_gold_boost_level)
+	var mult := GameData._cached_ascension_mult
+	# キャッシュ済みスキル倍率を使用
+	var gold_skill_mult := GameData._cached_gold_skill_mult
 
 	# デバッグ用: レベル100による確率100%を防ぎ、演出を確認するために確率を50%にする
 	var gold_is_crit := randf() < 0.5
@@ -107,7 +117,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 			token_mult *= GameData.get_token_direct_multiplier()
 
 		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
-		var token_skill_mult := pow(1.1, GameData.total_token_boost_level)
+		var token_skill_mult := GameData._cached_token_skill_mult
 		var base_tokens := (1 + GameData.boost_level) * mult * token_skill_mult
 		# Apply token_luck skill (30% chance for +1 token per level)
 		var token_luck_level := GameData.get_skill_level("token_luck")
@@ -137,10 +147,8 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	# --- Equipment Drop Logic ---
 	var dropped_item := GameData.roll_equipment_drop(is_corner)
 	if not dropped_item.is_empty():
-		var item_name: String = dropped_item.get("name", "")
-		var item_type: String = dropped_item.get("type", "")
 		if hud:
-			hud.show_equipment_drop_pop(item_name, item_type)
+			hud.show_equipment_drop_pop(dropped_item)
 
 
 
@@ -159,6 +167,7 @@ func _set_border_width(w: int) -> void:
 
 
 func _start_shake(direction: Vector2, strength: float) -> void:
+	_is_border_animating = true
 	# 画面の移動は行わない (平行移動による酔いを完全に防止)
 	
 	# 衝撃強度に応じて境界線パネルを一瞬拡大
@@ -175,22 +184,42 @@ func _start_shake(direction: Vector2, strength: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if not _is_border_animating:
+		return
+	
+	var all_settled := true
+	
 	# スケールを 1.0 に戻す
 	if play_area_border.scale != Vector2.ONE:
 		play_area_border.scale = play_area_border.scale.lerp(Vector2.ONE, 12.0 * delta)
 		if (play_area_border.scale - Vector2.ONE).length() < 0.001:
 			play_area_border.scale = Vector2.ONE
+		else:
+			all_settled = false
 			
-	# 枠線の太さを 4 に戻す
+	# 枚線の太さを 4 に戻す
 	if _border_style and _border_style.border_width_left > 4:
 		var cur_w = lerp(float(_border_style.border_width_left), 4.0, 12.0 * delta)
 		_set_border_width(int(cur_w))
 		if _border_style.border_width_left <= 4:
 			_set_border_width(4)
+		else:
+			all_settled = false
 			
 	# 境界線の色をネオンブルーに戻す (フラッシュの減衰)
-	if _border_style and _border_style.border_color != _base_border_color:
-		_border_style.border_color = _border_style.border_color.lerp(_base_border_color, 12.0 * delta)
+	if _border_style:
+		var cur_color = _border_style.border_color
+		var r_diff: float = abs(cur_color.r - _base_border_color.r)
+		var g_diff: float = abs(cur_color.g - _base_border_color.g)
+		var b_diff: float = abs(cur_color.b - _base_border_color.b)
+		if r_diff > 0.01 or g_diff > 0.01 or b_diff > 0.01:
+			_border_style.border_color = cur_color.lerp(_base_border_color, 12.0 * delta)
+			all_settled = false
+		else:
+			_border_style.border_color = _base_border_color
+	
+	if all_settled:
+		_is_border_animating = false
 
 
 func _flash_background() -> void:
@@ -271,29 +300,35 @@ func _on_over_time_timeout() -> void:
 	if logos.is_empty():
 		return
 		
-	var mult := GameData.get_ascension_multiplier()
-	var gold_skill_mult := pow(1.1, GameData.total_gold_boost_level)
+	var mult := GameData._cached_ascension_mult
+	var gold_skill_mult := GameData._cached_gold_skill_mult
 	
 	# Base amount is 10% of normal wall bounce gold
 	var base_hit_gold := int((1 + GameData.boost_level) * mult * gold_skill_mult)
 	var base_over_time_gold := base_hit_gold * 0.1
 	
-	var boost_mult := pow(1.1, GameData.total_get_gold_over_time_boost_level)
+	var boost_mult := GameData._cached_gold_over_time_boost_mult
 	var final_amount := int(base_over_time_gold * boost_mult)
 	final_amount = max(1, final_amount)
+	
+	# ゴールドを一括加算し、すべてのロゴからポップアップを表示
+	var logo_count := logos.size()
+	var total_gold := final_amount * logo_count
+	GameData.add_gold(total_gold)
 	
 	for logo in logos:
 		if logo is Node2D:
 			_spawn_drop_label(logo.global_position, "🪙 +%d" % final_amount, Color(1.0, 1.0, 1.0, 0.7), false)
-			GameData.add_gold(final_amount)
 
 
 func _play_sound(stream: AudioStream) -> void:
-	var player := AudioStreamPlayer.new()
-	player.stream = stream
-	add_child(player)
-	player.play()
-	player.finished.connect(player.queue_free)
+	# オーディオプールから空きプレイヤーを検索
+	for player in _audio_pool:
+		if not player.playing:
+			player.stream = stream
+			player.play()
+			return
+	# 全プレイヤーが使用中の場合はスキップ
 
 
 func _on_token_over_time_timeout() -> void:
@@ -301,17 +336,21 @@ func _on_token_over_time_timeout() -> void:
 	if logos.is_empty():
 		return
 		
-	var mult := GameData.get_ascension_multiplier()
+	var mult := GameData._cached_ascension_mult
 	
 	# Base amount is 10% of normal corner bounce tokens
-	var base_corner_tokens := (1 + GameData.boost_level) * mult * pow(1.1, GameData.total_token_boost_level)
+	var base_corner_tokens := (1 + GameData.boost_level) * mult * GameData._cached_token_skill_mult
 	var base_over_time_token := base_corner_tokens * 0.1
 	
-	var boost_mult := pow(1.1, GameData.total_get_token_over_time_boost_level)
+	var boost_mult := GameData._cached_token_over_time_boost_mult
 	var final_amount := int(base_over_time_token * boost_mult)
 	final_amount = max(1, final_amount)
+	
+	# トークンを一括加算し、すべてのロゴからポップアップを表示
+	var logo_count := logos.size()
+	var total_tokens := final_amount * logo_count
+	GameData.add_tokens(total_tokens)
 	
 	for logo in logos:
 		if logo is Node2D:
 			_spawn_drop_label(logo.global_position, "💎 +%d" % final_amount, Color(0.3, 0.75, 1.0, 0.7), false)
-			GameData.add_tokens(final_amount)
