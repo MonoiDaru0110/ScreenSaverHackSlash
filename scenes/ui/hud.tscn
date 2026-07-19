@@ -1,8 +1,8 @@
-[gd_scene load_steps=15 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=12 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
-[ext_resource type="Script" uid="uid://bh7yajm1axoto" path="res://scripts/ui/slot_button.gd" id="3_slot_btn"]
+[ext_resource type="PackedScene" path="res://scenes/ui/slot_button.tscn" id="3_slot_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
@@ -60,42 +60,6 @@ corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
 bg_color = Color(0.08, 0.08, 0.14, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_hover"]
-bg_color = Color(0.16, 0.16, 0.28, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.3, 0.3, 0.5, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_pressed"]
-bg_color = Color(0.08, 0.08, 0.15, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.4, 0.4, 0.7, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_slot_normal"]
-bg_color = Color(0.12, 0.12, 0.2, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.2, 0.2, 0.35, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skill_tree_scroll_bg"]
 bg_color = Color(0.15, 0.15, 0.24, 1)
@@ -362,75 +326,33 @@ grow_vertical = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="Slot1" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot1" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Main: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "main"
 allowed_type = "main"
 
-[node name="Slot2" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot2" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Sub: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "sub"
 allowed_type = "sub"
 
-[node name="Slot3" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot3" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Accessory 1: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "accessory_1"
 allowed_type = "accessory"
 
-[node name="Slot4" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot4" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Accessory 2: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "accessory_2"
 allowed_type = "accessory"
 
-[node name="Slot5" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot5" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Accessory 3: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "accessory_3"
 allowed_type = "accessory"
 
-[node name="Slot6" type="Button" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
-custom_minimum_size = Vector2(240, 72)
+[node name="Slot6" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-theme_override_styles/hover = SubResource("StyleBoxFlat_slot_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_slot_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_slot_normal")
-text = "Accessory 4: (Empty)"
-script = ExtResource("3_slot_btn")
 slot_key = "accessory_4"
 allowed_type = "accessory"
 

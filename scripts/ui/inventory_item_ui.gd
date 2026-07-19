@@ -32,19 +32,19 @@ func _ready() -> void:
 	# Ensure the button doesn't clip children so the level label can overflow
 	clip_contents = false
 	
-	# Configure the slot base StyleBox (identical to empty slots style)
+	# Configure the slot base StyleBox with rounded black border
 	if slot_base:
 		var base_style := StyleBoxFlat.new()
-		base_style.bg_color = Color(0.08, 0.08, 0.12, 0.6) # Dark transparent slot BG
-		base_style.border_width_left = 1
-		base_style.border_width_top = 1
-		base_style.border_width_right = 1
-		base_style.border_width_bottom = 1
-		base_style.border_color = Color(0.18, 0.18, 0.25, 0.8) # Grid border color
-		base_style.corner_radius_top_left = 4
-		base_style.corner_radius_top_right = 4
-		base_style.corner_radius_bottom_right = 4
-		base_style.corner_radius_bottom_left = 4
+		base_style.bg_color = Color(0.05, 0.05, 0.08, 0.8) # Dark transparent slot BG
+		base_style.border_width_left = 3
+		base_style.border_width_top = 3
+		base_style.border_width_right = 3
+		base_style.border_width_bottom = 3
+		base_style.border_color = Color(0.0, 0.0, 0.0, 1.0)
+		base_style.corner_radius_top_left = 6
+		base_style.corner_radius_top_right = 6
+		base_style.corner_radius_bottom_right = 6
+		base_style.corner_radius_bottom_left = 6
 		slot_base.add_theme_stylebox_override("panel", base_style)
 	
 	# Configure the white border for equipped items (full 64x64 border)
@@ -183,14 +183,38 @@ func _create_drag_preview() -> Control:
 	preview_root.z_index = 100
 	preview_root.z_as_relative = false
 	
+	var preview_base := Panel.new()
+	preview_base.custom_minimum_size = Vector2(64, 64)
+	preview_base.size = Vector2(64, 64)
+	preview_base.position = -Vector2(32, 32)
+	var border_style := StyleBoxFlat.new()
+	border_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
+	border_style.border_width_left = 3
+	border_style.border_width_top = 3
+	border_style.border_width_right = 3
+	border_style.border_width_bottom = 3
+	border_style.border_color = Color(0.0, 0.0, 0.0, 1.0)
+	border_style.corner_radius_top_left = 6
+	border_style.corner_radius_top_right = 6
+	border_style.corner_radius_bottom_right = 6
+	border_style.corner_radius_bottom_left = 6
+	preview_base.add_theme_stylebox_override("panel", border_style)
+	preview_root.add_child(preview_base)
+	
 	var preview_box := TextureRect.new()
-	preview_box.custom_minimum_size = Vector2(64, 64)
-	preview_box.size = Vector2(64, 64)
-	preview_box.position = -Vector2(32, 32) # Centered under mouse cursor
+	preview_box.anchor_left = 0.0
+	preview_box.anchor_top = 0.0
+	preview_box.anchor_right = 1.0
+	preview_box.anchor_bottom = 1.0
+	preview_box.offset_left = 4
+	preview_box.offset_top = 4
+	preview_box.offset_right = -4
+	preview_box.offset_bottom = -4
 	preview_box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview_box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if bg_texture_rect and bg_texture_rect.texture:
 		preview_box.texture = bg_texture_rect.texture
+	preview_base.add_child(preview_box)
 		
 	if icon_rect and icon_rect.texture:
 		var preview_icon := TextureRect.new()
@@ -223,9 +247,8 @@ func _create_drag_preview() -> Control:
 		preview_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
 		preview_lbl.add_theme_constant_override("outline_size", 3)
 		preview_lbl.add_theme_font_size_override("font_size", 20)
-		preview_box.add_child(preview_lbl)
+		preview_base.add_child(preview_lbl)
 		
-	preview_root.add_child(preview_box)
 	return preview_root
 
 
