@@ -505,50 +505,151 @@ func _update_slots_ui() -> void:
 		elif slot_key.begins_with("accessory_"):
 			slot_name = "Accessory " + slot_key.substr(10)
 			
-		# Check for custom IconRect child
-		var icon_rect: TextureRect = btn.get_node_or_null("IconRect")
+		# 1. Check for custom SlotBase child (Full button outline/background)
+		var slot_base: Panel = btn.get_node_or_null("SlotBase")
+		if not slot_base:
+			slot_base = Panel.new()
+			slot_base.name = "SlotBase"
+			slot_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			slot_base.anchor_left = 0.0
+			slot_base.anchor_top = 0.0
+			slot_base.anchor_right = 1.0
+			slot_base.anchor_bottom = 1.0
+			slot_base.offset_left = 0
+			slot_base.offset_top = 0
+			slot_base.offset_right = 0
+			slot_base.offset_bottom = 0
+			
+			var base_style := StyleBoxFlat.new()
+			base_style.bg_color = Color(0.08, 0.08, 0.12, 0.6)
+			base_style.border_width_left = 1
+			base_style.border_width_top = 1
+			base_style.border_width_right = 1
+			base_style.border_width_bottom = 1
+			base_style.border_color = Color(0.18, 0.18, 0.25, 0.8)
+			base_style.corner_radius_top_left = 6
+			base_style.corner_radius_top_right = 6
+			base_style.corner_radius_bottom_right = 6
+			base_style.corner_radius_bottom_left = 6
+			slot_base.add_theme_stylebox_override("panel", base_style)
+			btn.add_child(slot_base)
+			btn.move_child(slot_base, 0)
+
+		# 2. Check for custom IconContainer child (Square 64x64 cell at the right end)
+		var icon_container: Control = btn.get_node_or_null("IconContainer")
+		if not icon_container:
+			icon_container = Control.new()
+			icon_container.name = "IconContainer"
+			icon_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_container.custom_minimum_size = Vector2(64, 64)
+			btn.add_child(icon_container)
+		icon_container.position = Vector2(172, 4)
+
+		# 2a. Check for custom BgTextureRect child (Rarity background keeping square aspect ratio)
+		var bg_texture_rect: TextureRect = icon_container.get_node_or_null("BgTextureRect")
+		if not bg_texture_rect:
+			bg_texture_rect = TextureRect.new()
+			bg_texture_rect.name = "BgTextureRect"
+			bg_texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			bg_texture_rect.anchor_left = 0.0
+			bg_texture_rect.anchor_top = 0.0
+			bg_texture_rect.anchor_right = 1.0
+			bg_texture_rect.anchor_bottom = 1.0
+			bg_texture_rect.offset_left = 0
+			bg_texture_rect.offset_top = 0
+			bg_texture_rect.offset_right = 0
+			bg_texture_rect.offset_bottom = 0
+			bg_texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			bg_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_container.add_child(bg_texture_rect)
+
+		# 2b. Check for custom IconRect child (Item texture)
+		var icon_rect: TextureRect = bg_texture_rect.get_node_or_null("IconRect")
 		if not icon_rect:
 			icon_rect = TextureRect.new()
 			icon_rect.name = "IconRect"
+			icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_rect.anchor_left = 0.15
+			icon_rect.anchor_top = 0.15
+			icon_rect.anchor_right = 0.85
+			icon_rect.anchor_bottom = 0.85
+			icon_rect.offset_left = 0
+			icon_rect.offset_top = 0
+			icon_rect.offset_right = 0
+			icon_rect.offset_bottom = 0
 			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			# Button height is 72. 70% of 72 is ~50. Centered vertically: (72-50)/2 = 11. Left margin = 10.
-			icon_rect.custom_minimum_size = Vector2(50, 50)
-			icon_rect.position = Vector2(10, 11)
-			btn.add_child(icon_rect)
+			bg_texture_rect.add_child(icon_rect)
 			
-		# Check for custom GlossPanel child
+		# 3. Check for custom GlossPanel child (kept hidden for consistency)
 		var gloss_panel: Panel = btn.get_node_or_null("GlossPanel")
 		if not gloss_panel:
 			gloss_panel = Panel.new()
 			gloss_panel.name = "GlossPanel"
 			gloss_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			gloss_panel.anchor_left = 0.0
-			gloss_panel.anchor_top = 0.0
-			gloss_panel.anchor_right = 1.0
-			gloss_panel.anchor_bottom = 0.5
-			gloss_panel.offset_left = 0
-			gloss_panel.offset_top = 0
-			gloss_panel.offset_right = 0
-			gloss_panel.offset_bottom = 0
-			
-			var gloss_style := StyleBoxFlat.new()
-			gloss_style.bg_color = Color(1.0, 1.0, 1.0, 0.12) # 12% opacity white
-			gloss_style.corner_radius_top_left = 6
-			gloss_style.corner_radius_top_right = 6
-			gloss_style.corner_radius_bottom_left = 0
-			gloss_style.corner_radius_bottom_right = 0
-			gloss_panel.add_theme_stylebox_override("panel", gloss_style)
+			gloss_panel.visible = false
 			btn.add_child(gloss_panel)
+		else:
+			gloss_panel.visible = false
+
+		# 4. Check for custom DetailContainer child (Space reserved on the left for equipment stats)
+		var detail_container: VBoxContainer = btn.get_node_or_null("DetailContainer")
+		if not detail_container:
+			detail_container = VBoxContainer.new()
+			detail_container.name = "DetailContainer"
+			detail_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			detail_container.custom_minimum_size = Vector2(154, 50)
+			detail_container.add_theme_constant_override("separation", 2)
 			
+			var name_label := Label.new()
+			name_label.name = "NameLabel"
+			name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			name_label.add_theme_font_size_override("font_size", 15)
+			name_label.add_theme_color_override("font_outline_color", Color.BLACK)
+			name_label.add_theme_constant_override("outline_size", 3)
+			detail_container.add_child(name_label)
+			
+			var detail_label := Label.new()
+			detail_label.name = "DetailLabel"
+			detail_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			detail_label.add_theme_font_size_override("font_size", 13)
+			detail_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.85))
+			detail_label.add_theme_color_override("font_outline_color", Color.BLACK)
+			detail_label.add_theme_constant_override("outline_size", 2)
+			detail_container.add_child(detail_label)
+			
+			btn.add_child(detail_container)
+		detail_container.position = Vector2(12, 12)
+
+		var name_label: Label = detail_container.get_node("NameLabel")
+		var detail_label: Label = detail_container.get_node("DetailLabel")
+
+		# Transparent button style settings
+		btn.text = ""
+		btn.icon = null
+		var style_transparent := StyleBoxEmpty.new()
+		btn.add_theme_stylebox_override("normal", style_transparent)
+		btn.add_theme_stylebox_override("hover", style_transparent)
+		btn.add_theme_stylebox_override("pressed", style_transparent)
+		btn.add_theme_stylebox_override("focus", style_transparent)
+
 		if eq != null:
-			gloss_panel.visible = true
 			var item_name: String = eq.get("name", "")
 			var item_type: String = eq.get("type", "")
 			var item_icon: String = eq.get("icon", "")
 			var item_level: int = eq.get("level", 1)
-			var item_rarity: String = eq.get("rarity", "ノーマル")
+			var item_rarity: String = eq.get("rarity", "コモン")
+			
+			# Left square rarity background texture
+			icon_container.visible = true
+			bg_texture_rect.visible = true
+			var bg_path := GameData.get_rarity_bg_path(item_rarity)
+			var bg_tex := load(bg_path)
+			if bg_tex:
+				bg_texture_rect.texture = bg_tex
+			else:
+				bg_texture_rect.texture = null
+			bg_texture_rect.self_modulate = Color.WHITE
 			
 			# Load and set texture icon
 			if item_icon != "":
@@ -563,61 +664,23 @@ func _update_slots_ui() -> void:
 				icon_rect.texture = null
 				icon_rect.visible = false
 				
-			btn.icon = null # Clear native button icon
-			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			# Indent text slightly to avoid overlapping with the icon
-			btn.text = "        %s: %s (Lv.%d)" % [slot_name, item_name, item_level]
-			
-			# Style normal: rarity color background, blended to be dark and blue-ish
+			# Right side text/detail space
+			name_label.text = "%s: %s" % [slot_name, item_name]
 			var rarity_color := GameData.get_rarity_color(item_rarity)
-			var bg_color := rarity_color.lerp(Color(0.1, 0.1, 0.25), 0.12)
-			bg_color.a = 0.95
+			name_label.add_theme_color_override("font_color", rarity_color)
+			detail_label.text = "Lv.%d  [詳細スペース]" % item_level
 			
-			var style_normal = StyleBoxFlat.new()
-			style_normal.bg_color = bg_color
-			style_normal.border_width_left = 2
-			style_normal.border_width_top = 2
-			style_normal.border_width_right = 2
-			style_normal.border_width_bottom = 2
-			style_normal.border_color = Color(1.0, 1.0, 1.0, 0.6) # Translucent white border for equipped slots
-			style_normal.corner_radius_top_left = 6
-			style_normal.corner_radius_top_right = 6
-			style_normal.corner_radius_bottom_right = 6
-			style_normal.corner_radius_bottom_left = 6
-			
-			var style_hover = style_normal.duplicate() as StyleBoxFlat
-			style_hover.bg_color = bg_color.lightened(0.15)
-			
-			var style_pressed = style_normal.duplicate() as StyleBoxFlat
-			style_pressed.bg_color = bg_color.darkened(0.15)
-			
-			btn.add_theme_stylebox_override("normal", style_normal)
-			btn.add_theme_stylebox_override("hover", style_hover)
-			btn.add_theme_stylebox_override("pressed", style_pressed)
 			btn.modulate = Color.WHITE
 		else:
-			gloss_panel.visible = false
+			icon_container.visible = false
+			bg_texture_rect.texture = null
 			icon_rect.texture = null
-			icon_rect.visible = false
-			btn.icon = null
-			btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn.text = "%s: (Empty)" % slot_name
+			
+			name_label.text = "%s: (Empty)" % slot_name
+			name_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
+			detail_label.text = ""
+			
 			btn.modulate = Color.WHITE
-			
-			# Restore empty slot style boxes
-			var style_empty = StyleBoxFlat.new()
-			style_empty.bg_color = Color(0.08, 0.08, 0.12, 0.6)
-			style_empty.border_width_left = 1
-			style_empty.border_width_top = 1
-			style_empty.border_width_right = 1
-			style_empty.border_width_bottom = 1
-			style_empty.border_color = Color(0.18, 0.18, 0.25, 0.8)
-			style_empty.corner_radius_top_left = 6
-			style_empty.corner_radius_top_right = 6
-			style_empty.corner_radius_bottom_right = 6
-			style_empty.corner_radius_bottom_left = 6
-			
-			btn.add_theme_stylebox_override("normal", style_empty)
 			btn.add_theme_stylebox_override("hover", null)
 			btn.add_theme_stylebox_override("pressed", null)
 
@@ -639,10 +702,34 @@ func _update_inventory_ui() -> void:
 	_populate_grid(accessory_grid, inv_acc)
 
 
+class InventoryEmptySlot extends Button:
+	var grid_type: String = ""
+	var slot_index: int = -1
+	
+	func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+		if not data is Dictionary:
+			return false
+		return data.get("type", "") == grid_type
+
+	func _drop_data(_at_position: Vector2, data: Variant) -> void:
+		if data is Dictionary:
+			if data.has("item_index"):
+				var from_index: int = data.get("item_index", -1)
+				GameData.swap_inventory_items(grid_type, from_index, slot_index)
+			elif data.has("from_slot"):
+				GameData.unequip_item_to_index(data.get("slot_key", ""), slot_index)
+
+
 func _populate_grid(grid: GridContainer, items: Array) -> void:
 	for child in grid.get_children():
 		grid.remove_child(child)
 		child.queue_free()
+		
+	var grid_type := "main"
+	if grid == sub_grid:
+		grid_type = "sub"
+	elif grid == accessory_grid:
+		grid_type = "accessory"
 		
 	var item_scene := preload("res://scenes/ui/inventory_item_ui.tscn")
 	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
@@ -651,12 +738,13 @@ func _populate_grid(grid: GridContainer, items: Array) -> void:
 			grid.add_child(item_ui)
 			item_ui.setup(items[i])
 		else:
-			var slot_btn := Button.new()
+			var slot_btn := InventoryEmptySlot.new()
+			slot_btn.grid_type = grid_type
+			slot_btn.slot_index = i
 			slot_btn.custom_minimum_size = Vector2(64, 64)
 			slot_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			slot_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 			grid.add_child(slot_btn)
-			slot_btn.disabled = true
 			slot_btn.text = ""
 			
 			var style_empty = StyleBoxFlat.new()
@@ -670,6 +758,9 @@ func _populate_grid(grid: GridContainer, items: Array) -> void:
 			style_empty.corner_radius_top_right = 4
 			style_empty.corner_radius_bottom_right = 4
 			style_empty.corner_radius_bottom_left = 4
+			slot_btn.add_theme_stylebox_override("normal", style_empty)
+			slot_btn.add_theme_stylebox_override("hover", style_empty)
+			slot_btn.add_theme_stylebox_override("pressed", style_empty)
 			slot_btn.add_theme_stylebox_override("disabled", style_empty)
 
 
@@ -683,7 +774,7 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 	var item_type: String = item_data.get("type", "")
 	var item_icon: String = item_data.get("icon", "")
 	var item_level: int = item_data.get("level", 1)
-	var item_rarity: String = item_data.get("rarity", "ノーマル")
+	var item_rarity: String = item_data.get("rarity", "コモン")
 	
 	var pop := PanelContainer.new()
 	pop.mouse_filter = Control.MOUSE_FILTER_IGNORE

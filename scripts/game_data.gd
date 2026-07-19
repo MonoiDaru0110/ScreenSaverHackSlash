@@ -349,7 +349,7 @@ func buy_skill_upgrade(skill_id: String, cost: int, max_level: int) -> bool:
 
 func get_rarity_color(rarity: String) -> Color:
 	match rarity:
-		"ノーマル":
+		"コモン":
 			return Color.from_hsv(0.0, 0.0, 0.75)      # Light Muted Gray
 		"アンコモン":
 			return Color.from_hsv(0.333, 0.85, 0.9)    # Bright Green (Hue ~120)
@@ -363,6 +363,25 @@ func get_rarity_color(rarity: String) -> Color:
 			return Color.from_hsv(0.0, 0.85, 0.9)      # Bright Red (Hue 0)
 		_:
 			return Color(1.0, 1.0, 1.0)
+
+
+func get_rarity_bg_path(rarity: String) -> String:
+	match rarity:
+		"コモン":
+			return "res://images/equip_bg/equip_bg_common.png"
+		"アンコモン":
+			return "res://images/equip_bg/equip_bg_uncommon.png"
+		"レア":
+			return "res://images/equip_bg/equip_bg_rare.png"
+		"エピック":
+			return "res://images/equip_bg/equip_bg_epic.png"
+		"レジェンド":
+			return "res://images/equip_bg/equip_bg_legend.png"
+		"ミシック":
+			return "res://images/equip_bg/equip_bg_mythic.png"
+		_:
+			return "res://images/equip_bg/equip_bg_common.png"
+
 
 
 func generate_random_equipment() -> Dictionary:
@@ -400,7 +419,7 @@ func generate_random_equipment() -> Dictionary:
 	var level := randi_range(1, 100)
 	
 	# Generate random rarity
-	var rarities: Array[String] = ["ノーマル", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
+	var rarities: Array[String] = ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity: String = rarities[randi() % rarities.size()]
 	
 	return {
@@ -430,12 +449,48 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 
 
 func equip_item_by_id(item_id: String, slot_key: String) -> bool:
-	# Find item in inventories
+	# 1. First, check if the item is currently equipped in another slot
+	var from_slot_key: String = ""
+	for key in equipped_items:
+		var eq = equipped_items[key]
+		if eq != null and eq.get("id") == item_id:
+			from_slot_key = key
+			break
+			
+	if from_slot_key != "":
+		if from_slot_key == slot_key:
+			return true
+			
+		var item_a: Dictionary = equipped_items[from_slot_key]
+		var item_type_a: String = item_a.get("type", "")
+		
+		# Check type restriction for target slot_key
+		if slot_key == "main" and item_type_a != "main":
+			return false
+		elif slot_key == "sub" and item_type_a != "sub":
+			return false
+		elif slot_key.begins_with("accessory_") and item_type_a != "accessory":
+			return false
+			
+		# Swap equipped items between from_slot_key and slot_key
+		var item_b = equipped_items.get(slot_key)
+		equipped_items[slot_key] = item_a
+		equipped_items[from_slot_key] = item_b
+		equipment_changed.emit()
+		return true
+
+	# 2. Otherwise, find item in inventories
+	var found_type: String = ""
+	var found_index: int = -1
 	var found_item: Dictionary = {}
+	
 	for type in inventories:
-		for item in inventories[type]:
-			if item.get("id") == item_id:
-				found_item = item
+		var arr: Array = inventories[type]
+		for i in range(arr.size()):
+			if arr[i].get("id") == item_id:
+				found_item = arr[i]
+				found_type = type
+				found_index = i
 				break
 		if not found_item.is_empty():
 			break
@@ -452,22 +507,98 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 	elif slot_key.begins_with("accessory_") and item_type != "accessory":
 		return false
 		
-	# If already equipped in another slot, unequip it first
-	for key in equipped_items:
-		var eq = equipped_items[key]
-		if eq != null and eq.get("id") == item_id:
-			equipped_items[key] = null
-			
-	# Equip it
+	# Get currently equipped item in target slot if any
+	var old_equipped = equipped_items.get(slot_key)
+	
+	# Remove newly equipped item from inventory
+	if found_index >= 0 and inventories.has(found_type):
+		inventories[found_type].remove_at(found_index)
+		
+	# If there was an old item equipped, swap it back into inventory
+	if old_equipped != null and not old_equipped.is_empty():
+		if inventories.has(found_type):
+			if found_index <= inventories[found_type].size():
+				inventories[found_type].insert(found_index, old_equipped)
+			else:
+				inventories[found_type].append(old_equipped)
+				
+	# Set new equipped item
 	equipped_items[slot_key] = found_item
 	equipment_changed.emit()
 	return true
 
 
 func unequip_item(slot_key: String) -> void:
-	if equipped_items.get(slot_key) != null:
-		equipped_items[slot_key] = null
+	unequip_item_to_index(slot_key, -1)
+
+
+func unequip_item_to_index(slot_key: String, target_index: int) -> void:
+	var old_equipped = equipped_items.get(slot_key)
+	if old_equipped == null or old_equipped.is_empty():
+		return
+		
+	var item_type: String = old_equipped.get("type", "")
+	if not inventories.has(item_type):
+		return
+		
+	var arr: Array = inventories[item_type]
+	
+	# If target_index points to an existing item in inventory, swap equipped item with inventory item if valid
+	if target_index >= 0 and target_index < arr.size():
+		var target_inv_item = arr[target_index]
+		var target_type: String = target_inv_item.get("type", "")
+		
+		var can_equip := false
+		if slot_key == "main" and target_type == "main":
+			can_equip = true
+		elif slot_key == "sub" and target_type == "sub":
+			can_equip = true
+		elif slot_key.begins_with("accessory_") and target_type == "accessory":
+			can_equip = true
+			
+		if can_equip:
+			arr[target_index] = old_equipped
+			equipped_items[slot_key] = target_inv_item
+			equipment_changed.emit()
+			return
+			
+	if arr.size() >= MAX_TYPE_INVENTORY_SIZE:
+		return # Inventory full
+		
+	if target_index >= 0 and target_index <= arr.size():
+		arr.insert(target_index, old_equipped)
+	else:
+		arr.append(old_equipped)
+		
+	equipped_items[slot_key] = null
+	equipment_changed.emit()
+
+
+func swap_inventory_items(type: String, index_a: int, index_b: int) -> void:
+	if not inventories.has(type):
+		return
+	var arr: Array = inventories[type]
+	if index_a < 0 or index_a >= arr.size():
+		return
+		
+	if index_b < 0:
+		index_b = 0
+	elif index_b >= arr.size():
+		# If dropped on empty slot beyond array bounds, move to end
+		var item = arr[index_a]
+		arr.remove_at(index_a)
+		arr.append(item)
 		equipment_changed.emit()
+		return
+		
+	if index_a == index_b:
+		return
+		
+	# Swap elements inside inventory array
+	var temp = arr[index_a]
+	arr[index_a] = arr[index_b]
+	arr[index_b] = temp
+	equipment_changed.emit()
 
 
 func is_item_equipped(item_id: String) -> String:

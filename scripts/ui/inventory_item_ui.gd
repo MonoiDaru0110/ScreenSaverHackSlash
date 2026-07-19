@@ -6,16 +6,14 @@ var item_name: String = ""
 var item_type: String = ""
 var item_icon: String = ""
 var item_level: int = 1
-var item_rarity: String = "ノーマル"
+var item_rarity: String = "コモン"
 
 @onready var icon_rect: TextureRect = %IconRect
 @onready var gloss_panel: Panel = %GlossPanel
 @onready var lvl_label: Label = %LevelLabel
 @onready var equip_border: Panel = %EquipBorder
-@onready var bg_color_rect: ColorRect = %BgColorRect
+@onready var bg_texture_rect: TextureRect = %BgTextureRect
 @onready var slot_base: Panel = %SlotBase
-
-var base_bg_color: Color = Color.WHITE
 
 func setup(item_data: Dictionary) -> void:
 	item_id = item_data.get("id", "")
@@ -23,7 +21,7 @@ func setup(item_data: Dictionary) -> void:
 	item_type = item_data.get("type", "")
 	item_icon = item_data.get("icon", "")
 	item_level = item_data.get("level", 1)
-	item_rarity = item_data.get("rarity", "ノーマル")
+	item_rarity = item_data.get("rarity", "コモン")
 	
 	# If the node is already ready (in the tree), update the display immediately
 	if is_node_ready():
@@ -49,7 +47,7 @@ func _ready() -> void:
 		base_style.corner_radius_bottom_left = 4
 		slot_base.add_theme_stylebox_override("panel", base_style)
 	
-	# Configure the green/white border for equipped items (full 60x60 border)
+	# Configure the white border for equipped items (full 64x64 border)
 	if equip_border:
 		var border_style := StyleBoxFlat.new()
 		border_style.draw_center = false # Transparent center
@@ -64,7 +62,7 @@ func _ready() -> void:
 		border_style.corner_radius_bottom_left = 4
 		equip_border.add_theme_stylebox_override("panel", border_style)
 		
-	# Connect hover and press signals to modulate background color tint dynamically
+	# Connect hover and press signals to modulate background brightness dynamically
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	button_down.connect(_on_button_down)
@@ -92,16 +90,17 @@ func update_ui_display() -> void:
 	# Tooltip setting
 	tooltip_text = "[%s] %s (Lv.%d)" % [item_rarity, item_name, item_level]
 	
-	# Calculate modulated rarity color background (lerp with Color(0.1, 0.1, 0.25) at 12%)
-	var rarity_color := GameData.get_rarity_color(item_rarity)
-	base_bg_color = rarity_color.lerp(Color(0.1, 0.1, 0.25), 0.12)
-	base_bg_color.a = 0.95
+	# Apply rarity background texture directly to BgTextureRect (which is 56x56, centered inside 64x64 base)
+	if bg_texture_rect:
+		var bg_path := GameData.get_rarity_bg_path(item_rarity)
+		var bg_tex := load(bg_path)
+		if bg_tex:
+			bg_texture_rect.texture = bg_tex
+		else:
+			bg_texture_rect.texture = null
+		bg_texture_rect.self_modulate = Color.WHITE
 	
-	# Apply rarity color directly to BgColorRect (which is 52x52, centered inside the 60x60 base)
-	if bg_color_rect:
-		bg_color_rect.color = base_bg_color
-	
-	# Configure gloss panel StyleBox (layered on top of BgColorRect)
+	# Configure gloss panel StyleBox (layered on top of BgTextureRect)
 	if gloss_panel:
 		var gloss_style := StyleBoxFlat.new()
 		gloss_style.bg_color = Color(1.0, 1.0, 1.0, 0.12) # 12% opacity white
@@ -132,56 +131,120 @@ func _update_style() -> void:
 
 
 func _update_bg_color(color: Color) -> void:
-	if bg_color_rect:
-		bg_color_rect.color = color
+	if bg_texture_rect:
+		bg_texture_rect.self_modulate = color
 
 
-# Modulation effects for hover / press states applied directly to the ColorRect
+# Modulation effects for hover / press states applied to the BgTextureRect
 func _on_mouse_entered() -> void:
-	_update_bg_color(base_bg_color.lightened(0.15))
+	_update_bg_color(Color(1.18, 1.18, 1.18))
 
 
 func _on_mouse_exited() -> void:
-	_update_bg_color(base_bg_color)
+	_update_bg_color(Color.WHITE)
 
 
 func _on_button_down() -> void:
-	_update_bg_color(base_bg_color.darkened(0.15))
+	_update_bg_color(Color(0.8, 0.8, 0.8))
 
 
 func _on_button_up() -> void:
 	if is_hovered():
-		_update_bg_color(base_bg_color.lightened(0.15))
+		_update_bg_color(Color(1.18, 1.18, 1.18))
 	else:
-		_update_bg_color(base_bg_color)
+		_update_bg_color(Color.WHITE)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_DRAG_END:
+		modulate = Color.WHITE
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	var preview := Label.new()
-	preview.text = "[%s] %s (Lv.%d)" % [item_rarity, item_name, item_level]
-	preview.add_theme_font_size_override("font_size", 16)
+	# Entire root node grayed out during drag
+	modulate = Color(0.35, 0.35, 0.35, 0.5)
 	
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.18, 0.8)
-	style.border_width_left = 1
-	style.border_width_top = 1
-	style.border_width_right = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0.4, 0.4, 0.6)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.add_child(preview)
-	
-	set_drag_preview(panel)
+	set_drag_preview(_create_drag_preview())
 	
 	return {
+		"from_inventory": true,
 		"item_id": item_id,
 		"type": item_type,
 		"name": item_name,
 		"level": item_level,
 		"rarity": item_rarity,
-		"icon": item_icon
+		"icon": item_icon,
+		"item_index": get_index()
 	}
+
+
+func _create_drag_preview() -> Control:
+	var preview_root := Control.new()
+	preview_root.z_index = 100
+	preview_root.z_as_relative = false
+	
+	var preview_box := TextureRect.new()
+	preview_box.custom_minimum_size = Vector2(64, 64)
+	preview_box.size = Vector2(64, 64)
+	preview_box.position = -Vector2(32, 32) # Centered under mouse cursor
+	preview_box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview_box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if bg_texture_rect and bg_texture_rect.texture:
+		preview_box.texture = bg_texture_rect.texture
+		
+	if icon_rect and icon_rect.texture:
+		var preview_icon := TextureRect.new()
+		preview_icon.anchor_left = 0.15
+		preview_icon.anchor_top = 0.15
+		preview_icon.anchor_right = 0.85
+		preview_icon.anchor_bottom = 0.85
+		preview_icon.offset_left = 0
+		preview_icon.offset_top = 0
+		preview_icon.offset_right = 0
+		preview_icon.offset_bottom = 0
+		preview_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		preview_icon.texture = icon_rect.texture
+		preview_box.add_child(preview_icon)
+		
+	if lvl_label and lvl_label.text != "":
+		var preview_lbl := Label.new()
+		preview_lbl.text = lvl_label.text
+		preview_lbl.anchor_left = 1.0
+		preview_lbl.anchor_top = 1.0
+		preview_lbl.anchor_right = 1.0
+		preview_lbl.anchor_bottom = 1.0
+		preview_lbl.offset_left = -55
+		preview_lbl.offset_top = -30
+		preview_lbl.offset_right = -3
+		preview_lbl.offset_bottom = -2
+		preview_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		preview_lbl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		preview_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+		preview_lbl.add_theme_constant_override("outline_size", 3)
+		preview_lbl.add_theme_font_size_override("font_size", 20)
+		preview_box.add_child(preview_lbl)
+		
+	preview_root.add_child(preview_box)
+	return preview_root
+
+
+func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	if not data is Dictionary:
+		return false
+	var incoming_type: String = data.get("type", "")
+	return incoming_type == item_type
+
+
+func _drop_data(_at_position: Vector2, data: Variant) -> void:
+	if data is Dictionary:
+		if data.has("item_index"):
+			var from_index: int = data.get("item_index", -1)
+			var to_index: int = get_index()
+			GameData.swap_inventory_items(item_type, from_index, to_index)
+		elif data.has("from_slot"):
+			var from_slot_key: String = data.get("slot_key", "")
+			GameData.unequip_item_to_index(from_slot_key, get_index())
 
 
 func _gui_input(event: InputEvent) -> void:
