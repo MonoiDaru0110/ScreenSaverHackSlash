@@ -324,17 +324,35 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
+theme_override_constants/v_separation = 2
+
+[node name="MainHeaderLabel" type="Label" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.6, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "メイン"
 
 [node name="Slot1" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
 slot_key = "main"
 allowed_type = "main"
 
+[node name="SubHeaderLabel" type="Label" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.6, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "サブ"
+
 [node name="Slot2" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2
 slot_key = "sub"
 allowed_type = "sub"
+
+[node name="AccHeaderLabel" type="Label" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.6, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "アクセサリー"
 
 [node name="Slot3" parent="Sidebar/SidebarLayout/BottomSection/MarginContainer/BottomLayout/TabContent/GridContainer" instance=ExtResource("3_slot_scene")]
 layout_mode = 2

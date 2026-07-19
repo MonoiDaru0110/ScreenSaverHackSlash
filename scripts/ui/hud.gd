@@ -499,11 +499,12 @@ func _update_slots_ui() -> void:
 		var btn = _slot_buttons[slot_key] as SlotButton
 		var eq = GameData.equipped_items.get(slot_key)
 		
-		var slot_name := "Main"
+		var slot_name := "(メインの装備スロット)"
 		if slot_key == "sub":
-			slot_name = "Sub"
+			slot_name = "(サブの装備スロット)"
 		elif slot_key.begins_with("accessory_"):
-			slot_name = "Accessory " + slot_key.substr(10)
+			var acc_num: String = slot_key.substr(10)
+			slot_name = "(アクセサリースロット%s)" % acc_num
 			
 		btn.update_slot_ui(slot_name, eq)
 

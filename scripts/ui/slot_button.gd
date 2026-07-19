@@ -5,13 +5,9 @@ class_name SlotButton
 @export var allowed_type: String = ""
 
 @onready var slot_base: Panel = $SlotBase
-@onready var detail_container: VBoxContainer = $DetailContainer
-@onready var name_label: Label = $DetailContainer/NameLabel
-@onready var detail_label: Label = $DetailContainer/DetailLabel
-@onready var icon_container: Control = $IconContainer
-@onready var icon_base: Panel = $IconContainer/IconBase
-@onready var bg_texture_rect: TextureRect = $IconContainer/BgTextureRect
-@onready var icon_rect: TextureRect = $IconContainer/BgTextureRect/IconRect
+@onready var equipment_icon: EquipmentIcon = %EquipmentIcon
+@onready var empty_label: Label = $EmptyLabel
+@onready var skill_labels: Control = $SkillGrid/SkillLabels
 
 
 func _ready() -> void:
@@ -46,87 +42,66 @@ func _ready() -> void:
 func _ensure_nodes() -> void:
 	if not slot_base:
 		slot_base = get_node_or_null("SlotBase") as Panel
-	if not detail_container:
-		detail_container = get_node_or_null("DetailContainer") as VBoxContainer
-	if not name_label:
-		name_label = get_node_or_null("DetailContainer/NameLabel") as Label
-	if not detail_label:
-		detail_label = get_node_or_null("DetailContainer/DetailLabel") as Label
-	if not icon_container:
-		icon_container = get_node_or_null("IconContainer") as Control
-	if not icon_base:
-		icon_base = get_node_or_null("IconContainer/IconBase") as Panel
-	if not bg_texture_rect:
-		bg_texture_rect = get_node_or_null("IconContainer/BgTextureRect") as TextureRect
-	if not icon_rect:
-		icon_rect = get_node_or_null("IconContainer/BgTextureRect/IconRect") as TextureRect
+	if not equipment_icon:
+		equipment_icon = get_node_or_null("EquipmentIcon") as EquipmentIcon
+	if not empty_label:
+		empty_label = get_node_or_null("EmptyLabel") as Label
+	if not skill_labels:
+		skill_labels = get_node_or_null("SkillGrid/SkillLabels") as Control
 
 
-func update_slot_ui(slot_name: String, eq: Variant) -> void:
+func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 	_ensure_nodes()
+	
+	# スロット全体の枠線スタイルボックスを作成
+	var base_style := StyleBoxFlat.new()
+	base_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
+	base_style.border_width_left = 2
+	base_style.border_width_top = 2
+	base_style.border_width_right = 2
+	base_style.border_width_bottom = 2
+	base_style.corner_radius_top_left = 6
+	base_style.corner_radius_top_right = 6
+	base_style.corner_radius_bottom_right = 6
+	base_style.corner_radius_bottom_left = 6
+
 	if eq != null and not eq.is_empty():
-		if icon_base:
-			icon_base.visible = false
-		var item_name: String = eq.get("name", "")
-		var item_icon: String = eq.get("icon", "")
-		var item_level: int = eq.get("level", 1)
 		var item_rarity: String = eq.get("rarity", "コモン")
 		
-		if icon_container:
-			icon_container.visible = true
-			icon_container.modulate = Color.WHITE
-		if bg_texture_rect:
-			bg_texture_rect.visible = true
-			bg_texture_rect.modulate = Color.WHITE
-			bg_texture_rect.self_modulate = Color.WHITE
-			var bg_path := GameData.get_rarity_bg_path(item_rarity)
-			var bg_tex := load(bg_path)
-			if bg_tex:
-				bg_texture_rect.texture = bg_tex
-			else:
-				bg_texture_rect.texture = null
-			
-		if icon_rect:
-			icon_rect.visible = true
-			icon_rect.modulate = Color.WHITE
-			icon_rect.self_modulate = Color.WHITE
-			if item_icon != "":
-				var tex := load(item_icon)
-				if tex:
-					icon_rect.texture = tex
-				else:
-					icon_rect.texture = null
-			else:
-				icon_rect.texture = null
-			
-		if name_label:
-			name_label.text = "%s: %s" % [slot_name, item_name]
-			var rarity_color := GameData.get_rarity_color(item_rarity)
-			name_label.add_theme_color_override("font_color", rarity_color)
-		if detail_label:
-			detail_label.text = "Lv.%d  [詳細スペース]" % item_level
+		var rarity_color := GameData.get_rarity_color(item_rarity)
+		base_style.border_color = rarity_color
+		if slot_base:
+			slot_base.add_theme_stylebox_override("panel", base_style)
 		
+		if empty_label:
+			empty_label.visible = false
+		if skill_labels:
+			skill_labels.visible = true
+		if equipment_icon:
+			equipment_icon.set_show_icon_base(false)
+			equipment_icon.update_item(eq)
+			
 		modulate = Color.WHITE
 	else:
-		if icon_container:
-			icon_container.visible = false
-		if bg_texture_rect:
-			bg_texture_rect.texture = null
-		if icon_rect:
-			icon_rect.texture = null
-		
-		if name_label:
-			name_label.text = "%s: (Empty)" % slot_name
-			name_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
-		if detail_label:
-			detail_label.text = ""
+		base_style.border_color = Color(0.32, 0.24, 0.48, 0.9) # デフォルトの薄紫色
+		if slot_base:
+			slot_base.add_theme_stylebox_override("panel", base_style)
+			
+		if empty_label:
+			empty_label.visible = true
+		if skill_labels:
+			skill_labels.visible = false
+		if equipment_icon:
+			equipment_icon.update_item(null)
+			equipment_icon.set_show_icon_base(false)
 			
 		modulate = Color.WHITE
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
-		modulate = Color.WHITE
+		if equipment_icon:
+			equipment_icon.modulate = Color.WHITE
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
@@ -134,8 +109,8 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	if eq == null or eq.is_empty():
 		return null
 		
-	# Entire slot button grayed out during drag
-	modulate = Color(0.35, 0.35, 0.35, 0.5)
+	if equipment_icon:
+		equipment_icon.modulate = Color(0.35, 0.35, 0.35, 0.5)
 	
 	set_drag_preview(_create_drag_preview(eq))
 	
@@ -156,81 +131,14 @@ func _create_drag_preview(eq: Dictionary) -> Control:
 	preview_root.z_index = 100
 	preview_root.z_as_relative = false
 	
-	var item_rarity: String = eq.get("rarity", "コモン")
-	var item_icon: String = eq.get("icon", "")
-	var item_level: int = eq.get("level", 1)
+	var preview_icon_scene := preload("res://scenes/ui/equipment_icon.tscn")
+	var preview_icon := preview_icon_scene.instantiate() as EquipmentIcon
+	preview_icon.position = -Vector2(32, 32)
+	preview_root.add_child(preview_icon)
 	
-	var preview_base := Panel.new()
-	preview_base.custom_minimum_size = Vector2(64, 64)
-	preview_base.size = Vector2(64, 64)
-	preview_base.position = -Vector2(32, 32) # Centered under mouse cursor
+	preview_icon.set_show_icon_base(true)
+	preview_icon.update_item(eq)
 	
-	var border_style := StyleBoxFlat.new()
-	border_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
-	border_style.border_width_left = 3
-	border_style.border_width_top = 3
-	border_style.border_width_right = 3
-	border_style.border_width_bottom = 3
-	border_style.border_color = Color(0.0, 0.0, 0.0, 1.0)
-	border_style.corner_radius_top_left = 6
-	border_style.corner_radius_top_right = 6
-	border_style.corner_radius_bottom_right = 6
-	border_style.corner_radius_bottom_left = 6
-	preview_base.add_theme_stylebox_override("panel", border_style)
-	preview_root.add_child(preview_base)
-	
-	var preview_box := TextureRect.new()
-	preview_box.anchor_left = 0.5
-	preview_box.anchor_top = 0.5
-	preview_box.anchor_right = 0.5
-	preview_box.anchor_bottom = 0.5
-	preview_box.offset_left = -28
-	preview_box.offset_top = -28
-	preview_box.offset_right = 28
-	preview_box.offset_bottom = 28
-	preview_box.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	preview_box.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	
-	var bg_path := GameData.get_rarity_bg_path(item_rarity)
-	var bg_tex := load(bg_path)
-	if bg_tex:
-		preview_box.texture = bg_tex
-	preview_base.add_child(preview_box)
-		
-	if item_icon != "":
-		var tex := load(item_icon)
-		if tex:
-			var preview_icon := TextureRect.new()
-			preview_icon.anchor_left = 0.15
-			preview_icon.anchor_top = 0.15
-			preview_icon.anchor_right = 0.85
-			preview_icon.anchor_bottom = 0.85
-			preview_icon.offset_left = 0
-			preview_icon.offset_top = 0
-			preview_icon.offset_right = 0
-			preview_icon.offset_bottom = 0
-			preview_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-			preview_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			preview_icon.texture = tex
-			preview_box.add_child(preview_icon)
-			
-	var preview_lbl := Label.new()
-	preview_lbl.text = "Lv%d" % item_level
-	preview_lbl.anchor_left = 1.0
-	preview_lbl.anchor_top = 1.0
-	preview_lbl.anchor_right = 1.0
-	preview_lbl.anchor_bottom = 1.0
-	preview_lbl.offset_left = -55
-	preview_lbl.offset_top = -30
-	preview_lbl.offset_right = -3
-	preview_lbl.offset_bottom = -2
-	preview_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	preview_lbl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-	preview_lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-	preview_lbl.add_theme_constant_override("outline_size", 3)
-	preview_lbl.add_theme_font_size_override("font_size", 20)
-	preview_base.add_child(preview_lbl)
-		
 	return preview_root
 
 
@@ -252,15 +160,13 @@ func _on_gui_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			GameData.unequip_item(slot_key)
 		elif event.button_index == MOUSE_BUTTON_LEFT:
-			# If clicked and equipped, unequip it
 			if GameData.equipped_items.get(slot_key) != null:
 				GameData.unequip_item(slot_key)
 
 
 func _update_bg_color(color: Color) -> void:
-	var bg_tex := find_child("BgTextureRect") as TextureRect
-	if bg_tex:
-		bg_tex.self_modulate = color
+	if equipment_icon and equipment_icon.bg_texture_rect:
+		equipment_icon.bg_texture_rect.self_modulate = color
 
 
 func _on_mouse_entered() -> void:

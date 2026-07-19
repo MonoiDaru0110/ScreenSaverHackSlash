@@ -1,6 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://b8slotbtn001"]
 
 [ext_resource type="Script" path="res://scripts/ui/slot_button.gd" id="1_slot_btn"]
+[ext_resource type="PackedScene" uid="uid://c_equipment_icon" path="res://scenes/ui/equipment_icon.tscn" id="2_eq_icon"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
 
@@ -16,22 +17,10 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icon_base"]
-bg_color = Color(0.05, 0.05, 0.08, 0.8)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0, 0, 0, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [node name="SlotButton" type="Button"]
-custom_minimum_size = Vector2(240, 64)
+custom_minimum_size = Vector2(240, 70)
 offset_right = 240.0
-offset_bottom = 64.0
+offset_bottom = 70.0
 mouse_filter = 0
 theme_override_styles/normal = SubResource("StyleBoxEmpty_button")
 theme_override_styles/hover = SubResource("StyleBoxEmpty_button")
@@ -50,40 +39,48 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_slot_base")
 
-[node name="DetailContainer" type="VBoxContainer" parent="."]
+[node name="SeparatorLine" type="ColorRect" parent="."]
 layout_mode = 0
-offset_left = 12.0
-offset_top = 7.0
-offset_right = 166.0
-offset_bottom = 57.0
+offset_left = 70.0
+offset_top = 6.0
+offset_right = 71.0
+offset_bottom = 64.0
 mouse_filter = 2
-theme_override_constants/separation = 2
+color = Color(0.32, 0.24, 0.48, 0.5)
 
-[node name="NameLabel" type="Label" parent="DetailContainer"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 15
-
-[node name="DetailLabel" type="Label" parent="DetailContainer"]
-layout_mode = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(0.75, 0.75, 0.85, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 13
-
-[node name="IconContainer" type="Control" parent="."]
-custom_minimum_size = Vector2(64, 64)
+[node name="SkillGrid" type="Control" parent="."]
 layout_mode = 0
-offset_left = 172.0
-offset_top = 0.0
-offset_right = 236.0
+offset_left = 73.0
+offset_top = 6.0
+offset_right = 232.0
 offset_bottom = 64.0
 mouse_filter = 2
 
-[node name="IconBase" type="Panel" parent="IconContainer"]
+[node name="VertLine" type="ColorRect" parent="SkillGrid"]
+layout_mode = 0
+offset_left = 79.0
+offset_right = 80.0
+offset_bottom = 58.0
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.35, 0.3)
+
+[node name="HorizLine1" type="ColorRect" parent="SkillGrid"]
+layout_mode = 0
+offset_top = 19.0
+offset_right = 159.0
+offset_bottom = 20.0
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.35, 0.3)
+
+[node name="HorizLine2" type="ColorRect" parent="SkillGrid"]
+layout_mode = 0
+offset_top = 38.0
+offset_right = 159.0
+offset_bottom = 39.0
+mouse_filter = 2
+color = Color(0.2, 0.2, 0.35, 0.3)
+
+[node name="SkillLabels" type="Control" parent="SkillGrid"]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -92,35 +89,158 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_icon_base")
 
-[node name="BgTextureRect" type="TextureRect" parent="IconContainer"]
-custom_minimum_size = Vector2(56, 56)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -28.0
-offset_top = -28.0
-offset_right = 28.0
-offset_bottom = 28.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
+[node name="SkillName1" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_right = 75.0
+offset_bottom = 19.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "集中"
+vertical_alignment = 1
 
-[node name="IconRect" type="TextureRect" parent="IconContainer/BgTextureRect"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.15
-anchor_top = 0.15
-anchor_right = 0.85
-anchor_bottom = 0.85
-grow_horizontal = 2
-grow_vertical = 2
+[node name="SkillVal1" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_right = 75.0
+offset_bottom = 19.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+4"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SkillName2" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_right = 155.0
+offset_bottom = 19.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "見切り"
+vertical_alignment = 1
+
+[node name="SkillVal2" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_right = 155.0
+offset_bottom = 19.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+4"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SkillName3" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 20.0
+offset_right = 75.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "巨大化"
+vertical_alignment = 1
+
+[node name="SkillVal3" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 20.0
+offset_right = 75.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+1"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SkillName4" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 20.0
+offset_right = 155.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "強撃"
+vertical_alignment = 1
+
+[node name="SkillVal4" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 20.0
+offset_right = 155.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+3"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SkillName5" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 39.0
+offset_right = 75.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "加速"
+vertical_alignment = 1
+
+[node name="SkillVal5" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 39.0
+offset_right = 75.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+2"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="SkillName6" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 39.0
+offset_right = 155.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 12
+text = "幸運"
+vertical_alignment = 1
+
+[node name="SkillVal6" type="Label" parent="SkillGrid/SkillLabels"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 39.0
+offset_right = 155.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(0.7, 0.9, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "+5"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="EquipmentIcon" parent="." instance=ExtResource("2_eq_icon")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 4.0
+offset_top = 3.0
+offset_right = 68.0
+offset_bottom = 67.0
+
+[node name="EmptyLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 3.0
+offset_right = 68.0
+offset_bottom = 67.0
 mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 0.8)
+theme_override_font_sizes/font_size = 12
+text = "EMPTY"
+horizontal_alignment = 1
+vertical_alignment = 1
