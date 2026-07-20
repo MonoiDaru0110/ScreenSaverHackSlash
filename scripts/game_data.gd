@@ -422,13 +422,67 @@ func generate_random_equipment() -> Dictionary:
 	var rarities: Array[String] = ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity: String = rarities[randi() % rarities.size()]
 	
+	# 利用可能なオプション効果（スキル）の定義
+	var available_skills := [
+		{"name": "集中", "desc": "スキルのクールダウンが%d%%減少します。"},
+		{"name": "見切り", "desc": "クリティカル率が%d%%増加します。"},
+		{"name": "巨大化", "desc": "攻撃の範囲が%d%%拡大します。"},
+		{"name": "強撃", "desc": "攻撃力が%d%%増加します。"},
+		{"name": "加速", "desc": "攻撃速度が%d%%増加します。"},
+		{"name": "幸運", "desc": "アイテムのドロップ率が%d%%増加します。"}
+	]
+	
+	# レア度に応じたスキル付与数とボーナス値
+	var num_skills := 1
+	var rarity_bonus := 0
+	match rarity:
+		"コモン":
+			num_skills = 1
+			rarity_bonus = 0
+		"アンコモン":
+			num_skills = 2
+			rarity_bonus = 1
+		"レア":
+			num_skills = 3
+			rarity_bonus = 2
+		"エピック":
+			num_skills = 4
+			rarity_bonus = 3
+		"レジェンド":
+			num_skills = 5
+			rarity_bonus = 4
+		"ミシック":
+			num_skills = 6
+			rarity_bonus = 5
+
+	# スキルプールをシャッフルして重複なく付与
+	var skill_pool := available_skills.duplicate()
+	skill_pool.shuffle()
+	
+	var item_skills: Array[Dictionary] = []
+	for i in range(min(num_skills, skill_pool.size())):
+		var skill_base = skill_pool[i]
+		# スキルレベルの算出 (装備レベルとレア度に依存)
+		var s_level := randi_range(1, 5) + int(level / 20) + rarity_bonus
+		# スキルの効果量の計算 (スキルレベルに応じてスケール)
+		var effect_val := s_level * 2
+		if skill_base.name == "巨大化":
+			effect_val = s_level # 巨大化は少し控えめな%に
+			
+		item_skills.append({
+			"name": skill_base.name,
+			"level": s_level,
+			"desc": skill_base.desc % effect_val
+		})
+	
 	return {
 		"id": id,
 		"name": name,
 		"type": type,
 		"icon": icon_path,
 		"level": level,
-		"rarity": rarity
+		"rarity": rarity,
+		"equip_skill": item_skills
 	}
 
 

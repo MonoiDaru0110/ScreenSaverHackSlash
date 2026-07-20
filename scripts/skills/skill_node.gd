@@ -17,6 +17,7 @@ var _icon_loaded: bool = false
 var _last_loaded_icon_char: String = ""
 var _is_dirty: bool = true
 var _deferred_pending: bool = false
+var _custom_tooltip: SkillTooltip = null
 
 func _load_icon_if_needed() -> void:
 	if _icon_loaded and _last_loaded_icon_char == icon_char:
@@ -80,6 +81,12 @@ func _ready() -> void:
 		GameData.tokens_changed.connect(_on_tokens_changed)
 		GameData.skill_upgraded.connect(_on_skill_upgraded)
 		visibility_changed.connect(_on_visibility_changed)
+		
+		# マニュアルツールチップのホバー接続
+		mouse_entered.connect(_on_mouse_entered_tooltip)
+		mouse_exited.connect(_on_mouse_exited_tooltip)
+		visibility_changed.connect(_on_mouse_exited_tooltip)
+		tree_exited.connect(_on_mouse_exited_tooltip)
 	
 	_update_connections()
 	queue_update_ui()
@@ -89,6 +96,9 @@ func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		# Preview icons on editor
 		_update_ui_editor()
+	else:
+		# ゲーム実行時はツールチップの位置をマウス位置に追従させる
+		_update_tooltip_position()
 
 
 func _update_connections() -> void:
@@ -230,12 +240,8 @@ func _update_ui_actual() -> void:
 	var lvl_str = "MAX" if current_level >= max_level else "Lvl %d/%d" % [current_level, max_level]
 	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %d" % cost
 	
-	tooltip_text = "%s\n[%s]\n%s\n%s" % [
-		skill_name,
-		lvl_str,
-		description,
-		cost_str
-	]
+	# マニュアル管理ツールチップを使用するため、Godot標準のポップアップは完全に無効化します
+	tooltip_text = ""
 	
 	# 解放可能状態（前提スキルがすべてレベル1以上）
 	var playable = is_playable()
@@ -322,3 +328,64 @@ func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
 
 func _update_ui() -> void:
 	queue_update_ui()
+
+
+func _on_mouse_entered_tooltip() -> void:
+	if Engine.is_editor_hint():
+		return
+	if not is_visible_in_tree():
+		return
+		
+	_remove_tooltip()
+	
+	var tooltip_scene = preload("res://scenes/ui/skill_tooltip.tscn")
+	_custom_tooltip = tooltip_scene.instantiate() as SkillTooltip
+	
+	# 親方向へ最寄りの CanvasLayer を探し、そこに追加することでインベントリ等の前面に確実に描画する
+	var parent_node = get_parent()
+	var canvas_layer: CanvasLayer = null
+	while parent_node:
+		if parent_node is CanvasLayer:
+			canvas_layer = parent_node as CanvasLayer
+			break
+		parent_node = parent_node.get_parent()
+		
+	if canvas_layer:
+		canvas_layer.add_child(_custom_tooltip)
+	else:
+		_custom_tooltip.top_level = true
+		add_child(_custom_tooltip)
+	
+	_custom_tooltip.setup_from_node(self)
+	_update_tooltip_position()
+
+
+func _on_mouse_exited_tooltip() -> void:
+	_remove_tooltip()
+
+
+func _remove_tooltip() -> void:
+	if is_instance_valid(_custom_tooltip):
+		_custom_tooltip.queue_free()
+	_custom_tooltip = null
+
+
+func _update_tooltip_position() -> void:
+	if not is_instance_valid(_custom_tooltip):
+		return
+		
+	var mouse_pos = get_global_mouse_position()
+	var offset = Vector2(15, 15)
+	var target_pos = mouse_pos + offset
+	
+	# 画面端での見切れ防止処理
+	# まだレイアウト前で size が (0,0) の場合があるため、get_combined_minimum_size() を使う
+	var viewport_size = get_viewport().get_visible_rect().size
+	var tooltip_size = _custom_tooltip.get_combined_minimum_size()
+	
+	if target_pos.x + tooltip_size.x > viewport_size.x:
+		target_pos.x = mouse_pos.x - tooltip_size.x - 15
+	if target_pos.y + tooltip_size.y > viewport_size.y:
+		target_pos.y = mouse_pos.y - tooltip_size.y - 15
+		
+	_custom_tooltip.global_position = target_pos

@@ -1,0 +1,133 @@
+[gd_scene load_steps=4 format=3 uid="uid://bk3a0eo3ntngb"]
+
+[ext_resource type="Script" uid="uid://okmx4urhnr2b" path="res://scripts/ui/skill_tooltip.gd" id="1_sk_tooltip"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shadow"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tooltip"]
+bg_color = Color(0.05, 0.05, 0.08, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.32, 0.24, 0.48, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 4
+
+[node name="SkillTooltip" type="PanelContainer"]
+custom_minimum_size = Vector2(288, 0)
+offset_right = 288.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_shadow")
+script = ExtResource("1_sk_tooltip")
+
+[node name="TooltipMargin" type="MarginContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="TooltipPanel" type="PanelContainer" parent="TooltipMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tooltip")
+
+[node name="PaddingMargin" type="MarginContainer" parent="TooltipMargin/TooltipPanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="TooltipMargin/TooltipPanel/PaddingMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="IconPanel" type="Panel" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="IconChar" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/IconPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconRect" type="TextureRect" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/IconPanel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.15
+anchor_top = 0.15
+anchor_right = 0.85
+anchor_bottom = 0.85
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TextLayout" type="VBoxContainer" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="NameLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 15
+text = "スキル名"
+
+[node name="LevelLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.75, 0.85, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+
+[node name="Separator" type="ColorRect" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.32, 0.24, 0.48, 0.4)
+
+[node name="DescLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(256, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 2

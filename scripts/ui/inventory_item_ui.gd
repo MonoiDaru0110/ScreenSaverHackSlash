@@ -7,8 +7,10 @@ var item_type: String = ""
 var item_icon: String = ""
 var item_level: int = 1
 var item_rarity: String = "コモン"
+var item_equip_skill: Array = []
 
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
+var _custom_tooltip: EquipmentTooltip = null
 
 func setup(item_data: Dictionary) -> void:
 	item_id = item_data.get("id", "")
@@ -17,6 +19,7 @@ func setup(item_data: Dictionary) -> void:
 	item_icon = item_data.get("icon", "")
 	item_level = item_data.get("level", 1)
 	item_rarity = item_data.get("rarity", "コモン")
+	item_equip_skill = item_data.get("equip_skill", [])
 	
 	if is_node_ready():
 		update_ui_display()
@@ -27,6 +30,8 @@ func _ready() -> void:
 	
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	visibility_changed.connect(_on_mouse_exited)
+	tree_exited.connect(_on_mouse_exited)
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
 	
@@ -44,7 +49,7 @@ func update_ui_display() -> void:
 	}
 	equipment_icon.update_item(item_data)
 	
-	tooltip_text = "[%s] %s (Lv.%d)" % [item_rarity, item_name, item_level]
+	tooltip_text = ""
 	_update_style()
 
 
@@ -55,10 +60,9 @@ func _update_style() -> void:
 	var equipped_slot := GameData.is_item_equipped(item_id)
 	if equipped_slot != "":
 		equipment_icon.set_equipped_border(true)
-		tooltip_text = "[装備中 - %s] [%s] %s (Lv.%d)" % [equipped_slot.capitalize(), item_rarity, item_name, item_level]
 	else:
 		equipment_icon.set_equipped_border(false)
-		tooltip_text = "[%s] %s (Lv.%d)" % [item_rarity, item_name, item_level]
+	tooltip_text = ""
 
 
 func _update_bg_color(color: Color) -> void:
@@ -68,10 +72,50 @@ func _update_bg_color(color: Color) -> void:
 
 func _on_mouse_entered() -> void:
 	_update_bg_color(Color(1.18, 1.18, 1.18))
+	
+	if Engine.is_editor_hint():
+		return
+	if not is_visible_in_tree():
+		return
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		return
+		
+	_remove_tooltip()
+	
+	var tooltip_scene := preload("res://scenes/ui/equipment_tooltip.tscn")
+	_custom_tooltip = tooltip_scene.instantiate() as EquipmentTooltip
+	
+	# 親方向へ最寄りの CanvasLayer を探し、そこに追加することで最前面に描画する
+	var parent_node = get_parent()
+	var canvas_layer: CanvasLayer = null
+	while parent_node:
+		if parent_node is CanvasLayer:
+			canvas_layer = parent_node as CanvasLayer
+			break
+		parent_node = parent_node.get_parent()
+		
+	if canvas_layer:
+		canvas_layer.add_child(_custom_tooltip)
+	else:
+		_custom_tooltip.top_level = true
+		add_child(_custom_tooltip)
+	
+	var item_data := {
+		"id": item_id,
+		"name": item_name,
+		"type": item_type,
+		"icon": item_icon,
+		"level": item_level,
+		"rarity": item_rarity,
+		"equip_skill": item_equip_skill
+	}
+	_custom_tooltip.setup(item_data)
+	_update_tooltip_position()
 
 
 func _on_mouse_exited() -> void:
 	_update_bg_color(Color.WHITE)
+	_remove_tooltip()
 
 
 func _on_button_down() -> void:
@@ -92,6 +136,7 @@ func _notification(what: int) -> void:
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
+	_remove_tooltip()
 	if equipment_icon:
 		equipment_icon.modulate = Color(0.35, 0.35, 0.35, 0.5)
 	set_drag_preview(_create_drag_preview())
@@ -168,3 +213,37 @@ func _auto_equip() -> void:
 				target_slot = slot_key
 				break
 		GameData.equip_item_by_id(item_id, target_slot)
+
+
+func _remove_tooltip() -> void:
+	if is_instance_valid(_custom_tooltip):
+		_custom_tooltip.queue_free()
+	_custom_tooltip = null
+
+
+func _update_tooltip_position() -> void:
+	if not is_instance_valid(_custom_tooltip):
+		return
+		
+	var mouse_pos = get_global_mouse_position()
+	var offset = Vector2(15, 15)
+	var target_pos = mouse_pos + offset
+	
+	# 画面端での見切れ防止処理
+	var viewport_size = get_viewport().get_visible_rect().size
+	var tooltip_size = _custom_tooltip.get_combined_minimum_size()
+	
+	if target_pos.x + tooltip_size.x > viewport_size.x:
+		target_pos.x = mouse_pos.x - tooltip_size.x - 15
+	if target_pos.y + tooltip_size.y > viewport_size.y:
+		target_pos.y = mouse_pos.y - tooltip_size.y - 15
+		
+	_custom_tooltip.global_position = target_pos
+
+
+func _process(_delta: float) -> void:
+	if not Engine.is_editor_hint():
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+			_remove_tooltip()
+		else:
+			_update_tooltip_position()

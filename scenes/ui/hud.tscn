@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
-[ext_resource type="PackedScene" path="res://scenes/ui/slot_button.tscn" id="3_slot_scene"]
+[ext_resource type="PackedScene" uid="uid://b8slotbtn001" path="res://scenes/ui/slot_button.tscn" id="3_slot_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
