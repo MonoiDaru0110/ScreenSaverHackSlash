@@ -1,5 +1,70 @@
 {
 	"skills": {
+		"equip_drop_probability_boost_1": {
+			"base_cost": 5,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ率係数+10",
+			"icon": "res://images/skill_icon/equip_drop_probability_boost.png",
+			"max_level": 5,
+			"name": "装備ドロップ確率+",
+			"prerequisites": [
+				"equip_drop_unlock"
+			],
+			"x": -160.0,
+			"y": 320.0
+		},
+		"equip_drop_probability_boost_2": {
+			"base_cost": 15,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ率係数+10",
+			"icon": "res://images/skill_icon/equip_drop_probability_boost.png",
+			"max_level": 5,
+			"name": "装備ドロップ確率+",
+			"prerequisites": [
+				"equip_drop_rarity_boost_1"
+			],
+			"x": 320.0,
+			"y": 480.0
+		},
+		"equip_drop_rarity_boost_1": {
+			"base_cost": 5,
+			"cost_multiplier": 1.5,
+			"description": "高いレア度の装備がドロップしやすくなる",
+			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
+			"max_level": 5,
+			"name": "装備レアリティ+",
+			"prerequisites": [
+				"equip_drop_unlock"
+			],
+			"x": 160.0,
+			"y": 320.0
+		},
+		"equip_drop_rarity_boost_2": {
+			"base_cost": 15,
+			"cost_multiplier": 1.5,
+			"description": "高いレア度の装備がドロップしやすくなる",
+			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
+			"max_level": 5,
+			"name": "装備レアリティ+",
+			"prerequisites": [
+				"equip_drop_probability_boost_1"
+			],
+			"x": -320.0,
+			"y": 480.0
+		},
+		"equip_drop_unlock": {
+			"base_cost": 2,
+			"cost_multiplier": 1.5,
+			"description": "装備ドロップが解放される",
+			"icon": "res://images/skill_icon/equip_drop_unlock.png",
+			"max_level": 1,
+			"name": "装備ドロップ解放",
+			"prerequisites": [
+				"gold_boost_1"
+			],
+			"x": 0.0,
+			"y": 320.0
+		},
 		"get_gold_over_time": {
 			"base_cost": 10,
 			"cost_multiplier": 1.5,
@@ -79,7 +144,7 @@
 			"y": -480.0
 		},
 		"gold_boost_1": {
-			"base_cost": 5,
+			"base_cost": 1,
 			"cost_multiplier": 1.5,
 			"description": "ゴールド獲得量+10%",
 			"icon": "res://images/skill_icon/gold_boost_icon.png",
@@ -90,7 +155,7 @@
 			"y": 160.0
 		},
 		"gold_boost_2": {
-			"base_cost": 1,
+			"base_cost": 3,
 			"cost_multiplier": 1.5,
 			"description": "ゴールド獲得量+10%",
 			"icon": "res://images/skill_icon/gold_boost_icon.png",
@@ -103,7 +168,7 @@
 			"y": 0.0
 		},
 		"gold_boost_3": {
-			"base_cost": 1,
+			"base_cost": 5,
 			"cost_multiplier": 1.5,
 			"description": "ゴールド獲得量+10%",
 			"icon": "res://images/skill_icon/gold_boost_icon.png",
@@ -166,19 +231,6 @@
 			],
 			"x": 0.0,
 			"y": -480.0
-		},
-		"new_skill_1": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル",
-			"prerequisites": [
-				"gold_boost_1"
-			],
-			"x": 0.0,
-			"y": 320.0
 		},
 		"new_skill_100": {
 			"base_cost": 1,
@@ -726,45 +778,6 @@
 			"x": 160.0,
 			"y": -640.0
 		},
-		"new_skill_26": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 26",
-			"prerequisites": [
-				"new_skill_1"
-			],
-			"x": -160.0,
-			"y": 320.0
-		},
-		"new_skill_27": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 27",
-			"prerequisites": [
-				"new_skill_1"
-			],
-			"x": 160.0,
-			"y": 320.0
-		},
-		"new_skill_28": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 28",
-			"prerequisites": [
-				"new_skill_27"
-			],
-			"x": 320.0,
-			"y": 480.0
-		},
 		"new_skill_29": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -773,22 +786,9 @@
 			"max_level": 5,
 			"name": "新しいスキル 29",
 			"prerequisites": [
-				"new_skill_28"
+				"equip_drop_probability_boost_2"
 			],
 			"x": 480.0,
-			"y": 480.0
-		},
-		"new_skill_30": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 30",
-			"prerequisites": [
-				"new_skill_26"
-			],
-			"x": -320.0,
 			"y": 480.0
 		},
 		"new_skill_31": {
@@ -799,7 +799,7 @@
 			"max_level": 5,
 			"name": "新しいスキル 31",
 			"prerequisites": [
-				"new_skill_30"
+				"equip_drop_rarity_boost_2"
 			],
 			"x": -480.0,
 			"y": 480.0
@@ -812,7 +812,7 @@
 			"max_level": 5,
 			"name": "新しいスキル 32",
 			"prerequisites": [
-				"new_skill_30"
+				"equip_drop_rarity_boost_2"
 			],
 			"x": -320.0,
 			"y": 640.0
@@ -825,7 +825,7 @@
 			"max_level": 5,
 			"name": "新しいスキル 33",
 			"prerequisites": [
-				"new_skill_28"
+				"equip_drop_probability_boost_2"
 			],
 			"x": 320.0,
 			"y": 640.0
@@ -1559,7 +1559,7 @@
 			"y": -480.0
 		},
 		"token_boost_1": {
-			"base_cost": 5,
+			"base_cost": 3,
 			"cost_multiplier": 1.5,
 			"description": "トークン獲得量+10%",
 			"icon": "res://images/skill_icon/token_boost.png",
@@ -1572,7 +1572,7 @@
 			"y": 0.0
 		},
 		"token_boost_2": {
-			"base_cost": 1,
+			"base_cost": 3,
 			"cost_multiplier": 1.5,
 			"description": "トークン獲得量+10%",
 			"icon": "res://images/skill_icon/token_boost.png",

@@ -29,6 +29,8 @@ var total_token_cooltime_boost_level: int = 0
 var total_get_token_over_time_boost_level: int = 0
 var total_token_crit_boost_level: int = 0
 var total_token_direct_boost_level: int = 0
+var total_equip_drop_probability_boost_level: int = 0
+var total_equip_drop_rarity_boost_level: int = 0
 
 # --- Critical and Direct Hit Parameters ---
 var gold_critical_parameter: float = 1.0
@@ -257,6 +259,8 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
 	total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
 	total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
+	total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
+	total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
 	_recalculate_cached_multipliers()
 
 
@@ -320,6 +324,14 @@ func _update_cumulative_levels(skill_id: String) -> void:
 		var suffix: String = skill_id.substr(23) # "token_direct_hit_boost_".length() = 23
 		if suffix.is_valid_int() and suffix.to_int() > 0:
 			total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
+	elif skill_id.begins_with("equip_drop_probability_boost_"):
+		var suffix: String = skill_id.substr(27) # "equip_drop_probability_boost_".length() = 27
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
+	elif skill_id.begins_with("equip_drop_rarity_boost_"):
+		var suffix: String = skill_id.substr(22) # "equip_drop_rarity_boost_".length() = 22
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
 	_recalculate_cached_multipliers()
 
 
@@ -418,9 +430,31 @@ func generate_random_equipment() -> Dictionary:
 	# Generate random level (1 to 100)
 	var level := randi_range(1, 100)
 	
-	# Generate random rarity
-	var rarities: Array[String] = ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
-	var rarity: String = rarities[randi() % rarities.size()]
+	# Generate random rarity based on equip_drop_rarity_boost skill level
+	var rarity_level := total_equip_drop_rarity_boost_level
+	var w_common: float = maxf(10.0, 60.0 - rarity_level * 4.0)
+	var w_uncommon: float = 25.0 + rarity_level * 1.5
+	var w_rare: float = 10.0 + rarity_level * 1.5
+	var w_epic: float = 4.0 + rarity_level * 0.8
+	var w_legend: float = 0.9 + rarity_level * 0.3
+	var w_mythic: float = 0.1 + rarity_level * 0.05
+	
+	var total_w := w_common + w_uncommon + w_rare + w_epic + w_legend + w_mythic
+	var roll := randf() * total_w
+	
+	var rarity: String = "コモン"
+	if roll < w_common:
+		rarity = "コモン"
+	elif roll < w_common + w_uncommon:
+		rarity = "アンコモン"
+	elif roll < w_common + w_uncommon + w_rare:
+		rarity = "レア"
+	elif roll < w_common + w_uncommon + w_rare + w_epic:
+		rarity = "エピック"
+	elif roll < w_common + w_uncommon + w_rare + w_epic + w_legend:
+		rarity = "レジェンド"
+	else:
+		rarity = "ミシック"
 	
 	# 利用可能なオプション効果（スキル）の定義
 	var available_skills := [
@@ -487,9 +521,17 @@ func generate_random_equipment() -> Dictionary:
 
 
 func roll_equipment_drop(is_corner: bool) -> Dictionary:
-	var drop_chance := 1.0
+	# 装備ドロップ解放スキルが未習得の場合はドロップしない
+	if get_skill_level("equip_drop_unlock") <= 0:
+		return {}
+		
+	var base_drop_chance := 0.02
 	if is_corner:
-		drop_chance = 0.15
+		base_drop_chance = 0.15
+		
+	# ドロップ確率ブーストスキル (+10%/lvl 相当の倍率補正)
+	var prob_boost_mult := 1.0 + total_equip_drop_probability_boost_level * 0.1
+	var drop_chance := base_drop_chance * prob_boost_mult
 		
 	if randf() < drop_chance:
 		var item := generate_random_equipment()
@@ -498,6 +540,13 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 		if inv.size() < MAX_TYPE_INVENTORY_SIZE:
 			inv.append(item)
 			equipment_changed.emit()
+			return item
+		else:
+			# インベントリ満タン時: インベントリには追加せず、売却金を追加して通知用データを返す
+			var sell_price := 100
+			add_gold(sell_price)
+			item["is_sold"] = true
+			item["sell_price"] = sell_price
 			return item
 	return {}
 

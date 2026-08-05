@@ -639,8 +639,14 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			hbox.add_child(rect)
 			
+	var is_sold: bool = item_data.get("is_sold", false)
+	var sell_price: int = item_data.get("sell_price", 100)
+	
 	var label := Label.new()
-	label.text = "[%s] %s (Lv.%d) を手に入れた！" % [item_rarity, item_name, item_level]
+	if is_sold:
+		label.text = "[%s] %s (Lv.%d) を手に入れた！(売却🪙+%d)" % [item_rarity, item_name, item_level, sell_price]
+	else:
+		label.text = "[%s] %s (Lv.%d) を手に入れた！" % [item_rarity, item_name, item_level]
 	label.add_theme_font_size_override("font_size", 20)
 	label.add_theme_color_override("font_color", rarity_color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
