@@ -517,13 +517,86 @@ func _update_inventory_ui() -> void:
 	var inv_sub: Array = GameData.inventories.get("sub", [])
 	var inv_acc: Array = GameData.inventories.get("accessory", [])
 	
-	main_title_label.text = "⚔️ メイン (%d / %d)" % [inv_main.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
-	sub_title_label.text = "🛡️ サブ (%d / %d)" % [inv_sub.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
-	accessory_title_label.text = "💍 アクセサリー (%d / %d)" % [inv_acc.size(), GameData.MAX_TYPE_INVENTORY_SIZE]
+	var count_main = GameData.get_inventory_count("main")
+	var count_sub = GameData.get_inventory_count("sub")
+	var count_acc = GameData.get_inventory_count("accessory")
 	
-	_populate_grid(main_grid, inv_main)
-	_populate_grid(sub_grid, inv_sub)
-	_populate_grid(accessory_grid, inv_acc)
+	main_title_label.text = "⚔️ メイン (%d / %d)" % [count_main, GameData.MAX_TYPE_INVENTORY_SIZE]
+	sub_title_label.text = "🛡️ サブ (%d / %d)" % [count_sub, GameData.MAX_TYPE_INVENTORY_SIZE]
+	accessory_title_label.text = "💍 アクセサリー (%d / %d)" % [count_acc, GameData.MAX_TYPE_INVENTORY_SIZE]
+	
+	_update_grid_slots(main_grid, "main", inv_main)
+	_update_grid_slots(sub_grid, "sub", inv_sub)
+	_update_grid_slots(accessory_grid, "accessory", inv_acc)
+
+
+class InventorySlotWrapper extends Control:
+	var grid_type: String = ""
+	var slot_index: int = -1
+	var current_item_id: String = ""
+	var child_item_ui: InventoryItemUI = null
+	var child_empty_btn: InventoryEmptySlot = null
+	
+	func setup_slot(p_type: String, p_index: int) -> void:
+		grid_type = p_type
+		slot_index = p_index
+		custom_minimum_size = Vector2(64, 64)
+		size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		
+	func update_slot_item(item_data: Variant) -> void:
+		if item_data == null or not item_data is Dictionary or item_data.is_empty():
+			if current_item_id == "" and child_empty_btn != null:
+				return # 既に空き枠なら何も変更せず、ノードを維持する
+				
+			_clear_children()
+			current_item_id = ""
+			
+			child_empty_btn = InventoryEmptySlot.new()
+			child_empty_btn.grid_type = grid_type
+			child_empty_btn.slot_index = slot_index
+			child_empty_btn.custom_minimum_size = Vector2(64, 64)
+			child_empty_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			child_empty_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			add_child(child_empty_btn)
+			child_empty_btn.text = ""
+			
+			var style_empty = StyleBoxFlat.new()
+			style_empty.bg_color = Color(0.05, 0.05, 0.08, 0.6)
+			style_empty.border_width_left = 3
+			style_empty.border_width_top = 3
+			style_empty.border_width_right = 3
+			style_empty.border_width_bottom = 3
+			style_empty.border_color = Color(0.0, 0.0, 0.0, 1.0)
+			style_empty.corner_radius_top_left = 6
+			style_empty.corner_radius_top_right = 6
+			style_empty.corner_radius_bottom_right = 6
+			style_empty.corner_radius_bottom_left = 6
+			child_empty_btn.add_theme_stylebox_override("normal", style_empty)
+			child_empty_btn.add_theme_stylebox_override("hover", style_empty)
+			child_empty_btn.add_theme_stylebox_override("pressed", style_empty)
+			child_empty_btn.add_theme_stylebox_override("disabled", style_empty)
+		else:
+			var new_id: String = item_data.get("id", "")
+			if current_item_id == new_id and child_item_ui != null:
+				# アイテムIDが同一の場合はノードの再作成をスキップし、ホバー・ツールチップ状態を完全に維持する
+				child_item_ui._update_style()
+				return
+				
+			_clear_children()
+			current_item_id = new_id
+			
+			var item_scene := preload("res://scenes/ui/inventory_item_ui.tscn")
+			child_item_ui = item_scene.instantiate() as InventoryItemUI
+			add_child(child_item_ui)
+			child_item_ui.setup(item_data)
+			
+	func _clear_children() -> void:
+		for child in get_children():
+			remove_child(child)
+			child.queue_free()
+		child_item_ui = null
+		child_empty_btn = null
 
 
 class InventoryEmptySlot extends Button:
@@ -544,48 +617,21 @@ class InventoryEmptySlot extends Button:
 				GameData.unequip_item_to_index(data.get("slot_key", ""), slot_index)
 
 
-func _populate_grid(grid: GridContainer, items: Array) -> void:
-	for child in grid.get_children():
-		grid.remove_child(child)
-		child.queue_free()
-		
-	var grid_type := "main"
-	if grid == sub_grid:
-		grid_type = "sub"
-	elif grid == accessory_grid:
-		grid_type = "accessory"
-		
-	var item_scene := preload("res://scenes/ui/inventory_item_ui.tscn")
-	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
-		if i < items.size():
-			var item_ui := item_scene.instantiate()
-			grid.add_child(item_ui)
-			item_ui.setup(items[i])
-		else:
-			var slot_btn := InventoryEmptySlot.new()
-			slot_btn.grid_type = grid_type
-			slot_btn.slot_index = i
-			slot_btn.custom_minimum_size = Vector2(64, 64)
-			slot_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			slot_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			grid.add_child(slot_btn)
-			slot_btn.text = ""
+func _update_grid_slots(grid: GridContainer, grid_type: String, items: Array) -> void:
+	if grid.get_child_count() < GameData.MAX_TYPE_INVENTORY_SIZE:
+		for child in grid.get_children():
+			grid.remove_child(child)
+			child.queue_free()
+		for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
+			var wrapper := InventorySlotWrapper.new()
+			wrapper.setup_slot(grid_type, i)
+			grid.add_child(wrapper)
 			
-			var style_empty = StyleBoxFlat.new()
-			style_empty.bg_color = Color(0.05, 0.05, 0.08, 0.6)
-			style_empty.border_width_left = 3
-			style_empty.border_width_top = 3
-			style_empty.border_width_right = 3
-			style_empty.border_width_bottom = 3
-			style_empty.border_color = Color(0.0, 0.0, 0.0, 1.0)
-			style_empty.corner_radius_top_left = 6
-			style_empty.corner_radius_top_right = 6
-			style_empty.corner_radius_bottom_right = 6
-			style_empty.corner_radius_bottom_left = 6
-			slot_btn.add_theme_stylebox_override("normal", style_empty)
-			slot_btn.add_theme_stylebox_override("hover", style_empty)
-			slot_btn.add_theme_stylebox_override("pressed", style_empty)
-			slot_btn.add_theme_stylebox_override("disabled", style_empty)
+	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
+		var wrapper = grid.get_child(i) as InventorySlotWrapper
+		var item_data = items[i] if i < items.size() else null
+		if wrapper:
+			wrapper.update_slot_item(item_data)
 
 
 func _on_equipment_changed() -> void:

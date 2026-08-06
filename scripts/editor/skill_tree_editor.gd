@@ -21,6 +21,7 @@ const SAVE_PATH = "res://data/skills.json"
 var _selected_node: GraphNode = null
 var _updating_sidebar: bool = false
 var _file_dialog: FileDialog = null
+var _copied_skill_data: Dictionary = {}
 
 func _ready() -> void:
 	# Configure GraphEdit snapping and line curvature
@@ -305,6 +306,111 @@ func _on_add_button_pressed() -> void:
 	# Auto-select the newly added node
 	node.selected = true
 	_on_node_selected(node)
+
+
+func copy_selected_node() -> void:
+	if not _selected_node:
+		status_label.text = "コピーするノードが選択されていません。"
+		return
+		
+	_copied_skill_data = {
+		"src_id": _selected_node.get_meta("skill_id", ""),
+		"skill_name": _selected_node.get_meta("skill_name", ""),
+		"icon_char": _selected_node.get_meta("icon_char", "❓"),
+		"description": _selected_node.get_meta("description", ""),
+		"max_level": _selected_node.get_meta("max_level", 5),
+		"base_cost": _selected_node.get_meta("base_cost", 1),
+		"cost_multiplier": _selected_node.get_meta("cost_multiplier", 1.5)
+	}
+	status_label.text = "スキル '%s' をコピーしました。" % _copied_skill_data["src_id"]
+
+
+func paste_skill_data() -> void:
+	if _copied_skill_data.is_empty():
+		status_label.text = "コピーされたスキルデータがありません。"
+		return
+		
+	var src_id: String = _copied_skill_data.get("src_id", "")
+	var new_id := generate_unique_copy_id(src_id)
+	
+	var name_str: String = _copied_skill_data.get("skill_name", "")
+	var icon: String = _copied_skill_data.get("icon_char", "❓")
+	var desc: String = _copied_skill_data.get("description", "")
+	var max_lvl: int = _copied_skill_data.get("max_level", 5)
+	var cost: int = _copied_skill_data.get("base_cost", 1)
+	var mult: float = _copied_skill_data.get("cost_multiplier", 1.5)
+	
+	if _selected_node:
+		# 選択中のノードへパラメータをコピーペースト（IDは重複回避自動採番）
+		_selected_node.set_meta("skill_id", new_id)
+		_selected_node.set_meta("skill_name", name_str)
+		_selected_node.set_meta("icon_char", icon)
+		_selected_node.set_meta("description", desc)
+		_selected_node.set_meta("max_level", max_lvl)
+		_selected_node.set_meta("base_cost", cost)
+		_selected_node.set_meta("cost_multiplier", mult)
+		
+		_update_node_icon_preview(_selected_node, icon)
+		_on_node_selected(_selected_node)
+		status_label.text = "選択ノードにペーストしました (新ID: %s)" % new_id
+	else:
+		# ノード未選択時は新規ノードとして作成してペースト
+		var center = graph_edit.scroll_offset + graph_edit.size / 2.0 - Vector2(40, 40)
+		var node = add_new_node(new_id, name_str, icon, desc, max_lvl, cost, mult, center)
+		node.selected = true
+		_on_node_selected(node)
+		status_label.text = "新しいノードとしてペーストしました (新ID: %s)" % new_id
+
+
+func generate_unique_copy_id(src_id: String) -> String:
+	# 既存のすべてのスキルIDを収集
+	var used_ids: Array[String] = []
+	for child in graph_edit.get_children():
+		if child is GraphNode:
+			var id_val = child.get_meta("skill_id", "").strip_edges()
+			if not id_val.is_empty():
+				used_ids.append(id_val)
+				
+	# src_id からプレフィックス ○○ を抽出 ("gold_boost_1" -> "gold_boost")
+	var base_prefix := src_id
+	var last_underscore := src_id.rfind("_")
+	if last_underscore != -1:
+		var suffix := src_id.substr(last_underscore + 1)
+		if suffix.is_valid_int():
+			base_prefix = src_id.substr(0, last_underscore)
+			
+	# ○○_k が存在しない最小の k (k >= 1) を探索
+	var k := 1
+	var candidate_id := "%s_%d" % [base_prefix, k]
+	while candidate_id in used_ids:
+		k += 1
+		candidate_id = "%s_%d" % [base_prefix, k]
+		
+	return candidate_id
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		var focus_owner = get_viewport().gui_get_focus_owner()
+		if focus_owner is LineEdit or focus_owner is TextEdit:
+			return
+			
+		if event.ctrl_pressed or event.meta_pressed:
+			if event.keycode == KEY_C:
+				copy_selected_node()
+				get_viewport().set_input_as_handled()
+			elif event.keycode == KEY_V:
+				paste_skill_data()
+				get_viewport().set_input_as_handled()
+			elif event.keycode == KEY_D:
+				if _selected_node:
+					copy_selected_node()
+					_selected_node.selected = false
+					_clear_sidebar()
+					paste_skill_data()
+					get_viewport().set_input_as_handled()
 
 
 func save_data() -> void:

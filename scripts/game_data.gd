@@ -244,8 +244,28 @@ func get_token_direct_multiplier() -> float:
 
 
 func _ready() -> void:
+	_ensure_inventory_sizes()
 	_recalculate_all_cumulative_levels()
 	_recalculate_cached_multipliers()
+
+
+func _ensure_inventory_sizes() -> void:
+	for type in ["main", "sub", "accessory"]:
+		if not inventories.has(type) or not inventories[type] is Array:
+			inventories[type] = []
+		var arr: Array = inventories[type]
+		while arr.size() < MAX_TYPE_INVENTORY_SIZE:
+			arr.append(null)
+
+
+func get_inventory_count(type: String) -> int:
+	_ensure_inventory_sizes()
+	var count := 0
+	var arr: Array = inventories.get(type, [])
+	for item in arr:
+		if item != null:
+			count += 1
+	return count
 
 
 func _recalculate_all_cumulative_levels() -> void:
@@ -536,9 +556,18 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	if randf() < drop_chance:
 		var item := generate_random_equipment()
 		var type = item.get("type", "")
+		_ensure_inventory_sizes()
 		var inv: Array = inventories.get(type, [])
-		if inv.size() < MAX_TYPE_INVENTORY_SIZE:
-			inv.append(item)
+		
+		# 最初の空きスロット (null) を探す
+		var empty_index := -1
+		for i in range(inv.size()):
+			if inv[i] == null:
+				empty_index = i
+				break
+				
+		if empty_index != -1:
+			inv[empty_index] = item
 			equipment_changed.emit()
 			return item
 		else:
@@ -552,7 +581,8 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 
 
 func equip_item_by_id(item_id: String, slot_key: String) -> bool:
-	# 1. First, check if the item is currently equipped in another slot
+	_ensure_inventory_sizes()
+	# 1. 装備中アイテム間でのスロット付け替え
 	var from_slot_key: String = ""
 	for key in equipped_items:
 		var eq = equipped_items[key]
@@ -567,7 +597,6 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 		var item_a: Dictionary = equipped_items[from_slot_key]
 		var item_type_a: String = item_a.get("type", "")
 		
-		# Check type restriction for target slot_key
 		if slot_key == "main" and item_type_a != "main":
 			return false
 		elif slot_key == "sub" and item_type_a != "sub":
@@ -575,14 +604,13 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 		elif slot_key.begins_with("accessory_") and item_type_a != "accessory":
 			return false
 			
-		# Swap equipped items between from_slot_key and slot_key
 		var item_b = equipped_items.get(slot_key)
 		equipped_items[slot_key] = item_a
 		equipped_items[from_slot_key] = item_b
 		equipment_changed.emit()
 		return true
 
-	# 2. Otherwise, find item in inventories
+	# 2. インベントリからの装備
 	var found_type: String = ""
 	var found_index: int = -1
 	var found_item: Dictionary = {}
@@ -590,8 +618,9 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 	for type in inventories:
 		var arr: Array = inventories[type]
 		for i in range(arr.size()):
-			if arr[i].get("id") == item_id:
-				found_item = arr[i]
+			var element = arr[i]
+			if element != null and element is Dictionary and element.get("id") == item_id:
+				found_item = element
 				found_type = type
 				found_index = i
 				break
@@ -601,7 +630,6 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 	if found_item.is_empty():
 		return false
 		
-	# Check type restrictions
 	var item_type: String = found_item.get("type", "")
 	if slot_key == "main" and item_type != "main":
 		return false
@@ -610,22 +638,11 @@ func equip_item_by_id(item_id: String, slot_key: String) -> bool:
 	elif slot_key.begins_with("accessory_") and item_type != "accessory":
 		return false
 		
-	# Get currently equipped item in target slot if any
 	var old_equipped = equipped_items.get(slot_key)
 	
-	# Remove newly equipped item from inventory
-	if found_index >= 0 and inventories.has(found_type):
-		inventories[found_type].remove_at(found_index)
-		
-	# If there was an old item equipped, swap it back into inventory
-	if old_equipped != null and not old_equipped.is_empty():
-		if inventories.has(found_type):
-			if found_index <= inventories[found_type].size():
-				inventories[found_type].insert(found_index, old_equipped)
-			else:
-				inventories[found_type].append(old_equipped)
+	# インベントリの found_index 位置を old_equipped (または null) に入れ替える（位置保存）
+	inventories[found_type][found_index] = old_equipped
 				
-	# Set new equipped item
 	equipped_items[slot_key] = found_item
 	equipment_changed.emit()
 	return true
@@ -636,6 +653,7 @@ func unequip_item(slot_key: String) -> void:
 
 
 func unequip_item_to_index(slot_key: String, target_index: int) -> void:
+	_ensure_inventory_sizes()
 	var old_equipped = equipped_items.get(slot_key)
 	if old_equipped == null or old_equipped.is_empty():
 		return
@@ -646,58 +664,56 @@ func unequip_item_to_index(slot_key: String, target_index: int) -> void:
 		
 	var arr: Array = inventories[item_type]
 	
-	# If target_index points to an existing item in inventory, swap equipped item with inventory item if valid
-	if target_index >= 0 and target_index < arr.size():
+	# target_index が有効範囲内の場合
+	if target_index >= 0 and target_index < MAX_TYPE_INVENTORY_SIZE:
 		var target_inv_item = arr[target_index]
-		var target_type: String = target_inv_item.get("type", "")
-		
-		var can_equip := false
-		if slot_key == "main" and target_type == "main":
-			can_equip = true
-		elif slot_key == "sub" and target_type == "sub":
-			can_equip = true
-		elif slot_key.begins_with("accessory_") and target_type == "accessory":
-			can_equip = true
-			
-		if can_equip:
+		if target_inv_item == null:
 			arr[target_index] = old_equipped
-			equipped_items[slot_key] = target_inv_item
+			equipped_items[slot_key] = null
 			equipment_changed.emit()
 			return
+		else:
+			# 既にアイテムが存在する場合、同じタイプなら装備スロットとスワップ
+			var target_type: String = target_inv_item.get("type", "")
+			var can_equip := false
+			if slot_key == "main" and target_type == "main":
+				can_equip = true
+			elif slot_key == "sub" and target_type == "sub":
+				can_equip = true
+			elif slot_key.begins_with("accessory_") and target_type == "accessory":
+				can_equip = true
+				
+			if can_equip:
+				arr[target_index] = old_equipped
+				equipped_items[slot_key] = target_inv_item
+				equipment_changed.emit()
+				return
+				
+	# target_index が無効かスワップ不可だった場合、最初の空きスロット (null) を探す
+	var empty_index := -1
+	for i in range(MAX_TYPE_INVENTORY_SIZE):
+		if arr[i] == null:
+			empty_index = i
+			break
 			
-	if arr.size() >= MAX_TYPE_INVENTORY_SIZE:
-		return # Inventory full
-		
-	if target_index >= 0 and target_index <= arr.size():
-		arr.insert(target_index, old_equipped)
-	else:
-		arr.append(old_equipped)
-		
-	equipped_items[slot_key] = null
-	equipment_changed.emit()
+	if empty_index != -1:
+		arr[empty_index] = old_equipped
+		equipped_items[slot_key] = null
+		equipment_changed.emit()
 
 
 func swap_inventory_items(type: String, index_a: int, index_b: int) -> void:
+	_ensure_inventory_sizes()
 	if not inventories.has(type):
 		return
 	var arr: Array = inventories[type]
-	if index_a < 0 or index_a >= arr.size():
+	if index_a < 0 or index_a >= MAX_TYPE_INVENTORY_SIZE:
 		return
-		
-	if index_b < 0:
-		index_b = 0
-	elif index_b >= arr.size():
-		# If dropped on empty slot beyond array bounds, move to end
-		var item = arr[index_a]
-		arr.remove_at(index_a)
-		arr.append(item)
-		equipment_changed.emit()
+	if index_b < 0 or index_b >= MAX_TYPE_INVENTORY_SIZE:
 		return
-		
 	if index_a == index_b:
 		return
 		
-	# Swap elements inside inventory array
 	var temp = arr[index_a]
 	arr[index_a] = arr[index_b]
 	arr[index_b] = temp

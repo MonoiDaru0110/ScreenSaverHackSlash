@@ -28,6 +28,14 @@ theme_override_constants/separation = 16
 layout_mode = 2
 text = "➕ 新規スキル追加"
 
+[node name="CopyBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "📋 コピー"
+
+[node name="PasteBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "📄 ペースト"
+
 [node name="SaveBtn" type="Button" parent="VBoxContainer/HBoxContainer"]
 layout_mode = 2
 text = "💾 保存"
@@ -230,5 +238,7 @@ text = "❌ このスキルノードを削除"
 flat = true
 
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddBtn" to="." method="_on_add_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/CopyBtn" to="." method="copy_selected_node"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/PasteBtn" to="." method="paste_skill_data"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/SaveBtn" to="." method="save_data"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/LoadBtn" to="." method="load_data"]

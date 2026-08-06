@@ -135,6 +135,13 @@ func _notification(what: int) -> void:
 			equipment_icon.modulate = Color.WHITE
 
 
+func get_slot_index() -> int:
+	var parent = get_parent()
+	if parent and "slot_index" in parent:
+		return parent.slot_index
+	return get_index()
+
+
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	_remove_tooltip()
 	if equipment_icon:
@@ -149,7 +156,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 		"level": item_level,
 		"rarity": item_rarity,
 		"icon": item_icon,
-		"item_index": get_index()
+		"item_index": get_slot_index()
 	}
 
 
@@ -187,11 +194,11 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if data is Dictionary:
 		if data.has("item_index"):
 			var from_index: int = data.get("item_index", -1)
-			var to_index: int = get_index()
+			var to_index: int = get_slot_index()
 			GameData.swap_inventory_items(item_type, from_index, to_index)
 		elif data.has("from_slot"):
 			var from_slot_key: String = data.get("slot_key", "")
-			GameData.unequip_item_to_index(from_slot_key, get_index())
+			GameData.unequip_item_to_index(from_slot_key, get_slot_index())
 
 
 func _gui_input(event: InputEvent) -> void:
