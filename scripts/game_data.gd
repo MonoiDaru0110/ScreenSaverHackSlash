@@ -31,6 +31,8 @@ var total_token_crit_boost_level: int = 0
 var total_token_direct_boost_level: int = 0
 var total_equip_drop_probability_boost_level: int = 0
 var total_equip_drop_rarity_boost_level: int = 0
+var total_equip_drop_level_boost_level: int = 0
+var total_accessory_slot_unlock_level: int = 0
 
 # --- Critical and Direct Hit Parameters ---
 var gold_critical_parameter: float = 1.0
@@ -59,7 +61,32 @@ var equipped_items: Dictionary = {
 	"accessory_3": null,
 	"accessory_4": null
 }
+var unlocked_slots: Dictionary = {
+	"main": true,
+	"sub": true,
+	"accessory_1": true,
+	"accessory_2": false,
+	"accessory_3": false,
+	"accessory_4": false
+}
 const MAX_TYPE_INVENTORY_SIZE: int = 50
+
+
+func is_slot_unlocked(slot_key: String) -> bool:
+	if slot_key == "main" or slot_key == "sub" or slot_key == "accessory_1":
+		return true
+	elif slot_key == "accessory_2":
+		return total_accessory_slot_unlock_level >= 1
+	elif slot_key == "accessory_3":
+		return total_accessory_slot_unlock_level >= 2
+	elif slot_key == "accessory_4":
+		return total_accessory_slot_unlock_level >= 3
+	return unlocked_slots.get(slot_key, false)
+
+
+func set_slot_unlocked(slot_key: String, unlocked: bool) -> void:
+	unlocked_slots[slot_key] = unlocked
+	equipment_changed.emit()
 
 # --- Signals ---
 signal gold_changed(new_amount: int)
@@ -281,6 +308,8 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
 	total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
 	total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
+	total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
+	total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 	_recalculate_cached_multipliers()
 
 
@@ -303,55 +332,44 @@ func _recalculate_total_level(prefix: String) -> int:
 	return total
 
 
+func _check_and_update_cumulative(skill_id: String, prefix: String) -> bool:
+	if skill_id.begins_with(prefix):
+		var suffix: String = skill_id.substr(prefix.length())
+		if suffix.is_valid_int() and suffix.to_int() > 0:
+			return true
+	return false
+
+
 func _update_cumulative_levels(skill_id: String) -> void:
-	if skill_id.begins_with("gold_boost_"):
-		var suffix: String = skill_id.substr(11)
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_gold_boost_level = _recalculate_total_level("gold_boost_")
-	elif skill_id.begins_with("gold_cooltime_boost_"):
-		var suffix: String = skill_id.substr(20) # "gold_cooltime_boost_".length() = 20
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_gold_cooltime_boost_level = _recalculate_total_level("gold_cooltime_boost_")
-	elif skill_id.begins_with("get_gold_over_time_boost_"):
-		var suffix: String = skill_id.substr(25) # "get_gold_over_time_boost_".length() = 25
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_get_gold_over_time_boost_level = _recalculate_total_level("get_gold_over_time_boost_")
-	elif skill_id.begins_with("gold_critical_hit_boost_"):
-		var suffix: String = skill_id.substr(24) # "gold_critical_hit_boost_".length() = 24
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_gold_crit_boost_level = _recalculate_total_level("gold_critical_hit_boost_")
-	elif skill_id.begins_with("gold_direct_hit_boost_"):
-		var suffix: String = skill_id.substr(22) # "gold_direct_hit_boost_".length() = 22
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_gold_direct_boost_level = _recalculate_total_level("gold_direct_hit_boost_")
-	elif skill_id.begins_with("token_boost_"):
-		var suffix: String = skill_id.substr(12) # "token_boost_".length() = 12
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_token_boost_level = _recalculate_total_level("token_boost_")
-	elif skill_id.begins_with("token_cooltime_boost_"):
-		var suffix: String = skill_id.substr(21) # "token_cooltime_boost_".length() = 21
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_token_cooltime_boost_level = _recalculate_total_level("token_cooltime_boost_")
-	elif skill_id.begins_with("get_token_over_time_boost_"):
-		var suffix: String = skill_id.substr(26) # "get_token_over_time_boost_".length() = 26
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
-	elif skill_id.begins_with("token_critical_hit_boost_"):
-		var suffix: String = skill_id.substr(25) # "token_critical_hit_boost_".length() = 25
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
-	elif skill_id.begins_with("token_direct_hit_boost_"):
-		var suffix: String = skill_id.substr(23) # "token_direct_hit_boost_".length() = 23
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
-	elif skill_id.begins_with("equip_drop_probability_boost_"):
-		var suffix: String = skill_id.substr(27) # "equip_drop_probability_boost_".length() = 27
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
-	elif skill_id.begins_with("equip_drop_rarity_boost_"):
-		var suffix: String = skill_id.substr(22) # "equip_drop_rarity_boost_".length() = 22
-		if suffix.is_valid_int() and suffix.to_int() > 0:
-			total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
+	if _check_and_update_cumulative(skill_id, "gold_boost_"):
+		total_gold_boost_level = _recalculate_total_level("gold_boost_")
+	elif _check_and_update_cumulative(skill_id, "gold_cooltime_boost_"):
+		total_gold_cooltime_boost_level = _recalculate_total_level("gold_cooltime_boost_")
+	elif _check_and_update_cumulative(skill_id, "get_gold_over_time_boost_"):
+		total_get_gold_over_time_boost_level = _recalculate_total_level("get_gold_over_time_boost_")
+	elif _check_and_update_cumulative(skill_id, "gold_critical_hit_boost_"):
+		total_gold_crit_boost_level = _recalculate_total_level("gold_critical_hit_boost_")
+	elif _check_and_update_cumulative(skill_id, "gold_direct_hit_boost_"):
+		total_gold_direct_boost_level = _recalculate_total_level("gold_direct_hit_boost_")
+	elif _check_and_update_cumulative(skill_id, "token_boost_"):
+		total_token_boost_level = _recalculate_total_level("token_boost_")
+	elif _check_and_update_cumulative(skill_id, "token_cooltime_boost_"):
+		total_token_cooltime_boost_level = _recalculate_total_level("token_cooltime_boost_")
+	elif _check_and_update_cumulative(skill_id, "get_token_over_time_boost_"):
+		total_get_token_over_time_boost_level = _recalculate_total_level("get_token_over_time_boost_")
+	elif _check_and_update_cumulative(skill_id, "token_critical_hit_boost_"):
+		total_token_crit_boost_level = _recalculate_total_level("token_critical_hit_boost_")
+	elif _check_and_update_cumulative(skill_id, "token_direct_hit_boost_"):
+		total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
+	elif _check_and_update_cumulative(skill_id, "equip_drop_probability_boost_"):
+		total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
+	elif _check_and_update_cumulative(skill_id, "equip_drop_rarity_boost_"):
+		total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
+	elif _check_and_update_cumulative(skill_id, "equip_drop_level_boost_"):
+		total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
+	elif _check_and_update_cumulative(skill_id, "accessory_slot_unlock_"):
+		total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
+		equipment_changed.emit()
 	_recalculate_cached_multipliers()
 
 
@@ -447,8 +465,12 @@ func generate_random_equipment() -> Dictionary:
 	var icon_num := (randi() % 2) + 1
 	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
 	
-	# Generate random level (1 to 100)
-	var level := randi_range(1, 100)
+	# Generate level: 基礎レベル = 現在のアセンションレベル * (0.9 ~ 1.1乱数) + スキルツリーボーナス
+	var base_asc := maxi(1, ascension_level)
+	var rand_factor := randf_range(0.9, 1.1)
+	var base_level := int(base_asc * rand_factor)
+	var level_bonus := total_equip_drop_level_boost_level
+	var level := maxi(1, base_level + level_bonus)
 	
 	# Generate random rarity based on equip_drop_rarity_boost skill level
 	var rarity_level := total_equip_drop_rarity_boost_level
@@ -581,6 +603,9 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 
 
 func equip_item_by_id(item_id: String, slot_key: String) -> bool:
+	if not is_slot_unlocked(slot_key):
+		return false
+		
 	_ensure_inventory_sizes()
 	# 1. 装備中アイテム間でのスロット付け替え
 	var from_slot_key: String = ""

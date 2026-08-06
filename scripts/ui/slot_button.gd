@@ -7,6 +7,7 @@ class_name SlotButton
 @onready var slot_base: Panel = $SlotBase
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
 @onready var empty_label: Label = $EmptyLabel
+@onready var lock_label: Label = get_node_or_null("LockLabel") as Label
 @onready var equip_skill_labels: Control = $EquipSkillGrid/EquipSkillLabels
 var _custom_tooltip: EquipmentTooltip = null
 
@@ -49,6 +50,8 @@ func _ensure_nodes() -> void:
 		equipment_icon = get_node_or_null("EquipmentIcon") as EquipmentIcon
 	if not empty_label:
 		empty_label = get_node_or_null("EmptyLabel") as Label
+	if not lock_label:
+		lock_label = get_node_or_null("LockLabel") as Label
 	if not equip_skill_labels:
 		equip_skill_labels = get_node_or_null("EquipSkillGrid/EquipSkillLabels") as Control
 
@@ -56,21 +59,54 @@ func _ensure_nodes() -> void:
 func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 	_ensure_nodes()
 	
+	var is_unlocked := GameData.is_slot_unlocked(slot_key)
+	var separator_line = get_node_or_null("SeparatorLine") as ColorRect
+	
 	# スロット全体の枠線スタイルボックスを作成
 	var base_style := StyleBoxFlat.new()
-	base_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
-	base_style.border_width_left = 2
-	base_style.border_width_top = 2
-	base_style.border_width_right = 2
-	base_style.border_width_bottom = 2
 	base_style.corner_radius_top_left = 6
 	base_style.corner_radius_top_right = 6
 	base_style.corner_radius_bottom_right = 6
 	base_style.corner_radius_bottom_left = 6
+	base_style.border_width_left = 2
+	base_style.border_width_top = 2
+	base_style.border_width_right = 2
+	base_style.border_width_bottom = 2
+
+	if not is_unlocked:
+		# --- ロック状態の表示 ---
+		base_style.bg_color = Color(0.03, 0.03, 0.05, 0.9)
+		base_style.border_color = Color(0.18, 0.15, 0.25, 0.6)
+		if slot_base:
+			slot_base.add_theme_stylebox_override("panel", base_style)
+		tooltip_text = ""
+		if lock_label:
+			lock_label.visible = true
+		if empty_label:
+			empty_label.visible = false
+		if equip_skill_labels:
+			equip_skill_labels.visible = false
+		if separator_line:
+			separator_line.visible = false
+		if equipment_icon:
+			equipment_icon.update_item(null)
+			equipment_icon.set_show_icon_base(false)
+			equipment_icon.visible = false
+		modulate = Color.WHITE
+		return
+
+	# --- 解放済み状態の表示 ---
+	if lock_label:
+		lock_label.visible = false
+	if separator_line:
+		separator_line.visible = true
+	if equipment_icon:
+		equipment_icon.visible = true
+		
+	base_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
 
 	if eq != null and not eq.is_empty():
 		var item_rarity: String = eq.get("rarity", "コモン")
-		
 		var rarity_color := GameData.get_rarity_color(item_rarity)
 		base_style.border_color = rarity_color
 		if slot_base:
@@ -133,6 +169,9 @@ func _notification(what: int) -> void:
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
+	if not GameData.is_slot_unlocked(slot_key):
+		return null
+		
 	_remove_tooltip()
 	var eq = GameData.equipped_items.get(slot_key)
 	if eq == null or eq.is_empty():
@@ -172,6 +211,8 @@ func _create_drag_preview(eq: Dictionary) -> Control:
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	if not GameData.is_slot_unlocked(slot_key):
+		return false
 	if not data is Dictionary:
 		return false
 	var item_type = data.get("type", "")
@@ -179,12 +220,16 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
+	if not GameData.is_slot_unlocked(slot_key):
+		return
 	if data is Dictionary:
 		var item_id = data.get("item_id", "")
 		GameData.equip_item_by_id(item_id, slot_key)
 
 
 func _on_gui_input(event: InputEvent) -> void:
+	if not GameData.is_slot_unlocked(slot_key):
+		return
 	if event is InputEventMouseButton and event.pressed:
 		_remove_tooltip()
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -195,11 +240,15 @@ func _on_gui_input(event: InputEvent) -> void:
 
 
 func _update_bg_color(color: Color) -> void:
+	if not GameData.is_slot_unlocked(slot_key):
+		return
 	if equipment_icon and equipment_icon.bg_texture_rect:
 		equipment_icon.bg_texture_rect.self_modulate = color
 
 
 func _on_mouse_entered() -> void:
+	if not GameData.is_slot_unlocked(slot_key):
+		return
 	_update_bg_color(Color(1.18, 1.18, 1.18))
 	
 	if Engine.is_editor_hint():

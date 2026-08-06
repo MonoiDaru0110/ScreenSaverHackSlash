@@ -1,5 +1,31 @@
 {
 	"skills": {
+		"accessory_slot_unlock_1": {
+			"base_cost": 500,
+			"cost_multiplier": 1.5,
+			"description": "アクセサリースロットを一つ解放する",
+			"icon": "res://images/skill_icon/accessory_slot_unlock.png",
+			"max_level": 1,
+			"name": "アクセサリースロット解放",
+			"prerequisites": [
+				"equip_drop_rarity_boost_4"
+			],
+			"x": 640.0,
+			"y": 480.0
+		},
+		"accessory_slot_unlock_2": {
+			"base_cost": 500,
+			"cost_multiplier": 1.5,
+			"description": "アクセサリースロットを一つ解放する",
+			"icon": "res://images/skill_icon/accessory_slot_unlock.png",
+			"max_level": 1,
+			"name": "アクセサリースロット解放",
+			"prerequisites": [
+				"equip_drop_probability_boost_5"
+			],
+			"x": -960.0,
+			"y": 480.0
+		},
 		"equip_drop_level_boost_1": {
 			"base_cost": 100,
 			"cost_multiplier": 1.5,
@@ -38,6 +64,19 @@
 			],
 			"x": 800.0,
 			"y": 320.0
+		},
+		"equip_drop_level_boost_4": {
+			"base_cost": 1500,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+1",
+			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
+			"max_level": 5,
+			"name": "装備レベル+",
+			"prerequisites": [
+				"accessory_slot_unlock_2"
+			],
+			"x": -1120.0,
+			"y": 480.0
 		},
 		"equip_drop_probability_boost_1": {
 			"base_cost": 5,
@@ -91,6 +130,19 @@
 			"x": 640.0,
 			"y": 320.0
 		},
+		"equip_drop_probability_boost_5": {
+			"base_cost": 300,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ率係数+10",
+			"icon": "res://images/skill_icon/equip_drop_probability_boost.png",
+			"max_level": 5,
+			"name": "装備ドロップ確率+",
+			"prerequisites": [
+				"equip_drop_rarity_boost_5"
+			],
+			"x": -800.0,
+			"y": 480.0
+		},
 		"equip_drop_rarity_boost_1": {
 			"base_cost": 5,
 			"cost_multiplier": 1.5,
@@ -141,6 +193,19 @@
 				"equip_drop_probability_boost_2"
 			],
 			"x": 480.0,
+			"y": 480.0
+		},
+		"equip_drop_rarity_boost_5": {
+			"base_cost": 100,
+			"cost_multiplier": 1.5,
+			"description": "高いレア度の装備がドロップしやすくなる",
+			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
+			"max_level": 5,
+			"name": "装備レアリティ+",
+			"prerequisites": [
+				"equip_drop_probability_boost_3"
+			],
+			"x": -640.0,
 			"y": 480.0
 		},
 		"equip_drop_unlock": {
@@ -622,19 +687,6 @@
 			"x": 1440.0,
 			"y": -960.0
 		},
-		"new_skill_124": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 124",
-			"prerequisites": [
-				"equip_drop_probability_boost_3"
-			],
-			"x": -640.0,
-			"y": 480.0
-		},
 		"new_skill_125": {
 			"base_cost": 1,
 			"cost_multiplier": 1.5,
@@ -656,48 +708,9 @@
 			"max_level": 5,
 			"name": "新しいスキル 126",
 			"prerequisites": [
-				"new_skill_127"
+				"equip_drop_level_boost_4"
 			],
 			"x": -1280.0,
-			"y": 480.0
-		},
-		"new_skill_127": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 127",
-			"prerequisites": [
-				"new_skill_128"
-			],
-			"x": -1120.0,
-			"y": 480.0
-		},
-		"new_skill_128": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 128",
-			"prerequisites": [
-				"new_skill_129"
-			],
-			"x": -960.0,
-			"y": 480.0
-		},
-		"new_skill_129": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 129",
-			"prerequisites": [
-				"new_skill_124"
-			],
-			"x": -800.0,
 			"y": 480.0
 		},
 		"new_skill_13": {
@@ -760,22 +773,9 @@
 			"max_level": 5,
 			"name": "新しいスキル 133",
 			"prerequisites": [
-				"new_skill_135"
+				"accessory_slot_unlock_1"
 			],
 			"x": 800.0,
-			"y": 480.0
-		},
-		"new_skill_135": {
-			"base_cost": 1,
-			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
-			"max_level": 5,
-			"name": "新しいスキル 135",
-			"prerequisites": [
-				"equip_drop_rarity_boost_4"
-			],
-			"x": 640.0,
 			"y": 480.0
 		},
 		"new_skill_14": {

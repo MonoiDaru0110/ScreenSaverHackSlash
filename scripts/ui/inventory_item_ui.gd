@@ -209,17 +209,22 @@ func _gui_input(event: InputEvent) -> void:
 
 func _auto_equip() -> void:
 	if item_type == "main":
-		GameData.equip_item_by_id(item_id, "main")
+		if GameData.is_slot_unlocked("main"):
+			GameData.equip_item_by_id(item_id, "main")
 	elif item_type == "sub":
-		GameData.equip_item_by_id(item_id, "sub")
+		if GameData.is_slot_unlocked("sub"):
+			GameData.equip_item_by_id(item_id, "sub")
 	elif item_type == "accessory":
-		var target_slot := "accessory_1"
+		var target_slot := ""
 		for i in range(1, 5):
 			var slot_key := "accessory_%d" % i
-			if GameData.equipped_items.get(slot_key) == null:
+			if GameData.is_slot_unlocked(slot_key) and GameData.equipped_items.get(slot_key) == null:
 				target_slot = slot_key
 				break
-		GameData.equip_item_by_id(item_id, target_slot)
+		if target_slot == "" and GameData.is_slot_unlocked("accessory_1"):
+			target_slot = "accessory_1"
+		if target_slot != "":
+			GameData.equip_item_by_id(item_id, target_slot)
 
 
 func _remove_tooltip() -> void:
