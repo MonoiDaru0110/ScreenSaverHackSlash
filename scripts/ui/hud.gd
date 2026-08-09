@@ -20,6 +20,7 @@ extends CanvasLayer
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
+@onready var btn_toggle_skill_vis: Button = %ToggleSkillVisibilityBtn
 
 # Inventory UI references
 @onready var inventory_window: PanelContainer = %InventoryWindow
@@ -40,6 +41,7 @@ var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
+var _corner_tween: Tween = null
 
 # パフォーマンス最適化: アップグレードボタン更新のスロットリング
 var _upgrade_buttons_dirty: bool = false
@@ -169,6 +171,10 @@ func _ready() -> void:
 	btn_boost.pressed.connect(_on_boost_pressed)
 	btn_ascend.pressed.connect(_on_ascend_pressed)
 	btn_close_window.pressed.connect(close_skill_tree)
+	if btn_toggle_skill_vis:
+		btn_toggle_skill_vis.pressed.connect(_on_toggle_skill_vis_pressed)
+		if skill_tree_scroll:
+			_update_toggle_skill_vis_button_text(skill_tree_scroll.filter_unlocked_only)
 	
 	skill_tree_window.visible = false
 	
@@ -228,16 +234,23 @@ func _on_upgrades_changed() -> void:
 
 
 func _on_corner_hit() -> void:
-	## Show a big announcement when a corner hit occurs.
+	## Show announcement when a corner hit occurs.
+	# 既存のTweenをKillして連続ヒット時の文字消失バグを防止
+	if is_instance_valid(_corner_tween) and _corner_tween.is_running():
+		_corner_tween.kill()
+
 	corner_announce.text = "★ CORNER HIT! ★"
+	corner_announce.pivot_offset = corner_announce.size / 2.0
+	corner_announce.scale = Vector2(1.2, 1.2)
 	corner_announce.modulate.a = 1.0
-	corner_announce.scale = Vector2(1.3, 1.3)
-	var tween := create_tween()
-	tween.set_parallel(true)
-	tween.tween_property(corner_announce, "modulate:a", 0.0, 2.0)\
-		.set_ease(Tween.EASE_IN).set_delay(0.5)
-	tween.tween_property(corner_announce, "scale", Vector2.ONE, 0.3)\
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	corner_announce.visible = true
+
+	_corner_tween = create_tween()
+	_corner_tween.set_parallel(true)
+	_corner_tween.tween_property(corner_announce, "scale", Vector2.ONE, 0.2)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_corner_tween.tween_property(corner_announce, "modulate:a", 0.0, 1.0)\
+		.set_ease(Tween.EASE_IN).set_delay(0.4)
 
 
 func _update_all() -> void:
@@ -747,3 +760,20 @@ func _setup_grid_frames() -> void:
 				frame.add_child(grid)
 				parent.add_child(frame)
 				parent.move_child(frame, index)
+
+
+func _on_toggle_skill_vis_pressed() -> void:
+	if skill_tree_scroll:
+		var filter_on := skill_tree_scroll.toggle_filter_unlocked_only()
+		_update_toggle_skill_vis_button_text(filter_on)
+
+
+func _update_toggle_skill_vis_button_text(filter_on: bool) -> void:
+	if not btn_toggle_skill_vis:
+		return
+	if filter_on:
+		btn_toggle_skill_vis.text = "🔒 表示: 開放可能のみ"
+		btn_toggle_skill_vis.tooltip_text = "現在は前提スキルをすべて満たしているスキルのみ表示中\nクリックで全スキルを表示"
+	else:
+		btn_toggle_skill_vis.text = "👁️ 表示: 全スキル"
+		btn_toggle_skill_vis.tooltip_text = "現在は全てのスキルを表示中\nクリックで前提開放スキルのみを表示"

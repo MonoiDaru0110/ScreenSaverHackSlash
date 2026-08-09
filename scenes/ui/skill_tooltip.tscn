@@ -101,7 +101,12 @@ mouse_filter = 2
 theme_override_constants/separation = 2
 alignment = 1
 
-[node name="NameLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+[node name="TitleHBox" type="HBoxContainer" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="NameLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout/TitleHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
@@ -109,14 +114,23 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 15
 text = "スキル名"
 
-[node name="LevelLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+[node name="LevelLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout/TitleHBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.75, 0.85, 1)
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
-theme_override_font_sizes/font_size = 13
-text = "Lv.1"
+theme_override_font_sizes/font_size = 15
+text = "[Lv 1/5]"
+
+[node name="CostLabel" type="Label" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/TextLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 15
+text = "コスト: 💎 1"
 
 [node name="Separator" type="ColorRect" parent="TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer"]
 custom_minimum_size = Vector2(0, 1)

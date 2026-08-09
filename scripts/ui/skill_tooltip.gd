@@ -4,6 +4,7 @@ class_name SkillTooltip
 @onready var tooltip_panel: PanelContainer = %TooltipPanel
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
+@onready var cost_label: Label = %CostLabel
 @onready var desc_label: Label = %DescLabel
 @onready var icon_rect: TextureRect = %IconRect
 
@@ -39,6 +40,8 @@ func _ensure_nodes() -> void:
 		name_label = %NameLabel as Label
 	if not level_label:
 		level_label = %LevelLabel as Label
+	if not cost_label:
+		cost_label = %CostLabel as Label
 	if not desc_label:
 		desc_label = %DescLabel as Label
 	if not icon_rect:
@@ -100,7 +103,9 @@ func setup(skill_data: Dictionary) -> void:
 		if skill_data.has("level_string"):
 			level_label.text = skill_data.get("level_string", "")
 		else:
-			level_label.text = "Lv.%d" % skill_level
+			level_label.text = "[Lv %d]" % skill_level
+	if cost_label:
+		cost_label.visible = false
 	if desc_label:
 		desc_label.text = skill_desc
 		
@@ -127,13 +132,11 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	var max_level = skill_node.max_level
 	var cost = skill_node.get_upgrade_cost(current_level)
 	
-	var lvl_str = "MAX" if current_level >= max_level else "Lvl %d/%d" % [current_level, max_level]
+	var lvl_str = "[Lv MAX]" if current_level >= max_level else "[Lv %d/%d]" % [current_level, max_level]
 	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %d" % cost
 	
 	var skill_name = skill_node.skill_name if not skill_node.skill_name.is_empty() else skill_node.skill_id
 	var full_desc = skill_node.description
-	if not cost_str.is_empty():
-		full_desc += "\n" + cost_str
 		
 	# 1. アイコンパネルのスタイルと枠線の完全流用
 	var icon_panel = get_node_or_null("TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/IconPanel")
@@ -182,6 +185,9 @@ func setup_from_node(skill_node: SkillNode) -> void:
 		name_label.add_theme_color_override("font_color", border_color.lightened(0.2))
 	if level_label:
 		level_label.text = lvl_str
+	if cost_label:
+		cost_label.visible = true
+		cost_label.text = cost_str
 	if desc_label:
 		desc_label.text = full_desc
 		

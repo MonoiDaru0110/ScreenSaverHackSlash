@@ -10,9 +10,12 @@ class_name SkillTreeController
 var _zoom := 1.0
 var _is_dragging := false
 var _last_mouse_pos := Vector2.ZERO
+var filter_unlocked_only: bool = true
 
 func _ready() -> void:
 	clip_contents = true
+	if not Engine.is_editor_hint():
+		GameData.skill_upgraded.connect(_on_skill_upgraded)
 	
 	# Wait a frame to ensure the instanced skill tree data is loaded
 	await get_tree().process_frame
@@ -35,6 +38,22 @@ func _ready() -> void:
 		viewport.position = (parent_size - child_size) / 2.0
 		
 	visibility_changed.connect(update_culling)
+
+
+func toggle_filter_unlocked_only() -> bool:
+	filter_unlocked_only = not filter_unlocked_only
+	update_culling()
+	return filter_unlocked_only
+
+
+func is_node_filter_visible(node: SkillNode) -> bool:
+	if not filter_unlocked_only:
+		return true
+	return node.is_playable()
+
+
+func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
+	update_culling()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -155,9 +174,19 @@ func update_culling() -> void:
 	var container_rect = get_global_rect()
 	var skill_nodes = viewport.find_children("*", "SkillNode", true, false)
 	
+	var node_filter_map: Dictionary = {}
+	
 	# 1. 各 SkillNode の表示状態更新
 	for node in skill_nodes:
 		if not node is SkillNode:
+			continue
+			
+		var filter_vis := is_node_filter_visible(node)
+		node_filter_map[node] = filter_vis
+		
+		if not filter_vis:
+			if node.visible:
+				node.visible = false
 			continue
 			
 		var node_rect = node.get_global_rect()
@@ -168,13 +197,23 @@ func update_culling() -> void:
 		if node.visible != is_visible:
 			node.visible = is_visible
 			
-	# 2. 各 Line2D 接続線の表示状態更新
-	var lines = viewport.find_children("*", "Line2D", true, false)
-	for line in lines:
-		if line is Line2D and line.points.size() >= 2:
-			var p1_global = line.to_global(line.points[0])
-			var p2_global = line.to_global(line.points[1])
-			var line_rect = Rect2(p1_global, Vector2.ZERO).expand(p2_global).grow(5.0 * _zoom)
-			var is_visible = container_rect.intersects(line_rect)
-			if line.visible != is_visible:
-				line.visible = is_visible
+	# 2. 各 SkillNode の _lines (Line2D 接続線) の表示状態更新
+	for node in skill_nodes:
+		if not node is SkillNode:
+			continue
+			
+		var node_filter_vis: bool = node_filter_map.get(node, false)
+		
+		for line in node._lines:
+			if is_instance_valid(line) and line is Line2D and line.points.size() >= 2:
+				if not node_filter_vis:
+					if line.visible:
+						line.visible = false
+					continue
+					
+				var p1_global = line.to_global(line.points[0])
+				var p2_global = line.to_global(line.points[1])
+				var line_rect = Rect2(p1_global, Vector2.ZERO).expand(p2_global).grow(5.0 * _zoom)
+				var is_visible = container_rect.intersects(line_rect)
+				if line.visible != is_visible:
+					line.visible = is_visible

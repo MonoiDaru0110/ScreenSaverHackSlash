@@ -25,6 +25,7 @@ var _token_over_time_timer: Timer = null
 
 # パフォーマンス最適化
 var _is_border_animating: bool = false
+var _flash_tween: Tween = null
 var _audio_pool: Array[AudioStreamPlayer] = []
 const AUDIO_POOL_SIZE: int = 4
 
@@ -224,10 +225,15 @@ func _process(delta: float) -> void:
 
 func _flash_background() -> void:
 	## Brief flash effect when a corner hit occurs.
-	background.color = Color(0.15, 0.1, 0.25)
-	var tween := create_tween()
-	tween.tween_property(background, "color", _bg_default_color, 0.6)\
-		.set_ease(Tween.EASE_OUT)
+	if is_instance_valid(_flash_tween) and _flash_tween.is_running():
+		_flash_tween.kill()
+
+	# 程よい上品な紫系の背景発光
+	background.color = Color(0.22, 0.15, 0.38)
+
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(background, "color", _bg_default_color, 0.5)\
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
 
 func _setup_over_time_timer() -> void:
