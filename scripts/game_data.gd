@@ -71,6 +71,68 @@ var unlocked_slots: Dictionary = {
 }
 const MAX_TYPE_INVENTORY_SIZE: int = 50
 
+const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
+var equipment_skill_defs: Dictionary = {}
+var equipped_skill_levels: Dictionary = {}
+
+
+func _load_equipment_skill_defs() -> void:
+	if not FileAccess.file_exists(EQUIP_SKILLS_PATH):
+		return
+	var file := FileAccess.open(EQUIP_SKILLS_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) == OK:
+		var data = json.get_data()
+		if data is Dictionary and data.has("equipment_skills"):
+			equipment_skill_defs = data["equipment_skills"]
+	file.close()
+
+
+func _recalculate_equipped_skill_levels() -> void:
+	equipped_skill_levels.clear()
+	for slot_key in equipped_items:
+		if not is_slot_unlocked(slot_key):
+			continue
+		var item = equipped_items[slot_key]
+		if item != null and item is Dictionary and not item.is_empty():
+			var item_skills: Array = item.get("equip_skill", [])
+			for sk in item_skills:
+				if sk is Dictionary:
+					var id_val: String = sk.get("id", "")
+					if id_val.is_empty():
+						var name_val: String = sk.get("name", "")
+						for k in equipment_skill_defs:
+							if equipment_skill_defs[k].get("name", "") == name_val:
+								id_val = k
+								break
+					var lvl: int = int(sk.get("level", 1))
+					if not id_val.is_empty():
+						equipped_skill_levels[id_val] = equipped_skill_levels.get(id_val, 0) + lvl
+	_recalculate_cached_multipliers()
+
+
+func get_equipped_skill_total_val(skill_id: String) -> float:
+	var lvl: int = equipped_skill_levels.get(skill_id, 0)
+	if lvl <= 0:
+		return 0.0
+	var def: Dictionary = equipment_skill_defs.get(skill_id, {})
+	var unit_val: float = float(def.get("unit_value", 0.0))
+	return unit_val * lvl
+
+
+func get_equipped_skill_value(skill_id: String) -> float:
+	return get_equipped_skill_total_val(skill_id)
+
+
+func get_equipped_saving_cost_multiplier() -> float:
+	var lvl: int = equipped_skill_levels.get("saving", 0)
+	if lvl <= 0:
+		return 1.0
+	var unit_val: float = float(equipment_skill_defs.get("saving", {}).get("unit_value", 0.99))
+	return pow(unit_val, lvl)
+
 
 func is_slot_unlocked(slot_key: String) -> bool:
 	if slot_key == "main" or slot_key == "sub" or slot_key == "accessory_1":
@@ -121,15 +183,23 @@ func record_bounce(is_corner: bool) -> void:
 # --- Upgrade Logic ---
 
 func get_logo_upgrade_cost() -> int:
-	return int(100 * pow(2.0, logo_count - 1))
+	var base := int(100 * pow(2.0, logo_count - 1))
+	return int(base * get_equipped_saving_cost_multiplier())
 
 
 func get_speed_upgrade_cost() -> int:
-	return int(10 + speed_level * 15)
+	var base := int(10 + speed_level * 15)
+	return int(base * get_equipped_saving_cost_multiplier())
 
 
 func get_boost_upgrade_cost() -> int:
-	return int(20 + boost_level * 25)
+	var base := int(20 + boost_level * 25)
+	return int(base * get_equipped_saving_cost_multiplier())
+
+
+func get_size_upgrade_cost() -> int:
+	var base := int(15 + size_level * 20)
+	return int(base * get_equipped_saving_cost_multiplier())
 
 
 func get_ascension_multiplier() -> float:
@@ -185,12 +255,17 @@ func buy_size_upgrade() -> bool:
 	return false
 
 
-func get_size_upgrade_cost() -> int:
-	return int(15 + size_level * 20)
+
 
 
 func get_logo_size_multiplier() -> float:
-	return clampf(1.0 + size_level * 0.1, 0.5, 3.0)
+	var base := clampf(1.0 + size_level * 0.1, 0.5, 3.0)
+	var equip_size_bonus := get_equipped_skill_total_val("size_boost")
+	return base + equip_size_bonus
+
+
+func get_equipped_speed_bonus() -> float:
+	return get_equipped_skill_total_val("speed_boost")
 
 
 func perform_ascension() -> bool:
@@ -215,7 +290,7 @@ func get_skill_level(skill_id: String) -> int:
 
 
 func get_gold_critical_parameter() -> float:
-	return gold_critical_parameter * pow(1.1, total_gold_crit_boost_level)
+	return gold_critical_parameter * pow(1.1, total_gold_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
 
 
 func get_gold_direct_hit_parameter() -> float:
@@ -223,7 +298,7 @@ func get_gold_direct_hit_parameter() -> float:
 
 
 func get_token_critical_parameter() -> float:
-	return token_critical_parameter * pow(1.1, total_token_crit_boost_level)
+	return token_critical_parameter * pow(1.1, total_token_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
 
 
 func get_token_direct_hit_parameter() -> float:
@@ -271,9 +346,17 @@ func get_token_direct_multiplier() -> float:
 
 
 func _ready() -> void:
+	_load_equipment_skill_defs()
 	_ensure_inventory_sizes()
 	_recalculate_all_cumulative_levels()
+	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
+	equipment_changed.connect(_on_equipment_changed_internal)
+
+
+func _on_equipment_changed_internal() -> void:
+	_recalculate_equipped_skill_levels()
+	upgrades_changed.emit()
 
 
 func _ensure_inventory_sizes() -> void:
@@ -314,8 +397,10 @@ func _recalculate_all_cumulative_levels() -> void:
 
 
 func _recalculate_cached_multipliers() -> void:
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level)
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level)
+	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
+	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult
 	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level)
 	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level)
 	_cached_ascension_mult = get_ascension_multiplier()
@@ -465,15 +550,16 @@ func generate_random_equipment() -> Dictionary:
 	var icon_num := (randi() % 2) + 1
 	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
 	
-	# Generate level: 基礎レベル = 現在のアセンションレベル * (0.9 ~ 1.1乱数) + スキルツリーボーナス
+	# Generate level: 基礎レベル = 現在のアセンションレベル * (0.9 ~ 1.1乱数) + スキルツリーボーナス + 装備スキルボーナス(洗練)
 	var base_asc := maxi(1, ascension_level)
 	var rand_factor := randf_range(0.9, 1.1)
 	var base_level := int(base_asc * rand_factor)
-	var level_bonus := total_equip_drop_level_boost_level
+	var equip_refinement_bonus := int(get_equipped_skill_total_val("refinement"))
+	var level_bonus := total_equip_drop_level_boost_level + equip_refinement_bonus
 	var level := maxi(1, base_level + level_bonus)
 	
-	# Generate random rarity based on equip_drop_rarity_boost skill level
-	var rarity_level := total_equip_drop_rarity_boost_level
+	# Generate random rarity based on equip_drop_rarity_boost skill level and equip_skill (drop_luck)
+	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_luck"))
 	var w_common: float = maxf(10.0, 60.0 - rarity_level * 4.0)
 	var w_uncommon: float = 25.0 + rarity_level * 1.5
 	var w_rare: float = 10.0 + rarity_level * 1.5
@@ -498,16 +584,6 @@ func generate_random_equipment() -> Dictionary:
 	else:
 		rarity = "ミシック"
 	
-	# 利用可能なオプション効果（スキル）の定義
-	var available_skills := [
-		{"name": "集中", "desc": "スキルのクールダウンが%d%%減少します。"},
-		{"name": "見切り", "desc": "クリティカル率が%d%%増加します。"},
-		{"name": "巨大化", "desc": "攻撃の範囲が%d%%拡大します。"},
-		{"name": "強撃", "desc": "攻撃力が%d%%増加します。"},
-		{"name": "加速", "desc": "攻撃速度が%d%%増加します。"},
-		{"name": "幸運", "desc": "アイテムのドロップ率が%d%%増加します。"}
-	]
-	
 	# レア度に応じたスキル付与数とボーナス値
 	var num_skills := 1
 	var rarity_bonus := 0
@@ -531,24 +607,40 @@ func generate_random_equipment() -> Dictionary:
 			num_skills = 6
 			rarity_bonus = 5
 
-	# スキルプールをシャッフルして重複なく付与
-	var skill_pool := available_skills.duplicate()
+	# 利用可能なオプション効果（スキル）の定義を JSON から構築
+	var skill_pool: Array = []
+	for sk_id in equipment_skill_defs:
+		skill_pool.append(equipment_skill_defs[sk_id])
 	skill_pool.shuffle()
 	
 	var item_skills: Array[Dictionary] = []
 	for i in range(min(num_skills, skill_pool.size())):
-		var skill_base = skill_pool[i]
+		var sk_def: Dictionary = skill_pool[i]
+		var sk_id: String = sk_def.get("id", "")
+		var sk_name: String = sk_def.get("name", "")
+		var unit_val: float = float(sk_def.get("unit_value", 1.0))
+		var desc_tmpl: String = sk_def.get("desc_template", "%s")
+		
 		# スキルレベルの算出 (装備レベルとレア度に依存)
 		var s_level := randi_range(1, 5) + int(level / 20) + rarity_bonus
-		# スキルの効果量の計算 (スキルレベルに応じてスケール)
-		var effect_val := s_level * 2
-		if skill_base.name == "巨大化":
-			effect_val = s_level # 巨大化は少し控えめな%に
-			
+		var total_val = unit_val * s_level
+		if sk_id == "saving":
+			total_val = pow(unit_val, float(s_level))
+		
+		# 説明文フォーマットの生成
+		var formatted_desc := desc_tmpl
+		if "%" in desc_tmpl:
+			var tmpl := desc_tmpl.replace("%f", "%.1f")
+			if "%.2f" in tmpl or "%.1f" in tmpl:
+				formatted_desc = tmpl % float(total_val)
+			else:
+				formatted_desc = tmpl % int(total_val)
+				
 		item_skills.append({
-			"name": skill_base.name,
+			"id": sk_id,
+			"name": sk_name,
 			"level": s_level,
-			"desc": skill_base.desc % effect_val
+			"desc": formatted_desc
 		})
 	
 	return {

@@ -118,12 +118,15 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 		if equip_skill_labels:
 			equip_skill_labels.visible = true
 			var item_equip_skills = eq.get("equip_skill", [])
-			for i in range(1, 7):
-				var name_node = equip_skill_labels.get_node_or_null("EquipSkillName%d" % i) as Label
-				var val_node = equip_skill_labels.get_node_or_null("EquipSkillVal%d" % i) as Label
+			# 縦優先の並び順マッピング (1,3,5=左列 / 2,4,6=右列)
+			var node_order := [1, 3, 5, 2, 4, 6]
+			for slot_idx in range(6):
+				var node_num: int = node_order[slot_idx]
+				var name_node = equip_skill_labels.get_node_or_null("EquipSkillName%d" % node_num) as Label
+				var val_node = equip_skill_labels.get_node_or_null("EquipSkillVal%d" % node_num) as Label
 				
-				if i <= item_equip_skills.size():
-					var skill = item_equip_skills[i - 1]
+				if slot_idx < item_equip_skills.size():
+					var skill = item_equip_skills[slot_idx]
 					if name_node:
 						name_node.tooltip_text = ""
 						name_node.mouse_filter = Control.MOUSE_FILTER_IGNORE

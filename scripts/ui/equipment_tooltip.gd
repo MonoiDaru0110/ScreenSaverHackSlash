@@ -5,7 +5,7 @@ class_name EquipmentTooltip
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
-@onready var equip_skill_label: Label = %EquipSkillLabel
+@onready var equip_skill_label: Control = %EquipSkillLabel
 
 
 func _ready() -> void:
@@ -32,7 +32,7 @@ func _ensure_nodes() -> void:
 	if not level_label:
 		level_label = %LevelLabel as Label
 	if not equip_skill_label:
-		equip_skill_label = %EquipSkillLabel as Label
+		equip_skill_label = %EquipSkillLabel as Control
 
 
 func setup(item_data: Dictionary) -> void:
@@ -62,14 +62,25 @@ func setup(item_data: Dictionary) -> void:
 	if level_label:
 		level_label.text = "Lv.%d" % item_level
 		
-	# スキル説明の構築（全スキルを改行区切りで1つのLabelにセット）
+	# スキル説明の構築（スキルレベルおよび効果数値の+部分を薄緑色 #b2ebb2 でハイライト）
 	if equip_skill_label:
 		var item_equip_skills = item_data.get("equip_skill", [])
 		var lines := PackedStringArray()
+		var green_color := "#b2ebb2" # 右装備欄のスキルレベルカラー Color(0.7, 0.9, 0.7)
+		
+		var regex := RegEx.new()
+		regex.compile("(?:\\+|x|×|\\*)\\d+(?:\\.\\d+)?%?")
+		
 		for skill in item_equip_skills:
-			lines.append("%s+%d: %s" % [
-				skill.get("name", ""),
-				skill.get("level", 1),
-				skill.get("desc", "")
-			])
-		equip_skill_label.text = "\n".join(lines)
+			var sk_name: String = skill.get("name", "")
+			var sk_lvl: int = skill.get("level", 1)
+			var level_str := "[color=%s]+%d[/color]" % [green_color, sk_lvl]
+			var raw_desc: String = skill.get("desc", "")
+			var highlighted_desc := regex.sub(raw_desc, "[color=%s]$0[/color]" % green_color, true)
+			
+			lines.append("%s %s: %s" % [sk_name, level_str, highlighted_desc])
+			
+		if equip_skill_label is RichTextLabel:
+			(equip_skill_label as RichTextLabel).text = "\n".join(lines)
+		elif equip_skill_label is Label:
+			(equip_skill_label as Label).text = "\n".join(lines)

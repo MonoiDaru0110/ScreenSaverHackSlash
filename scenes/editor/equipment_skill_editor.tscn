@@ -1,0 +1,182 @@
+[gd_scene load_steps=2 format=3 uid="uid://bx0hpp6f8rk2h"]
+
+[ext_resource type="Script" uid="uid://d27rix4w0612u" path="res://scripts/editor/equipment_skill_editor.gd" id="1_eq_sk_editor"]
+
+[node name="EquipmentSkillEditor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_eq_sk_editor")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.08, 0.12, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "🛠️ 装備通常スキル エディタ"
+
+[node name="AddBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "➕ 新規追加"
+
+[node name="DeleteBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+text = "🗑️ 削除"
+
+[node name="SaveBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "💾 JSON保存"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContentHSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 320
+
+[node name="ListPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentHSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SkillList" type="ItemList" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="FormPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentHSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="FormVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="FormTitle" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "⚙️ スキル定義＆開発メモ編集"
+
+[node name="IdGrid" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/IdGrid"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "スキルID:"
+
+[node name="IdLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/IdGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameGrid" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/NameGrid"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "スキル名:"
+
+[node name="NameLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/NameGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ValueGrid" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/ValueGrid"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "1Lvあたり効果量:"
+
+[node name="UnitValSpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/ValueGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+step = 0.01
+value = 1.0
+
+[node name="DescGrid" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/DescGrid"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "説明文テンプレート:"
+
+[node name="DescLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/DescGrid"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "例: ロゴサイズ倍率 +%.2f"
+
+[node name="MemoVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/MemoVBox"]
+layout_mode = 2
+text = "📝 開発用仕様メモ:"
+
+[node name="MemoTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormPanel/Margin/FormVBox/MemoVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+placeholder_text = "計算方式やゲーム内での適用ロジック等のメモ"
+wrap_mode = 1
+
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
+text = "準備完了"
