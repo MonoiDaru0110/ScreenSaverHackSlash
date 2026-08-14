@@ -365,7 +365,7 @@
 		"gold_critical_hit_boost_1": {
 			"base_cost": 350,
 			"cost_multiplier": 1.5,
-			"description": "ゴールドのクリティカルヒット係数+10%",
+			"description": "ゴールドのクリティカル係数+1",
 			"icon": "res://images/skill_icon/gold_critical_hit_boost.png",
 			"max_level": 5,
 			"name": "ゴールドクリティカルヒット+",
@@ -378,7 +378,7 @@
 		"gold_direct_hit_boost_1": {
 			"base_cost": 300,
 			"cost_multiplier": 1.5,
-			"description": "ゴールドのダイレクトヒット係数+10％",
+			"description": "ゴールドのダイレクトヒット係数+1",
 			"icon": "res://images/skill_icon/gold_direct_hit_boost.png",
 			"max_level": 5,
 			"name": "ゴールドダイレクトヒット+",
@@ -1626,7 +1626,7 @@
 		"token_critical_hit_boost_1": {
 			"base_cost": 1000,
 			"cost_multiplier": 1.5,
-			"description": "ゴールドのクリティカルヒット係数+10%",
+			"description": "トークンのクリティカル係数+1",
 			"icon": "res://images/skill_icon/token_critical_hit_boost.png",
 			"max_level": 5,
 			"name": "トークンクリティカルヒット+",
@@ -1639,7 +1639,7 @@
 		"token_direct_hit_boost_1": {
 			"base_cost": 350,
 			"cost_multiplier": 1.5,
-			"description": "トークンのダイレクトヒット係数+10%",
+			"description": "トークンのダイレクトヒット係数+1",
 			"icon": "res://images/skill_icon/token_direct_hit_boost.png",
 			"max_level": 5,
 			"name": "トークンダイレクトヒット+",

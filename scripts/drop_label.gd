@@ -3,11 +3,27 @@ extends Node2D
 ## Animates with slam-downs, high-speed shakes, and slides.
 
 
-func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false) -> void:
+func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false, crit_weight: int = 0) -> void:
 	# Position with random offset based on logo size (X: ±100, Y: ±50)
 	position = start_pos + Vector2(randf_range(-100.0, 100.0), randf_range(-50.0, 50.0))
 
 	var label := $Label
+	
+	# Build label text based on Direct Hit and Crit Weight
+	var label_text := content
+	if is_direct:
+		if label_text.contains("+"):
+			label_text = label_text.replace("+", "+*")
+		else:
+			label_text = "*" + label_text
+	
+	var weight := crit_weight if is_crit else 0
+	if is_crit and weight <= 0:
+		weight = 1
+	for i in range(weight):
+		label_text += "!"
+		
+	label.text = label_text
 	
 	# Determine text style based on Critical and Direct Hit
 	var font_size := 28
@@ -16,15 +32,14 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 
 	if is_crit and is_direct:
 		font_size = 68 if is_corner else 56
-		label.text = content + "!!"
 	elif is_crit:
 		font_size = 68 if is_corner else 56
-		label.text = content + "!"
 	elif is_direct:
 		font_size = 48 if is_corner else 36
-		label.text = content
-	else:
-		label.text = content
+
+	# Scale font size with crit weight
+	if is_crit:
+		font_size += mini(weight - 1, 10) * 4
 
 	label.add_theme_font_size_override("font_size", font_size)
 	label.modulate = color
@@ -37,37 +52,47 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 
 	var tween := create_tween()
 
-	# Only trigger the intense slam and high-speed shake for Crit-Direct (Critical AND Direct) hits
-	if is_crit and is_direct:
-		# --- Critical & Direct (Crit-Direct): Slam-down & High-speed Shake ---
-		# Start from large scale and transparent
+	if is_crit or is_direct:
+		# --- Special Hits (Crit, Direct, or Crit-Direct): Dynamic Slam-down & Shake Animation ---
 		modulate.a = 0.0
-		label.scale = Vector2(2.5, 2.5)
+		var capped_w := mini(weight, 10)
+		var start_scale := 1.4
+		if is_crit and is_direct:
+			start_scale = 2.2 + float(capped_w) * 0.3
+		elif is_crit:
+			start_scale = 1.8 + float(capped_w) * 0.2
 		
-		# Slam-down animation (fade in and scale down quickly in 0.05s)
+		label.scale = Vector2(start_scale, start_scale)
+		
+		# Slam-down animation (fade in and scale down quickly)
 		tween.set_parallel(true)
-		tween.tween_property(self, "modulate:a", 1.0, 0.05).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "scale", Vector2.ONE, 0.05).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(self, "modulate:a", 1.0, 0.06).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "scale", Vector2.ONE, 0.06).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		
-		# Instantly trigger high-speed shake upon landing
-		tween.chain().tween_callback(func():
-			var shake_tween := create_tween()
-			var base_label_pos = -label.size / 2.0
-			# Rapid shake (step size: 0.02s)
-			for i in range(10):
-				var offset = Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0))
-				shake_tween.tween_property(label, "position", base_label_pos + offset, 0.02).set_trans(Tween.TRANS_SINE)
-			shake_tween.tween_property(label, "position", base_label_pos, 0.02)
-		)
+		# High-speed shake upon landing for Critical Hits, scaling intensity with weight
+		if is_crit:
+			var shake_count := 6 + mini(weight * 2, 20)
+			var shake_intensity := 6.0 + float(capped_w) * 1.5
+			if is_direct:
+				shake_intensity += 3.0
+				shake_count += 4
+				
+			tween.chain().tween_callback(func():
+				var shake_tween := create_tween()
+				var base_label_pos = -label.size / 2.0
+				for i in range(shake_count):
+					var offset = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
+					shake_tween.tween_property(label, "position", base_label_pos + offset, 0.02).set_trans(Tween.TRANS_SINE)
+				shake_tween.tween_property(label, "position", base_label_pos, 0.02)
+			)
 		
-		# Stay in place and fade out (Extended lifetime)
-		tween.chain().tween_interval(0.9)
+		# Stay in place briefly and fade out
+		tween.chain().tween_interval(0.8)
 		tween.chain().tween_property(self, "modulate:a", 0.0, 0.5).set_ease(Tween.EASE_IN)
 		tween.chain().tween_callback(queue_free)
 		
 	else:
-		# --- Standard, Direct-only, or Crit-only: Float up and fade out ---
-		# Ensure default scale and opacity settings (Extended lifetime)
+		# --- Standard: Float up and fade out ---
 		scale = Vector2.ONE
 		label.scale = Vector2.ONE
 		modulate.a = 1.0

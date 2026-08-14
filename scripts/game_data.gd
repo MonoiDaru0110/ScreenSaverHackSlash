@@ -290,59 +290,70 @@ func get_skill_level(skill_id: String) -> int:
 
 
 func get_gold_critical_parameter() -> float:
-	return gold_critical_parameter * pow(1.1, total_gold_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
+	return gold_critical_parameter + float(total_gold_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
 
 
 func get_gold_direct_hit_parameter() -> float:
-	return gold_direct_hit_parameter * pow(1.1, total_gold_direct_boost_level)
+	return gold_direct_hit_parameter + float(total_gold_direct_boost_level) + get_equipped_skill_total_val("direct_boost")
 
 
 func get_token_critical_parameter() -> float:
-	return token_critical_parameter * pow(1.1, total_token_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
+	return token_critical_parameter + float(total_token_crit_boost_level) + get_equipped_skill_total_val("crit_boost")
 
 
 func get_token_direct_hit_parameter() -> float:
-	return token_direct_hit_parameter * pow(1.1, total_token_direct_boost_level)
+	return token_direct_hit_parameter + float(total_token_direct_boost_level) + get_equipped_skill_total_val("direct_boost")
 
 
-func get_gold_crit_chance() -> float:
-	var x = get_gold_critical_parameter()
-	return 1.0 / (1.0 + exp(-1.0 * (x - 4.0)))
+func calculate_crit_result(crit_factor: float) -> Dictionary:
+	if crit_factor <= 0.0:
+		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
+	
+	var chance_percent := 5.0 * crit_factor
+	var n := int(floor(chance_percent / 100.0))
+	var m := chance_percent - float(n * 100)
+	
+	var weight := n
+	if randf() * 100.0 < m:
+		weight += 1
+		
+	if weight <= 0:
+		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
+		
+	var base_crit_bonus := 0.05 * crit_factor
+	var mult := 1.0 + float(weight) * base_crit_bonus
+	return {"multiplier": mult, "is_crit": true, "weight": weight}
 
 
-func get_gold_crit_multiplier() -> float:
-	var x = get_gold_critical_parameter()
-	return 1.5 + 0.015 * x
+func roll_gold_critical() -> Dictionary:
+	return calculate_crit_result(get_gold_critical_parameter())
 
 
-func get_gold_direct_chance() -> float:
-	var x = get_gold_direct_hit_parameter()
-	return 0.2 + 0.8 / (1.0 + exp(-1.0 * (x - 3.0)))
+func roll_token_critical() -> Dictionary:
+	return calculate_crit_result(get_token_critical_parameter())
 
 
-func get_gold_direct_multiplier() -> float:
-	var x = get_gold_direct_hit_parameter()
-	return 1.2 + 0.01 * x
+func calculate_direct_result(direct_factor: float) -> Dictionary:
+	if direct_factor <= 0.0:
+		return {"multiplier": 1.0, "is_direct": false}
+	
+	var chance_percent := minf(100.0, 5.0 * direct_factor)
+	var is_direct := (randf() * 100.0) < chance_percent
+	
+	if not is_direct:
+		return {"multiplier": 1.0, "is_direct": false}
+		
+	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0)
+	var mult := 1.0 + base_direct_bonus
+	return {"multiplier": mult, "is_direct": true}
 
 
-func get_token_crit_chance() -> float:
-	var x = get_token_critical_parameter()
-	return 1.0 / (1.0 + exp(-1.0 * (x - 4.0)))
+func roll_gold_direct() -> Dictionary:
+	return calculate_direct_result(get_gold_direct_hit_parameter())
 
 
-func get_token_crit_multiplier() -> float:
-	var x = get_token_critical_parameter()
-	return 1.5 + 0.015 * x
-
-
-func get_token_direct_chance() -> float:
-	var x = get_token_direct_hit_parameter()
-	return 0.2 + 0.8 / (1.0 + exp(-1.0 * (x - 3.0)))
-
-
-func get_token_direct_multiplier() -> float:
-	var x = get_token_direct_hit_parameter()
-	return 1.2 + 0.01 * x
+func roll_token_direct() -> Dictionary:
+	return calculate_direct_result(get_token_direct_hit_parameter())
 
 
 func _ready() -> void:

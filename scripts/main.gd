@@ -94,28 +94,18 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	# キャッシュ済みスキル倍率を使用
 	var gold_skill_mult := GameData._cached_gold_skill_mult
 
-	# デバッグ用: レベル100による確率100%を防ぎ、演出を確認するために確率を50%にする
-	var gold_is_crit := randf() < 0.5
-	var gold_is_direct := randf() < 0.5
-	var gold_mult := 1.0
-	if gold_is_crit:
-		gold_mult *= GameData.get_gold_crit_multiplier()
-	if gold_is_direct:
-		gold_mult *= GameData.get_gold_direct_multiplier()
+	var gold_crit := GameData.roll_gold_critical()
+	var gold_direct := GameData.roll_gold_direct()
+	var gold_mult: float = gold_crit.multiplier * gold_direct.multiplier
 
 	if is_corner:
 		_play_sound(_sound_corner)
 		var base_gold := (50 + GameData.boost_level * 10) * mult * gold_skill_mult
 		var gold_amount := int(base_gold * gold_mult)
 		
-		# デバッグ用: 演出検証用に確率を50%にする
-		var token_is_crit := randf() < 0.5
-		var token_is_direct := randf() < 0.5
-		var token_mult := 1.0
-		if token_is_crit:
-			token_mult *= GameData.get_token_crit_multiplier()
-		if token_is_direct:
-			token_mult *= GameData.get_token_direct_multiplier()
+		var token_crit := GameData.roll_token_critical()
+		var token_direct := GameData.roll_token_direct()
+		var token_mult: float = token_crit.multiplier * token_direct.multiplier
 
 		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
 		var token_skill_mult := GameData._cached_token_skill_mult
@@ -132,8 +122,8 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		_flash_background()
 
 		# Spawn separate labels for Gold and Tokens
-		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%d" % gold_amount, Color(1.0, 0.95, 0.3), true, gold_is_crit, gold_is_direct)
-		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%d" % token_amount, Color(0.3, 0.75, 1.0), true, token_is_crit, token_is_direct)
+		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%d" % gold_amount, Color(1.0, 0.95, 0.3), true, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
+		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%d" % token_amount, Color(0.3, 0.75, 1.0), true, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
 		_start_shake(direction.normalized(), 15.0)
 	else:
 		var base_gold := (1 + GameData.boost_level) * mult * gold_skill_mult
@@ -142,7 +132,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		GameData.record_bounce(false)
 		GameData.add_gold(gold_amount)
 
-		_spawn_drop_label(pos, "🪙 +%d" % gold_amount, Color(1.0, 1.0, 0.95), false, gold_is_crit, gold_is_direct)
+		_spawn_drop_label(pos, "🪙 +%d" % gold_amount, Color(1.0, 1.0, 0.95), false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
 		_start_shake(direction, 5.0)
 
 	# --- Equipment Drop Logic ---
@@ -153,10 +143,10 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 
 
 
-func _spawn_drop_label(pos: Vector2, text_content: String, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false) -> void:
+func _spawn_drop_label(pos: Vector2, text_content: String, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false, crit_weight: int = 0) -> void:
 	var label := _drop_label_scene.instantiate()
 	drop_container.add_child(label)
-	label.setup(text_content, pos, color, is_corner, is_crit, is_direct)
+	label.setup(text_content, pos, color, is_corner, is_crit, is_direct, crit_weight)
 
 
 func _set_border_width(w: int) -> void:

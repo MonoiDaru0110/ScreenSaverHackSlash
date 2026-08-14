@@ -1,11 +1,18 @@
 {
 	"equipment_skills": {
 		"crit_boost": {
-			"desc_template": "会心パラメータ +%.1f",
+			"desc_template": "クリティカル係数 +%d",
 			"id": "crit_boost",
-			"memo": "会心（クリティカル）パラメータを直接加算する。",
+			"memo": "クリティカル係数を直接加算する。",
 			"name": "見切り",
-			"unit_value": 0.5
+			"unit_value": 1.0
+		},
+		"direct_boost": {
+			"desc_template": "ダイレクトヒット係数 +%d",
+			"id": "direct_boost",
+			"memo": "ダイレクトヒット係数を直接加算する。",
+			"name": "直撃",
+			"unit_value": 1.0
 		},
 		"drop_luck": {
 			"desc_template": "装備ドロップ幸運値 +%d",
