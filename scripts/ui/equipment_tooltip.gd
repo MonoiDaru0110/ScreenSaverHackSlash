@@ -69,7 +69,7 @@ func setup(item_data: Dictionary) -> void:
 		var green_color := "#b2ebb2" # 右装備欄のスキルレベルカラー Color(0.7, 0.9, 0.7)
 		
 		var regex := RegEx.new()
-		regex.compile("(?:\\+|x|×|\\*)\\d+(?:\\.\\d+)?%?")
+		regex.compile("(?:\\+|x|×|\\*)?\\d+(?:\\.\\d+)?%?")
 		
 		for skill in item_equip_skills:
 			var sk_name: String = skill.get("name", "")

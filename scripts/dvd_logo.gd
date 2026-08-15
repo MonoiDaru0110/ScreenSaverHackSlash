@@ -131,7 +131,12 @@ func _check_bounds() -> void:
 		hit_dir.y = 1.0
 
 	if hit_x or hit_y:
-		_on_bounce(hit_x and hit_y, hit_dir)
+		var is_corner := hit_x and hit_y
+		if not is_corner:
+			var conversion_chance := GameData.get_corner_conversion_chance()
+			if conversion_chance > 0.0 and randf() < conversion_chance:
+				is_corner = true
+		_on_bounce(is_corner, hit_dir)
 
 
 func _on_bounce(is_corner: bool, direction: Vector2) -> void:

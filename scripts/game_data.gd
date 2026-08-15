@@ -278,6 +278,13 @@ func get_equipped_speed_bonus() -> float:
 	return get_equipped_skill_total_val("speed_boost")
 
 
+func get_corner_conversion_chance() -> float:
+	var n := int(get_equipped_skill_total_val("corner_trick"))
+	if n <= 0:
+		return 0.0
+	return 1.0 - pow(0.99, float(n))
+
+
 func perform_ascension() -> bool:
 	if can_ascend():
 		gold = 0
@@ -650,7 +657,10 @@ func generate_random_equipment() -> Dictionary:
 		
 		# 説明文フォーマットの生成
 		var formatted_desc := desc_tmpl
-		if "%" in desc_tmpl:
+		if sk_id == "corner_trick":
+			var chance_percent := int((1.0 - pow(0.99, float(s_level))) * 100.0)
+			formatted_desc = desc_tmpl % chance_percent
+		elif "%" in desc_tmpl:
 			var tmpl := desc_tmpl.replace("%f", "%.1f")
 			if "%.2f" in tmpl or "%.1f" in tmpl:
 				formatted_desc = tmpl % float(total_val)

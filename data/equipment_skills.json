@@ -1,5 +1,12 @@
 {
 	"equipment_skills": {
+		"corner_trick": {
+			"desc_template": "辺ヒット時、%d%%の確率で角ヒットになる",
+			"id": "corner_trick",
+			"memo": "辺ヒット時に一定確率で角ヒットに昇格させる。",
+			"name": "トリック",
+			"unit_value": 1.0
+		},
 		"crit_boost": {
 			"desc_template": "クリティカル係数 +%d",
 			"id": "crit_boost",
