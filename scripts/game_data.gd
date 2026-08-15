@@ -259,9 +259,19 @@ func buy_size_upgrade() -> bool:
 
 
 func get_logo_size_multiplier() -> float:
-	var base := clampf(1.0 + size_level * 0.1, 0.5, 3.0)
-	var equip_size_bonus := get_equipped_skill_total_val("size_boost")
-	return base + equip_size_bonus
+	# 枠内ギリギリの追加可能限界 C (画面1662x1080に対してロゴ200x100。横幅限界 1662/200 = 8.31倍。マージン考慮で 8.25倍 -> C = 7.25)
+	var max_C := 7.25
+	var half_C := max_C * 0.5
+	
+	# 基礎強化レベル A (size_level) による収束寄与
+	var level_A := float(size_level)
+	var contrib_A := half_C * (1.0 - exp(-0.02 * level_A))
+	
+	# 装備スキルレベル B (size_boost) による収束寄与
+	var level_B := get_equipped_skill_total_val("size_boost")
+	var contrib_B := half_C * (1.0 - exp(-0.03 * level_B))
+	
+	return 1.0 + contrib_A + contrib_B
 
 
 func get_equipped_speed_bonus() -> float:

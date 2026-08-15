@@ -43,18 +43,18 @@
 			"unit_value": 0.99
 		},
 		"size_boost": {
-			"desc_template": "ロゴサイズ倍率 +%.1f",
+			"desc_template": "巨大化レベル +%d",
 			"id": "size_boost",
-			"memo": "ロゴの拡大サイズ倍率に直接加算する。",
+			"memo": "巨大化レベルに直接加算する。",
 			"name": "巨大化",
-			"unit_value": 0.05
+			"unit_value": 1.0
 		},
 		"speed_boost": {
 			"desc_template": "移動速度 +%d",
 			"id": "speed_boost",
 			"memo": "ロゴの移動速度に直接加算する。",
 			"name": "加速",
-			"unit_value": 10.0
+			"unit_value": 20.0
 		},
 		"token_boost": {
 			"desc_template": "トークン獲得量 +%d%%",
