@@ -586,31 +586,33 @@ func generate_random_equipment() -> Dictionary:
 	var level_bonus := total_equip_drop_level_boost_level + equip_refinement_bonus
 	var level := maxi(1, base_level + level_bonus)
 	
-	# Generate random rarity based on equip_drop_rarity_boost skill level and equip_skill (drop_luck)
+	# Generate random rarity using Gaussian (Normal) Distribution model
+	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
 	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_luck"))
-	var w_common: float = maxf(10.0, 60.0 - rarity_level * 4.0)
-	var w_uncommon: float = 25.0 + rarity_level * 1.5
-	var w_rare: float = 10.0 + rarity_level * 1.5
-	var w_epic: float = 4.0 + rarity_level * 0.8
-	var w_legend: float = 0.9 + rarity_level * 0.3
-	var w_mythic: float = 0.1 + rarity_level * 0.05
-	
-	var total_w := w_common + w_uncommon + w_rare + w_epic + w_legend + w_mythic
+	var L := float(rarity_level)
+	var mu := minf(5.0, 0.05 * L)
+	# muが5.0に達する(L > 100)までは広いばらつき sigma=1.10 を維持し、
+	# ミシック到達以降に標準偏差が収束してミシック100%確定へ向かう
+	var extra_L := maxf(0.0, L - 100.0)
+	var sigma := 0.01 + 1.09 * exp(-0.02 * extra_L)
+
+	var weights: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	var total_w := 0.0
+	for x in range(6):
+		var diff := float(x) - mu
+		var w := exp(- (diff * diff) / (2.0 * sigma * sigma))
+		weights[x] = w
+		total_w += w
+
 	var roll := randf() * total_w
-	
+	var accumulated_w := 0.0
+	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity: String = "コモン"
-	if roll < w_common:
-		rarity = "コモン"
-	elif roll < w_common + w_uncommon:
-		rarity = "アンコモン"
-	elif roll < w_common + w_uncommon + w_rare:
-		rarity = "レア"
-	elif roll < w_common + w_uncommon + w_rare + w_epic:
-		rarity = "エピック"
-	elif roll < w_common + w_uncommon + w_rare + w_epic + w_legend:
-		rarity = "レジェンド"
-	else:
-		rarity = "ミシック"
+	for x in range(6):
+		accumulated_w += weights[x]
+		if roll <= accumulated_w:
+			rarity = rarity_names[x]
+			break
 	
 	# レア度に応じたスキル付与数とボーナス値
 	var num_skills := 1

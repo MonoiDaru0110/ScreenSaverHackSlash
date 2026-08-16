@@ -146,7 +146,7 @@
 		"equip_drop_rarity_boost_1": {
 			"base_cost": 5,
 			"cost_multiplier": 1.5,
-			"description": "高いレア度の装備がドロップしやすくなる",
+			"description": "装備レアリティ係数+1",
 			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
 			"max_level": 5,
 			"name": "装備レアリティ+",
@@ -159,7 +159,7 @@
 		"equip_drop_rarity_boost_2": {
 			"base_cost": 15,
 			"cost_multiplier": 1.5,
-			"description": "高いレア度の装備がドロップしやすくなる",
+			"description": "装備レアリティ係数+1",
 			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
 			"max_level": 5,
 			"name": "装備レアリティ+",
@@ -172,7 +172,7 @@
 		"equip_drop_rarity_boost_3": {
 			"base_cost": 50,
 			"cost_multiplier": 1.5,
-			"description": "高いレア度の装備がドロップしやすくなる",
+			"description": "装備レアリティ係数+1",
 			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
 			"max_level": 5,
 			"name": "装備レアリティ+",
@@ -185,7 +185,7 @@
 		"equip_drop_rarity_boost_4": {
 			"base_cost": 50,
 			"cost_multiplier": 1.5,
-			"description": "高いレア度の装備がドロップしやすくなる",
+			"description": "装備レアリティ係数+1",
 			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
 			"max_level": 5,
 			"name": "装備レアリティ+",
@@ -198,7 +198,7 @@
 		"equip_drop_rarity_boost_5": {
 			"base_cost": 100,
 			"cost_multiplier": 1.5,
-			"description": "高いレア度の装備がドロップしやすくなる",
+			"description": "装備レアリティ係数+1",
 			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
 			"max_level": 5,
 			"name": "装備レアリティ+",

@@ -22,10 +22,10 @@
 			"unit_value": 1.0
 		},
 		"drop_luck": {
-			"desc_template": "装備ドロップ幸運値 +%d",
+			"desc_template": "装備レアリティ係数 +%d",
 			"id": "drop_luck",
-			"memo": "高レアリティ装備のドロップ重みを上昇させる。",
-			"name": "幸運",
+			"memo": "装備のドロップレアリティ係数を上昇させる。",
+			"name": "鑑定",
 			"unit_value": 1.0
 		},
 		"gold_boost": {
