@@ -28,6 +28,13 @@
 			"name": "鑑定",
 			"unit_value": 1.0
 		},
+		"drop_rate_boost": {
+			"desc_template": "装備ドロップ率係数 +%d",
+			"id": "drop_rate_boost",
+			"memo": "装備のドロップ率係数を上昇させる。",
+			"name": "大漁",
+			"unit_value": 1.0
+		},
 		"gold_boost": {
 			"desc_template": "ゴールド獲得量 +%d%%",
 			"id": "gold_boost",
@@ -36,9 +43,9 @@
 			"unit_value": 5.0
 		},
 		"refinement": {
-			"desc_template": "ドロップする装備のレベル +%.1f",
+			"desc_template": "ドロップ装備のスキルレベル +%.1f",
 			"id": "refinement",
-			"memo": "ドロップする装備のレベルに加算する。（効果量は小数点以下切り捨て）",
+			"memo": "ドロップする装備の各スキル基本レベルに加算する。",
 			"name": "洗練",
 			"unit_value": 0.1
 		},
@@ -69,6 +76,13 @@
 			"memo": "トークン獲得倍率にパーセンテージ乗算補正をかける。",
 			"name": "集中",
 			"unit_value": 5.0
+		},
+		"token_saving": {
+			"desc_template": "スキルツリー解放時の消費トークン x%.2f",
+			"id": "token_saving",
+			"memo": "スキルツリーレベルアップ時の消費トークンコストに 0.99^Lv 倍をかける。",
+			"name": "節約【特】",
+			"unit_value": 0.99
 		}
 	}
 }

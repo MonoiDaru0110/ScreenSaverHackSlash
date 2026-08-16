@@ -134,6 +134,14 @@ func get_equipped_saving_cost_multiplier() -> float:
 	return pow(unit_val, lvl)
 
 
+func get_equipped_token_saving_cost_multiplier() -> float:
+	var lvl: int = equipped_skill_levels.get("token_saving", 0)
+	if lvl <= 0:
+		return 1.0
+	var unit_val: float = float(equipment_skill_defs.get("token_saving", {}).get("unit_value", 0.99))
+	return pow(unit_val, lvl)
+
+
 func is_slot_unlocked(slot_key: String) -> bool:
 	if slot_key == "main" or slot_key == "sub" or slot_key == "accessory_1":
 		return true
@@ -578,13 +586,12 @@ func generate_random_equipment() -> Dictionary:
 	var icon_num := (randi() % 2) + 1
 	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
 	
-	# Generate level: 基礎レベル = 現在のアセンションレベル * (0.9 ~ 1.1乱数) + スキルツリーボーナス + 装備スキルボーナス(洗練)
-	var base_asc := maxi(1, ascension_level)
+	# Generate level: 10の倍数補正 (アセンション*乱数0.9~1.1 + ツリー補正+10/lvl)
+	var base_asc := float(maxi(1, ascension_level))
 	var rand_factor := randf_range(0.9, 1.1)
-	var base_level := int(base_asc * rand_factor)
-	var equip_refinement_bonus := int(get_equipped_skill_total_val("refinement"))
-	var level_bonus := total_equip_drop_level_boost_level + equip_refinement_bonus
-	var level := maxi(1, base_level + level_bonus)
+	var tree_level_bonus := float(total_equip_drop_level_boost_level * 10)
+	var raw_level := (base_asc * rand_factor) + tree_level_bonus
+	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
 	
 	# Generate random rarity using Gaussian (Normal) Distribution model
 	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
@@ -614,28 +621,21 @@ func generate_random_equipment() -> Dictionary:
 			rarity = rarity_names[x]
 			break
 	
-	# レア度に応じたスキル付与数とボーナス値
+	# レア度に応じたスキル付与数
 	var num_skills := 1
-	var rarity_bonus := 0
 	match rarity:
 		"コモン":
 			num_skills = 1
-			rarity_bonus = 0
 		"アンコモン":
 			num_skills = 2
-			rarity_bonus = 1
 		"レア":
 			num_skills = 3
-			rarity_bonus = 2
 		"エピック":
 			num_skills = 4
-			rarity_bonus = 3
 		"レジェンド":
 			num_skills = 5
-			rarity_bonus = 4
 		"ミシック":
 			num_skills = 6
-			rarity_bonus = 5
 
 	# 利用可能なオプション効果（スキル）の定義を JSON から構築
 	var skill_pool: Array = []
@@ -643,6 +643,36 @@ func generate_random_equipment() -> Dictionary:
 		skill_pool.append(equipment_skill_defs[sk_id])
 	skill_pool.shuffle()
 	
+	# スキルレベル配分 (平均 = 装備レベル/10 + 洗練レベル*0.1)
+	var refinement_total := get_equipped_skill_total_val("refinement")
+	var target_avg_skill_level := (float(level) / 10.0) + refinement_total
+	
+	var float_skill_levels: Array[float] = []
+	for i in range(num_skills):
+		float_skill_levels.append(target_avg_skill_level)
+		
+	# 総和保存型の3割幅 (±30%) 分散
+	if num_skills >= 2:
+		for i in range(num_skills / 2):
+			var idx1 := i
+			var idx2 := num_skills - 1 - i
+			var max_disp := target_avg_skill_level * 0.3
+			var disp := randf_range(-max_disp, max_disp)
+			float_skill_levels[idx1] += disp
+			float_skill_levels[idx2] -= disp
+			
+	# 小数点確率還元を適用して整数レベル化（最低1）
+	var final_skill_levels: Array[int] = []
+	for s_val in float_skill_levels:
+		var int_part := int(s_val)
+		var frac_part := s_val - float(int_part)
+		if randf() < frac_part:
+			int_part += 1
+		final_skill_levels.append(maxi(1, int_part))
+		
+	# スキルレベルが大きい順（降順）にソート
+	final_skill_levels.sort_custom(func(a, b): return a > b)
+
 	var item_skills: Array[Dictionary] = []
 	for i in range(min(num_skills, skill_pool.size())):
 		var sk_def: Dictionary = skill_pool[i]
@@ -651,10 +681,9 @@ func generate_random_equipment() -> Dictionary:
 		var unit_val: float = float(sk_def.get("unit_value", 1.0))
 		var desc_tmpl: String = sk_def.get("desc_template", "%s")
 		
-		# スキルレベルの算出 (装備レベルとレア度に依存)
-		var s_level := randi_range(1, 5) + int(level / 20) + rarity_bonus
+		var s_level: int = final_skill_levels[i]
 		var total_val = unit_val * s_level
-		if sk_id == "saving":
+		if sk_id == "saving" or sk_id == "token_saving":
 			total_val = pow(unit_val, float(s_level))
 		
 		# 説明文フォーマットの生成
@@ -692,13 +721,12 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	if get_skill_level("equip_drop_unlock") <= 0:
 		return {}
 		
-	var base_drop_chance := 0.02
-	if is_corner:
-		base_drop_chance = 0.15
-		
-	# ドロップ確率ブーストスキル (+10%/lvl 相当の倍率補正)
-	var prob_boost_mult := 1.0 + total_equip_drop_probability_boost_level * 0.1
-	var drop_chance := base_drop_chance * prob_boost_mult
+	# 累積ドロップ率係数 L (スキルツリーレベル + 装備スキル「大漁」レベル)
+	var L := float(total_equip_drop_probability_boost_level) + get_equipped_skill_total_val("drop_rate_boost")
+	
+	# 分数関数(反比例)漸近収束モデル: P(L) = 1.0 - (1.0 - P_base) / (1.0 + 0.03 * L)
+	var base_drop_chance := 0.15 if is_corner else 0.02
+	var drop_chance := 1.0 - (1.0 - base_drop_chance) / (1.0 + 0.03 * L)
 		
 	if randf() < drop_chance:
 		var item := generate_random_equipment()

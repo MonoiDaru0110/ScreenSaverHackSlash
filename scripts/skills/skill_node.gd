@@ -284,7 +284,9 @@ func _update_ui_actual() -> void:
 
 
 func get_upgrade_cost(level: int) -> int:
-	return int(base_cost * pow(cost_multiplier, level))
+	var raw_cost := int(base_cost * pow(cost_multiplier, level))
+	var discount := GameData.get_equipped_token_saving_cost_multiplier()
+	return maxi(1, int(raw_cost * discount))
 
 
 func is_playable() -> bool:

@@ -29,7 +29,7 @@
 		"equip_drop_level_boost_1": {
 			"base_cost": 100,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレベル+1",
+			"description": "ドロップする装備のレベル+10",
 			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
 			"max_level": 5,
 			"name": "装備レベル+",
@@ -42,7 +42,7 @@
 		"equip_drop_level_boost_2": {
 			"base_cost": 50,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレベル+1",
+			"description": "ドロップする装備のレベル+10",
 			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
 			"max_level": 5,
 			"name": "装備レベル+",
@@ -55,7 +55,7 @@
 		"equip_drop_level_boost_3": {
 			"base_cost": 300,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレベル+1",
+			"description": "ドロップする装備のレベル+10",
 			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
 			"max_level": 5,
 			"name": "装備レベル+",
@@ -68,7 +68,7 @@
 		"equip_drop_level_boost_4": {
 			"base_cost": 1500,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレベル+1",
+			"description": "ドロップする装備のレベル+10",
 			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
 			"max_level": 5,
 			"name": "装備レベル+",
