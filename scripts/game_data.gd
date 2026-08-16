@@ -122,10 +122,6 @@ func get_equipped_skill_total_val(skill_id: String) -> float:
 	return unit_val * lvl
 
 
-func get_equipped_skill_value(skill_id: String) -> float:
-	return get_equipped_skill_total_val(skill_id)
-
-
 func get_equipped_saving_cost_multiplier() -> float:
 	var lvl: int = equipped_skill_levels.get("saving", 0)
 	if lvl <= 0:
@@ -280,10 +276,6 @@ func get_logo_size_multiplier() -> float:
 	var contrib_B := half_C * (1.0 - exp(-0.03 * level_B))
 	
 	return 1.0 + contrib_A + contrib_B
-
-
-func get_equipped_speed_bonus() -> float:
-	return get_equipped_skill_total_val("speed_boost")
 
 
 func get_corner_conversion_chance() -> float:
@@ -637,11 +629,9 @@ func generate_random_equipment() -> Dictionary:
 		"ミシック":
 			num_skills = 6
 
-	# 利用可能なオプション効果（スキル）の定義を JSON から構築
-	var skill_pool: Array = []
-	for sk_id in equipment_skill_defs:
-		skill_pool.append(equipment_skill_defs[sk_id])
-	skill_pool.shuffle()
+	# 利用可能なオプション効果（スキル）のキーをシャッフル
+	var skill_keys := equipment_skill_defs.keys()
+	skill_keys.shuffle()
 	
 	# スキルレベル配分 (平均 = 装備レベル/10 + 洗練レベル*0.1)
 	var refinement_total := get_equipped_skill_total_val("refinement")
@@ -674,9 +664,9 @@ func generate_random_equipment() -> Dictionary:
 	final_skill_levels.sort_custom(func(a, b): return a > b)
 
 	var item_skills: Array[Dictionary] = []
-	for i in range(min(num_skills, skill_pool.size())):
-		var sk_def: Dictionary = skill_pool[i]
-		var sk_id: String = sk_def.get("id", "")
+	for i in range(min(num_skills, skill_keys.size())):
+		var sk_id: String = skill_keys[i]
+		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
 		var sk_name: String = sk_def.get("name", "")
 		var unit_val: float = float(sk_def.get("unit_value", 1.0))
 		var desc_tmpl: String = sk_def.get("desc_template", "%s")
