@@ -74,6 +74,12 @@ func setup(item_data: Dictionary) -> void:
 		for skill in item_equip_skills:
 			var sk_name: String = skill.get("name", "")
 			var sk_lvl: int = skill.get("level", 1)
+			var is_spec: bool = skill.get("is_special", false)
+			
+			if is_spec:
+				var spec_hex = GameData.special_skill_color.to_html()
+				sk_name = "[color=#%s]%s[/color]" % [spec_hex, sk_name]
+
 			var level_str := "[color=%s]+%d[/color]" % [green_color, sk_lvl]
 			var raw_desc: String = skill.get("desc", "")
 			var highlighted_desc := regex.sub(raw_desc, "[color=%s]$0[/color]" % green_color, true)

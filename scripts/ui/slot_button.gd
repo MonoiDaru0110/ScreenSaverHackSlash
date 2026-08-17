@@ -132,6 +132,10 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 						name_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 						name_node.text = skill.get("name", "")
 						name_node.visible = true
+						if skill.get("is_special", false):
+							name_node.add_theme_color_override("font_color", GameData.special_skill_color)
+						else:
+							name_node.remove_theme_color_override("font_color")
 					if val_node:
 						val_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 						val_node.text = "+%d" % skill.get("level", 1)

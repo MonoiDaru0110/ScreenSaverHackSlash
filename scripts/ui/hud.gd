@@ -13,11 +13,16 @@ extends CanvasLayer
 @onready var btn_ascend: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4
 
 # Tab UI references
+@onready var star_label: Label = %StarLabel
+@onready var sidebar_star_progress_bar: ProgressBar = %SidebarStarProgressBar
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
+@onready var btn_reincarnation_tab: Button = %ReincarnationTabBtn
+@onready var special_skill_ui_container: HBoxContainer = %SpecialSkillUIContainer
 @onready var grid_equipment: GridContainer = %GridContainer
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
+@onready var reincarnation_window: PanelContainer = %ReincarnationWindow
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
 @onready var btn_toggle_skill_vis: Button = %ToggleSkillVisibilityBtn
@@ -39,6 +44,7 @@ var _tab_style_active: StyleBoxFlat
 var _tab_style_inactive: StyleBoxFlat
 var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
+var _is_reincarnation_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 var _corner_tween: Tween = null
@@ -149,9 +155,11 @@ func _ready() -> void:
 
 	btn_equipment_tab.add_theme_stylebox_override("focus", style_focus)
 	btn_skill_tree_tab.add_theme_stylebox_override("focus", style_focus)
+	btn_reincarnation_tab.add_theme_stylebox_override("focus", style_focus)
 	
 	btn_equipment_tab.pressed.connect(_on_equipment_tab_pressed)
 	btn_skill_tree_tab.pressed.connect(_on_skill_tree_tab_pressed)
+	btn_reincarnation_tab.pressed.connect(_on_reincarnation_tab_pressed)
 
 	# Instantiate and add skill tree container to viewport
 	_skill_tree_instance = _skill_tree_scene.instantiate()
@@ -162,9 +170,14 @@ func _ready() -> void:
 
 	GameData.gold_changed.connect(_on_gold_changed)
 	GameData.tokens_changed.connect(_on_tokens_changed)
+	GameData.stars_changed.connect(_on_stars_changed)
 	GameData.stats_changed.connect(_on_stats_changed)
 	GameData.corner_hit_occurred.connect(_on_corner_hit)
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
+
+	_on_stars_changed(GameData.stars)
+	_update_sidebar_star_progress()
+	_update_special_skill_custom_ui()
 	
 	btn_size.pressed.connect(_on_size_pressed)
 	btn_speed.pressed.connect(_on_speed_pressed)
@@ -181,6 +194,9 @@ func _ready() -> void:
 	_init_slot_buttons()
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	btn_close_inventory.pressed.connect(close_inventory)
+	if reincarnation_window.has_signal("closed"):
+		reincarnation_window.closed.connect(close_reincarnation)
+	reincarnation_window.visible = false
 	
 	# アップグレードボタン更新スロットリングタイマーの初期化 (0.2秒間隔 = 5回/秒)
 	_upgrade_update_timer = Timer.new()
@@ -231,6 +247,71 @@ func _on_stats_changed() -> void:
 
 func _on_upgrades_changed() -> void:
 	_update_upgrade_buttons()
+	_update_sidebar_star_progress()
+	_update_special_skill_custom_ui()
+
+
+func _update_special_skill_custom_ui() -> void:
+	if not special_skill_ui_container:
+		return
+
+	for child in special_skill_ui_container.get_children():
+		child.queue_free()
+
+	# 装備中のアイテムから has_custom_ui == true の特殊スキルをスキャン
+	var active_spec_skills: Array[Dictionary] = []
+	for slot_key in GameData.equipped_items:
+		var item = GameData.equipped_items[slot_key]
+		if item != null:
+			var skills: Array = item.get("equip_skill", [])
+			for sk in skills:
+				if sk.get("is_special", false) and sk.get("has_custom_ui", false):
+					var already_added := false
+					for existing in active_spec_skills:
+						if existing.get("id") == sk.get("id"):
+							already_added = true
+							break
+					if not already_added:
+						active_spec_skills.append(sk)
+
+	if active_spec_skills.is_empty():
+		special_skill_ui_container.visible = false
+		return
+
+	special_skill_ui_container.visible = true
+
+	# 専用UIパネルの生成（ミニカード表示）
+	for sk in active_spec_skills:
+		var panel = PanelContainer.new()
+		panel.custom_minimum_size = Vector2(150, 34)
+
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.15, 0.1, 0.25, 0.9)
+		style.border_width_left = 1
+		style.border_width_top = 1
+		style.border_width_right = 1
+		style.border_width_bottom = 1
+		style.border_color = GameData.special_skill_color
+		style.set_corner_radius_all(6)
+		panel.add_theme_stylebox_override("panel", style)
+
+		var margin = MarginContainer.new()
+		margin.add_theme_constant_override("margin_left", 8)
+		margin.add_theme_constant_override("margin_right", 8)
+		panel.add_child(margin)
+
+		var hbox = HBoxContainer.new()
+		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		margin.add_child(hbox)
+
+		var title_lbl = Label.new()
+		var ui_title: String = sk.get("ui_title", sk.get("name", "特殊スキル"))
+		title_lbl.text = "%s Lv.%d" % [ui_title, sk.get("level", 1)]
+		title_lbl.add_theme_color_override("font_color", GameData.special_skill_color)
+		title_lbl.add_theme_font_size_override("font_size", 13)
+		hbox.add_child(title_lbl)
+
+		special_skill_ui_container.add_child(panel)
 
 
 func _on_corner_hit() -> void:
@@ -333,9 +414,33 @@ func _format_number(n: int) -> String:
 	return result
 
 
+func _on_stars_changed(new_amount: int) -> void:
+	if star_label:
+		star_label.text = "⚛️ %s" % _format_number(new_amount)
+	_update_sidebar_star_progress()
+
+
+func _update_sidebar_star_progress() -> void:
+	if sidebar_star_progress_bar:
+		var next_cost = GameData.get_next_star_cost()
+		sidebar_star_progress_bar.max_value = next_cost
+		sidebar_star_progress_bar.value = min(GameData.infused_tokens, next_cost)
+
+
+func _update_tab_button_styles() -> void:
+	if btn_equipment_tab and _tab_style_active and _tab_style_inactive:
+		btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_inventory_open else _tab_style_inactive)
+	if btn_skill_tree_tab and _tab_style_active and _tab_style_inactive:
+		btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_skill_tree_open else _tab_style_inactive)
+	if btn_reincarnation_tab and _tab_style_active and _tab_style_inactive:
+		btn_reincarnation_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_reincarnation_open else _tab_style_inactive)
+
+
 func _on_equipment_tab_pressed() -> void:
 	if _is_skill_tree_open:
 		close_skill_tree()
+	if _is_reincarnation_open:
+		close_reincarnation()
 	
 	if _is_inventory_open:
 		close_inventory()
@@ -350,9 +455,7 @@ func open_inventory() -> void:
 	_is_inventory_open = true
 	inventory_window.visible = true
 	_update_inventory_ui()
-	
-	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
-	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+	_update_tab_button_styles()
 
 
 func close_inventory() -> void:
@@ -361,16 +464,14 @@ func close_inventory() -> void:
 		
 	_is_inventory_open = false
 	inventory_window.visible = false
-	
-	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
-	# If skill tree is also closed, keep equipment tab highlighted as default idle state
-	if not _is_skill_tree_open:
-		btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
+	_update_tab_button_styles()
 
 
 func _on_skill_tree_tab_pressed() -> void:
 	if _is_inventory_open:
 		close_inventory()
+	if _is_reincarnation_open:
+		close_reincarnation()
 		
 	if _is_skill_tree_open:
 		close_skill_tree()
@@ -385,9 +486,7 @@ func open_skill_tree() -> void:
 	_is_skill_tree_open = true
 	skill_tree_window.visible = true
 	_update_skill_nodes()
-	
-	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
-	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active)
+	_update_tab_button_styles()
 	
 	# ゲーム起動時（初回オープン時）のみ中央位置合わせを行う
 	if not _has_centered_on_startup:
@@ -406,12 +505,40 @@ func open_skill_tree() -> void:
 func close_skill_tree() -> void:
 	if not _is_skill_tree_open:
 		return
-	
+		
 	_is_skill_tree_open = false
 	skill_tree_window.visible = false
-	
-	btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active)
-	btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_inactive)
+	_update_tab_button_styles()
+
+
+func _on_reincarnation_tab_pressed() -> void:
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+
+	if _is_reincarnation_open:
+		close_reincarnation()
+	else:
+		open_reincarnation()
+
+
+func open_reincarnation() -> void:
+	if _is_reincarnation_open:
+		return
+	_is_reincarnation_open = true
+	reincarnation_window.visible = true
+	if reincarnation_window.has_method("update_ui"):
+		reincarnation_window.update_ui()
+	_update_tab_button_styles()
+
+
+func close_reincarnation() -> void:
+	if not _is_reincarnation_open:
+		return
+	_is_reincarnation_open = false
+	reincarnation_window.visible = false
+	_update_tab_button_styles()
 
 
 func _on_skill_node_pressed(node: SkillNode) -> void:
@@ -520,6 +647,8 @@ func _update_slots_ui() -> void:
 			slot_name = "(アクセサリースロット%s)" % acc_num
 			
 		btn.update_slot_ui(slot_name, eq)
+
+	_update_special_skill_custom_ui()
 
 
 func _update_inventory_ui() -> void:

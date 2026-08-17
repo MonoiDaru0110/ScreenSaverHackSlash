@@ -5,6 +5,14 @@ extends Node
 # --- Currency ---
 var gold: int = 10000
 var tokens: int = 10000
+var stars: int = 0
+var infused_tokens: int = 0
+var is_infusing_tokens: bool = false
+var star_level: int = 0
+var base_star_threshold: int = 1000
+var reincarnation_level: int = 0
+var pending_reincarnation_upgrades: Dictionary = {} # { "upgrade_id": level_int }
+var active_reincarnation_upgrades: Dictionary = {}  # { "upgrade_id": level_int }
 
 # --- Statistics ---
 var total_bounces: int = 0
@@ -70,6 +78,26 @@ var unlocked_slots: Dictionary = {
 	"accessory_4": false
 }
 const MAX_TYPE_INVENTORY_SIZE: int = 50
+
+# --- Special Skill Settings & Definitions ---
+var special_skill_drop_chance: float = 0.03 # 基本確率 3%
+var special_skill_color: Color = Color(0.85, 0.45, 1.0, 1.0) # ソフトコーディング用カラー (紫/アストラル系)
+
+var special_skill_defs: Dictionary = {
+	"spec_void_aura": {
+		"id": "spec_void_aura",
+		"name": "虚空のオーラ",
+		"desc_template": "周囲に虚空波動を展開。3秒ごとにアトミックエネルギーを回収 (Lv.%d)",
+		"has_custom_ui": true,
+		"ui_title": "虚空オーラ"
+	},
+	"spec_time_warp": {
+		"id": "spec_time_warp",
+		"name": "時空歪曲",
+		"desc_template": "壁反射時のバウンス威力を +%d%% 増加させ、減速を抑制",
+		"has_custom_ui": false
+	}
+}
 
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
 var equipment_skill_defs: Dictionary = {}
@@ -157,6 +185,7 @@ func set_slot_unlocked(slot_key: String, unlocked: bool) -> void:
 # --- Signals ---
 signal gold_changed(new_amount: int)
 signal tokens_changed(new_amount: int)
+signal stars_changed(new_amount: int)
 signal stats_changed()
 signal corner_hit_occurred()
 signal upgrades_changed()
@@ -164,6 +193,7 @@ signal logo_spawn_requested()
 signal logo_reset_requested()
 signal skill_upgraded(skill_id: String, new_level: int)
 signal equipment_changed()
+signal reincarnation_performed()
 
 
 func add_gold(amount: int) -> void:
@@ -171,9 +201,107 @@ func add_gold(amount: int) -> void:
 	gold_changed.emit(gold)
 
 
+func add_stars(amount: int) -> void:
+	stars += amount
+	stars_changed.emit(stars)
+
+
+func use_stars(amount: int) -> bool:
+	if stars >= amount:
+		stars -= amount
+		stars_changed.emit(stars)
+		return true
+	return false
+
+
+func get_next_star_cost() -> int:
+	# 1スター上がるごとに必要トークン量が2倍 (1,000 * 2^star_level)
+	return int(base_star_threshold * pow(2, star_level))
+
+
+func toggle_token_infusion() -> bool:
+	is_infusing_tokens = !is_infusing_tokens
+	upgrades_changed.emit()
+	return is_infusing_tokens
+
+
 func add_tokens(amount: int) -> void:
-	tokens += amount
-	tokens_changed.emit(tokens)
+	if amount <= 0:
+		return
+	if is_infusing_tokens:
+		infused_tokens += amount
+		var cost = get_next_star_cost()
+		while infused_tokens >= cost and cost > 0:
+			infused_tokens -= cost
+			stars += 1
+			star_level += 1
+			stars_changed.emit(stars)
+			cost = get_next_star_cost()
+		upgrades_changed.emit()
+	else:
+		tokens += amount
+		tokens_changed.emit(tokens)
+
+
+func reserve_reincarnation_upgrade(upgrade_id: String, star_cost: int) -> bool:
+	if use_stars(star_cost):
+		var current_lvl = pending_reincarnation_upgrades.get(upgrade_id, 0)
+		pending_reincarnation_upgrades[upgrade_id] = current_lvl + 1
+		upgrades_changed.emit()
+		return true
+	return false
+
+
+func execute_reincarnation() -> void:
+	# 予約されていた強化を解禁（アクティベート）
+	for id in pending_reincarnation_upgrades:
+		var current_active = active_reincarnation_upgrades.get(id, 0)
+		active_reincarnation_upgrades[id] = current_active + pending_reincarnation_upgrades[id]
+	pending_reincarnation_upgrades.clear()
+
+	reincarnation_level += 1
+	is_infusing_tokens = false
+
+	# 通常通貨等のリセット
+	tokens = 0
+	tokens_changed.emit(0)
+	gold = 1000
+	gold_changed.emit(1000)
+
+	reincarnation_performed.emit()
+	upgrades_changed.emit()
+
+
+func get_base_equip_level_bonus() -> int:
+	var lvl = active_reincarnation_upgrades.get("tree_node_equip_lvl", 0)
+	return lvl * 5
+
+
+func get_auto_unlocked_skill_count() -> int:
+	var lvl = active_reincarnation_upgrades.get("tree_node_auto_skills", 0)
+	return lvl * 2
+
+
+func get_reincarnation_multiplier() -> float:
+	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0)
+	var tree_boost = active_reincarnation_upgrades.get("tree_node_mult", 0)
+	return 1.0 + (star_boost * 0.5) + (tree_boost * 0.25)
+
+
+func use_tokens(amount: int) -> bool:
+	if tokens >= amount:
+		tokens -= amount
+		tokens_changed.emit(tokens)
+		return true
+	return false
+
+
+func use_gold(amount: int) -> bool:
+	if gold >= amount:
+		gold -= amount
+		gold_changed.emit(gold)
+		return true
+	return false
 
 
 func record_bounce(is_corner: bool) -> void:
@@ -629,6 +757,10 @@ func generate_random_equipment() -> Dictionary:
 		"ミシック":
 			num_skills = 6
 
+	# 特殊スキルの付与判定 (確立: 3%, 1装備につき最大1つ)
+	var has_special: bool = (randf() < special_skill_drop_chance) and not special_skill_defs.is_empty()
+	var normal_skill_count: int = maxi(0, num_skills - 1 if has_special else num_skills)
+
 	# 利用可能なオプション効果（スキル）のキーをシャッフル
 	var skill_keys := equipment_skill_defs.keys()
 	skill_keys.shuffle()
@@ -638,14 +770,14 @@ func generate_random_equipment() -> Dictionary:
 	var target_avg_skill_level := (float(level) / 10.0) + refinement_total
 	
 	var float_skill_levels: Array[float] = []
-	for i in range(num_skills):
+	for i in range(normal_skill_count):
 		float_skill_levels.append(target_avg_skill_level)
 		
 	# 総和保存型の3割幅 (±30%) 分散
-	if num_skills >= 2:
-		for i in range(num_skills / 2):
+	if normal_skill_count >= 2:
+		for i in range(normal_skill_count / 2):
 			var idx1 := i
-			var idx2 := num_skills - 1 - i
+			var idx2 := normal_skill_count - 1 - i
 			var max_disp := target_avg_skill_level * 0.3
 			var disp := randf_range(-max_disp, max_disp)
 			float_skill_levels[idx1] += disp
@@ -664,7 +796,7 @@ func generate_random_equipment() -> Dictionary:
 	final_skill_levels.sort_custom(func(a, b): return a > b)
 
 	var item_skills: Array[Dictionary] = []
-	for i in range(min(num_skills, skill_keys.size())):
+	for i in range(min(normal_skill_count, skill_keys.size())):
 		var sk_id: String = skill_keys[i]
 		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
 		var sk_name: String = sk_def.get("name", "")
@@ -695,6 +827,25 @@ func generate_random_equipment() -> Dictionary:
 			"desc": formatted_desc
 		})
 	
+	# 特殊スキルが付与される場合、最後尾（最後）に1個追加
+	if has_special:
+		var spec_keys = special_skill_defs.keys()
+		var spec_id: String = spec_keys[randi() % spec_keys.size()]
+		var spec_def: Dictionary = special_skill_defs[spec_id]
+		var spec_lvl: int = maxi(1, int(ceil(float(level) / 100.0)))
+		var desc_tmpl: String = spec_def.get("desc_template", "%s")
+		var formatted_desc: String = desc_tmpl % spec_lvl if "%d" in desc_tmpl else desc_tmpl
+
+		item_skills.append({
+			"id": spec_id,
+			"name": spec_def.get("name", ""),
+			"level": spec_lvl,
+			"desc": formatted_desc,
+			"is_special": true,
+			"has_custom_ui": spec_def.get("has_custom_ui", false),
+			"ui_title": spec_def.get("ui_title", "")
+		})
+
 	return {
 		"id": id,
 		"name": name,

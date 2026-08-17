@@ -1,0 +1,298 @@
+[gd_scene load_steps=5 format=3 uid="uid://c8reincwnd001"]
+
+[ext_resource type="Script" uid="uid://ch2reinc1001" path="res://scripts/ui/reincarnation_window.gd" id="1_reinc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window_bg"]
+bg_color = Color(0.1, 0.08, 0.16, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.65, 0.35, 0.95, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.6)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bg"]
+bg_color = Color(0.14, 0.12, 0.22, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.25, 0.5, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_btn"]
+bg_color = Color(0.55, 0.15, 0.75, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.45, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_bg"]
+bg_color = Color(0.08, 0.12, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.5, 0.6, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_fill"]
+bg_color = Color(0.3, 0.8, 0.9, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ReincarnationWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1472.0
+offset_top = 110.0
+offset_right = -272.0
+offset_bottom = -109.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_window_bg")
+script = ExtResource("1_reinc")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="HeaderBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/MainLayout/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "⚛️ 最上位転生 - TRANSCENDENCE"
+
+[node name="CloseBtn" type="Button" parent="MarginContainer/MainLayout/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+text = "❌"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="ContentBody" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="LeftStation" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="StationTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "🔮 トークン自動注入ステーション"
+
+[node name="InfusionHBox" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="LeftCol" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ToggleInfuseBtn" type="Button" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "🔮 トークンを注入"
+
+[node name="InfuseProgressBar" type="ProgressBar" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_progress_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_progress_fill")
+show_percentage = false
+
+[node name="InfusedTokensLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "注入済み: 💎 0"
+
+[node name="RightStarCard" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin"]
+layout_mode = 2
+alignment = 1
+
+[node name="StarCardTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "所持スター"
+horizontal_alignment = 1
+
+[node name="BigStarsLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "⚛️ 0"
+horizontal_alignment = 1
+
+[node name="HSeparator1" type="HSeparator" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+
+[node name="PassiveBonusTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "📊 現在の基礎パッシブボーナス"
+
+[node name="PassiveBonusVBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LblEquipLevelBonus" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/PassiveBonusVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "・ 装備初期レベル底上げ: +Lv. 0"
+
+[node name="LblAutoSkillsBonus" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/PassiveBonusVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "・ 初期自動解禁スキル数: +0 個"
+
+[node name="LblMultiplierBonus" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/PassiveBonusVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 13
+text = "・ 転生オール倍率: x 1.0"
+
+[node name="HSeparator2" type="HSeparator" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+
+[node name="SpecialSkillsTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "✨ 特殊スキル解放・恒常化スペース"
+
+[node name="SpecialScroll" type="ScrollContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+custom_minimum_size = Vector2(0, 160)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SpecialSkillsList" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/SpecialScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Spacer" type="Control" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+layout_mode = 2
+
+[node name="ReincarnationCountLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "現在の転生回数: Lv. 0"
+horizontal_alignment = 1
+
+[node name="ReincarnateBtn" type="Button" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+theme_override_styles/normal = SubResource("StyleBoxFlat_reinc_btn")
+text = "🌟 今すぐ最上位転生を行う"
+
+[node name="RightStation" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="RightTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "🌳 転生恒常スキルツリー (Reincarnation Skill Tree)"
+
+[node name="UpgradeScroll" type="ScrollContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TreeNodesContainer" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox/UpgradeScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
