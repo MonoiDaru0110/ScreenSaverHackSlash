@@ -140,6 +140,8 @@ func get_diversity_multiplier() -> float:
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
 var equipment_skill_defs: Dictionary = {}
 var equipped_skill_levels: Dictionary = {}
+var _cached_equipped_skill_totals: Dictionary = {}
+var _cached_equipment_skill_keys: Array = []
 
 
 func _load_equipment_skill_defs() -> void:
@@ -153,11 +155,13 @@ func _load_equipment_skill_defs() -> void:
 		var data = json.get_data()
 		if data is Dictionary and data.has("equipment_skills"):
 			equipment_skill_defs = data["equipment_skills"]
+			_cached_equipment_skill_keys = equipment_skill_defs.keys()
 	file.close()
 
 
 func _recalculate_equipped_skill_levels() -> void:
 	equipped_skill_levels.clear()
+	_cached_equipped_skill_totals.clear()
 	for slot_key in equipped_items:
 		if not is_slot_unlocked(slot_key):
 			continue
@@ -176,16 +180,18 @@ func _recalculate_equipped_skill_levels() -> void:
 					var lvl: int = int(sk.get("level", 1))
 					if not id_val.is_empty():
 						equipped_skill_levels[id_val] = equipped_skill_levels.get(id_val, 0) + lvl
+
+	for sk_id in equipped_skill_levels:
+		var lvl: int = equipped_skill_levels[sk_id]
+		var def: Dictionary = equipment_skill_defs.get(sk_id, {})
+		var unit_val: float = float(def.get("unit_value", 0.0))
+		_cached_equipped_skill_totals[sk_id] = unit_val * float(lvl)
+
 	_recalculate_cached_multipliers()
 
 
 func get_equipped_skill_total_val(skill_id: String) -> float:
-	var lvl: int = equipped_skill_levels.get(skill_id, 0)
-	if lvl <= 0:
-		return 0.0
-	var def: Dictionary = equipment_skill_defs.get(skill_id, {})
-	var unit_val: float = float(def.get("unit_value", 0.0))
-	return unit_val * lvl
+	return _cached_equipped_skill_totals.get(skill_id, 0.0)
 
 
 func get_equipped_saving_cost_multiplier() -> float:
@@ -231,6 +237,7 @@ signal logo_spawn_requested()
 signal logo_reset_requested()
 signal skill_upgraded(skill_id: String, new_level: int)
 signal equipment_changed()
+signal inventory_updated()
 signal reincarnation_performed()
 
 
@@ -269,12 +276,15 @@ func add_tokens(amount: float) -> void:
 	if is_infusing_tokens:
 		infused_tokens += amount
 		var cost = get_next_star_cost()
+		var star_gained := false
 		while infused_tokens >= cost and cost > 0.0:
 			infused_tokens -= cost
 			stars += 1
 			star_level += 1
-			stars_changed.emit(stars)
+			star_gained = true
 			cost = get_next_star_cost()
+		if star_gained:
+			stars_changed.emit(stars)
 		upgrades_changed.emit()
 	else:
 		tokens += amount
@@ -801,7 +811,9 @@ func generate_random_equipment() -> Dictionary:
 	var normal_skill_count: int = maxi(0, num_skills - 1 if has_special else num_skills)
 
 	# 利用可能なオプション効果（スキル）のキーをシャッフル
-	var skill_keys := equipment_skill_defs.keys()
+	var skill_keys := _cached_equipment_skill_keys.duplicate()
+	if skill_keys.is_empty():
+		skill_keys = equipment_skill_defs.keys()
 	skill_keys.shuffle()
 	
 	# スキルレベル配分 (平均 = 装備レベル/10 + 洗練レベル*0.1)
@@ -832,7 +844,7 @@ func generate_random_equipment() -> Dictionary:
 		final_skill_levels.append(maxi(1, int_part))
 		
 	# スキルレベルが大きい順（降順）にソート
-	final_skill_levels.sort_custom(func(a, b): return a > b)
+	final_skill_levels.sort_custom(_sort_descending_int)
 
 	var item_skills: Array[Dictionary] = []
 	for i in range(min(normal_skill_count, skill_keys.size())):
@@ -931,7 +943,7 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 				
 		if empty_index != -1:
 			inv[empty_index] = item
-			equipment_changed.emit()
+			inventory_updated.emit()
 			return item
 		else:
 			# インベントリ満タン時: インベントリには追加せず、売却金を追加して通知用データを返す
@@ -1092,3 +1104,7 @@ func is_item_equipped(item_id: String) -> String:
 		if eq != null and eq.get("id") == item_id:
 			return slot_key
 	return ""
+
+
+static func _sort_descending_int(a: int, b: int) -> bool:
+	return a > b

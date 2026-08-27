@@ -87,6 +87,7 @@ func _ready() -> void:
 		mouse_exited.connect(_on_mouse_exited_tooltip)
 		visibility_changed.connect(_on_mouse_exited_tooltip)
 		tree_exited.connect(_on_mouse_exited_tooltip)
+		set_process(false)
 	
 	_update_connections()
 	queue_update_ui()
@@ -321,11 +322,17 @@ func _on_visibility_changed() -> void:
 
 
 func _on_tokens_changed(_new_tokens: float) -> void:
-	queue_update_ui()
+	if is_inside_tree() and is_visible_in_tree():
+		queue_update_ui()
+	else:
+		_is_dirty = true
 
 
 func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
-	queue_update_ui()
+	if is_inside_tree() and is_visible_in_tree():
+		queue_update_ui()
+	else:
+		_is_dirty = true
 
 
 func _update_ui() -> void:
@@ -360,6 +367,7 @@ func _on_mouse_entered_tooltip() -> void:
 	
 	_custom_tooltip.setup_from_node(self)
 	_update_tooltip_position()
+	set_process(true)
 
 
 func _on_mouse_exited_tooltip() -> void:
@@ -370,6 +378,8 @@ func _remove_tooltip() -> void:
 	if is_instance_valid(_custom_tooltip):
 		_custom_tooltip.queue_free()
 	_custom_tooltip = null
+	if not Engine.is_editor_hint():
+		set_process(false)
 
 
 func _update_tooltip_position() -> void:

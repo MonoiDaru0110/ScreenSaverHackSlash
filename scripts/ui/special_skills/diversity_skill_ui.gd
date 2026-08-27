@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	# 倍率発動中はコロナおよび倍率文字のパルスアニメーションのために毎フレーム更新
-	if is_mult_active and is_inside_tree():
+	if is_mult_active and is_inside_tree() and is_visible_in_tree():
 		if hex_draw_control:
 			hex_draw_control.queue_redraw()
 		_update_text_glow_effect()

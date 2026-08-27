@@ -12,6 +12,25 @@ var _is_dragging := false
 var _last_mouse_pos := Vector2.ZERO
 var filter_unlocked_only: bool = true
 
+var _cached_skill_nodes: Array[SkillNode] = []
+var _skill_nodes_cached: bool = false
+
+func _get_skill_nodes() -> Array[SkillNode]:
+	if _skill_nodes_cached:
+		return _cached_skill_nodes
+	_cached_skill_nodes.clear()
+	if viewport:
+		var found = viewport.find_children("*", "SkillNode", true, false)
+		for node in found:
+			if node is SkillNode:
+				_cached_skill_nodes.append(node as SkillNode)
+	_skill_nodes_cached = true
+	return _cached_skill_nodes
+
+func invalidate_skill_node_cache() -> void:
+	_skill_nodes_cached = false
+	_cached_skill_nodes.clear()
+
 func _ready() -> void:
 	clip_contents = true
 	if not Engine.is_editor_hint():
@@ -119,7 +138,7 @@ func center_on_root(window: Control = null) -> void:
 		
 	# 前提スキル（prerequisites）がないスキルを「ルートスキル」として自動探索する（子孫から検索）
 	var root_node: SkillNode = null
-	var skill_nodes = viewport.find_children("*", "SkillNode", true, false)
+	var skill_nodes = _get_skill_nodes()
 	for node in skill_nodes:
 		if node.prerequisites.is_empty():
 			root_node = node
@@ -172,7 +191,7 @@ func update_culling() -> void:
 		return
 		
 	var container_rect = get_global_rect()
-	var skill_nodes = viewport.find_children("*", "SkillNode", true, false)
+	var skill_nodes = _get_skill_nodes()
 	
 	var node_filter_map: Dictionary = {}
 	

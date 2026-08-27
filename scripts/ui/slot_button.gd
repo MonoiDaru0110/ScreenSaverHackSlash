@@ -42,6 +42,9 @@ func _ready() -> void:
 	button_down.connect(_on_button_down)
 	button_up.connect(_on_button_up)
 
+	if not Engine.is_editor_hint():
+		set_process(false)
+
 
 func _ensure_nodes() -> void:
 	if not slot_base:
@@ -291,6 +294,7 @@ func _on_mouse_entered() -> void:
 	
 	_custom_tooltip.setup(eq)
 	_update_tooltip_position()
+	set_process(true)
 
 
 func _on_mouse_exited() -> void:
@@ -313,6 +317,8 @@ func _remove_tooltip() -> void:
 	if is_instance_valid(_custom_tooltip):
 		_custom_tooltip.queue_free()
 	_custom_tooltip = null
+	if not Engine.is_editor_hint():
+		set_process(false)
 
 
 func _update_tooltip_position() -> void:

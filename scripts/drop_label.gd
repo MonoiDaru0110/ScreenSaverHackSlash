@@ -44,11 +44,12 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 	label.add_theme_font_size_override("font_size", font_size)
 	label.modulate = color
 
-	# Adjust pivot offset to center based on actual label size
-	label.size = label.get_minimum_size()
-	label.pivot_offset = label.size / 2.0
-	# Offset label position to center it around parent Node2D position (0,0)
-	label.position = -label.size / 2.0
+	# Center label around parent Node2D position without costly get_minimum_size layout recalculation
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.position = Vector2(-200.0, -40.0)
+	label.size = Vector2(400.0, 80.0)
+	label.pivot_offset = Vector2(200.0, 40.0)
 
 	var tween := create_tween()
 
@@ -71,19 +72,18 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 		
 		# High-speed shake upon landing for Critical Hits, scaling intensity with weight
 		if is_crit:
-			var shake_count := 6 + mini(weight * 2, 20)
 			var shake_intensity := 6.0 + float(capped_w) * 1.5
 			if is_direct:
 				shake_intensity += 3.0
-				shake_count += 4
 				
 			tween.chain().tween_callback(func():
+				if not is_instance_valid(label):
+					return
 				var shake_tween := create_tween()
 				var base_label_pos = -label.size / 2.0
-				for i in range(shake_count):
-					var offset = Vector2(randf_range(-shake_intensity, shake_intensity), randf_range(-shake_intensity, shake_intensity))
-					shake_tween.tween_property(label, "position", base_label_pos + offset, 0.02).set_trans(Tween.TRANS_SINE)
-				shake_tween.tween_property(label, "position", base_label_pos, 0.02)
+				shake_tween.tween_property(label, "position", base_label_pos + Vector2(-shake_intensity, shake_intensity * 0.7), 0.03)
+				shake_tween.tween_property(label, "position", base_label_pos + Vector2(shake_intensity * 0.8, -shake_intensity), 0.03)
+				shake_tween.tween_property(label, "position", base_label_pos, 0.03)
 			)
 		
 		# Stay in place briefly and fade out

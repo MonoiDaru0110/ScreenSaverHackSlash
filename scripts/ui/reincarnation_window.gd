@@ -105,7 +105,7 @@ func _ready() -> void:
 
 
 func update_ui() -> void:
-	if not is_inside_tree():
+	if not is_inside_tree() or not is_visible_in_tree():
 		return
 
 	# トグルボタン状態
@@ -140,14 +140,24 @@ func update_ui() -> void:
 	var pending_count = GameData.pending_reincarnation_upgrades.size()
 	btn_reincarnate.disabled = pending_count == 0 and GameData.reincarnation_level == 0
 
-	# リスト項目の再描画
-	_render_special_skills()
-	_render_vertical_skill_tree()
+	# リスト項目の軽量更新
+	_update_skill_widgets()
 
 
-func _render_special_skills() -> void:
+var _special_skill_widgets: Array[Dictionary] = []
+var _tree_node_widgets: Array[Dictionary] = []
+var _is_ui_built: bool = false
+
+
+func _build_ui_once() -> void:
+	if _is_ui_built:
+		return
+	_is_ui_built = true
+
+	# --- 1. 特殊スキルの固定構築 ---
 	for child in special_skills_list.get_children():
 		child.queue_free()
+	_special_skill_widgets.clear()
 
 	for skill in SPECIAL_SKILLS_DATA:
 		var item_panel = PanelContainer.new()
@@ -180,43 +190,46 @@ func _render_special_skills() -> void:
 		desc_lbl.add_theme_font_size_override("font_size", 11)
 		vbox.add_child(desc_lbl)
 
-		var id = skill["id"]
-		var cost = skill["cost"]
-		var active_lvl = GameData.active_reincarnation_upgrades.get(id, 0)
-		var pending_lvl = GameData.pending_reincarnation_upgrades.get(id, 0)
+		var id: String = skill["id"]
+		var cost: int = skill["cost"]
 
-		if active_lvl > 0:
-			var badge = Label.new()
-			badge.text = "✅ 解禁済み"
-			badge.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4))
-			badge.add_theme_font_size_override("font_size", 12)
-			hbox.add_child(badge)
-		elif pending_lvl > 0:
-			var badge = Label.new()
-			badge.text = "🔒 [予約済み]"
-			badge.add_theme_color_override("font_color", Color(1.0, 0.7, 0.2))
-			badge.add_theme_font_size_override("font_size", 12)
-			hbox.add_child(badge)
-		else:
-			var btn = Button.new()
-			btn.custom_minimum_size = Vector2(90, 32)
-			btn.text = "⚛️ %d 予約" % cost
-			btn.add_theme_font_size_override("font_size", 12)
-			btn.disabled = GameData.stars < cost
-			btn.pressed.connect(func(): _reserve_skill(id, cost))
-			hbox.add_child(btn)
+		var badge_active := Label.new()
+		badge_active.text = "✅ 解禁済み"
+		badge_active.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4))
+		badge_active.add_theme_font_size_override("font_size", 12)
+		hbox.add_child(badge_active)
+
+		var badge_pending := Label.new()
+		badge_pending.text = "🔒 [予約済み]"
+		badge_pending.add_theme_color_override("font_color", Color(1.0, 0.7, 0.2))
+		badge_pending.add_theme_font_size_override("font_size", 12)
+		hbox.add_child(badge_pending)
+
+		var btn := Button.new()
+		btn.custom_minimum_size = Vector2(90, 32)
+		btn.text = "⚛️ %d 予約" % cost
+		btn.add_theme_font_size_override("font_size", 12)
+		btn.pressed.connect(func(): _reserve_skill(id, cost))
+		hbox.add_child(btn)
+
+		_special_skill_widgets.append({
+			"id": id,
+			"cost": cost,
+			"badge_active": badge_active,
+			"badge_pending": badge_pending,
+			"btn": btn
+		})
 
 		special_skills_list.add_child(item_panel)
 
-
-func _render_vertical_skill_tree() -> void:
+	# --- 2. 縦型ツリーノードの固定構築 ---
 	for child in tree_nodes_container.get_children():
 		child.queue_free()
+	_tree_node_widgets.clear()
 
 	for i in range(TREE_NODES_DATA.size()):
 		var node_data = TREE_NODES_DATA[i]
 
-		# 縦接続線の描画 (Root以外)
 		if i > 0:
 			var line_container = CenterContainer.new()
 			line_container.custom_minimum_size = Vector2(0, 16)
@@ -256,41 +269,74 @@ func _render_vertical_skill_tree() -> void:
 		desc_lbl.add_theme_font_size_override("font_size", 11)
 		vbox.add_child(desc_lbl)
 
-		var id = node_data["id"]
-		var cost = node_data["cost"]
+		var id: String = node_data["id"]
+		var cost: int = node_data["cost"]
+		var is_root: bool = (node_data["type"] == "root")
 
-		if node_data["type"] == "root":
+		if is_root:
 			var badge = Label.new()
 			badge.text = "⚡ 常時有効"
 			badge.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
 			badge.add_theme_font_size_override("font_size", 12)
 			hbox.add_child(badge)
 		else:
-			var active_lvl = GameData.active_reincarnation_upgrades.get(id, 0)
-			var pending_lvl = GameData.pending_reincarnation_upgrades.get(id, 0)
+			var badge_active := Label.new()
+			badge_active.text = "✅ 解禁済み"
+			badge_active.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4))
+			badge_active.add_theme_font_size_override("font_size", 12)
+			hbox.add_child(badge_active)
 
-			if active_lvl > 0:
-				var badge = Label.new()
-				badge.text = "✅ 解禁済み"
-				badge.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4))
-				badge.add_theme_font_size_override("font_size", 12)
-				hbox.add_child(badge)
-			elif pending_lvl > 0:
-				var badge = Label.new()
-				badge.text = "🔒 [予約済み]"
-				badge.add_theme_color_override("font_color", Color(1.0, 0.7, 0.2))
-				badge.add_theme_font_size_override("font_size", 12)
-				hbox.add_child(badge)
-			else:
-				var btn = Button.new()
-				btn.custom_minimum_size = Vector2(100, 34)
-				btn.text = "⚛️ %d 予約" % cost
-				btn.add_theme_font_size_override("font_size", 13)
-				btn.disabled = GameData.stars < cost
-				btn.pressed.connect(func(): _reserve_skill(id, cost))
-				hbox.add_child(btn)
+			var badge_pending := Label.new()
+			badge_pending.text = "🔒 [予約済み]"
+			badge_pending.add_theme_color_override("font_color", Color(1.0, 0.7, 0.2))
+			badge_pending.add_theme_font_size_override("font_size", 12)
+			hbox.add_child(badge_pending)
+
+			var btn := Button.new()
+			btn.custom_minimum_size = Vector2(100, 34)
+			btn.text = "⚛️ %d 予約" % cost
+			btn.add_theme_font_size_override("font_size", 13)
+			btn.pressed.connect(func(): _reserve_skill(id, cost))
+			hbox.add_child(btn)
+
+			_tree_node_widgets.append({
+				"id": id,
+				"cost": cost,
+				"badge_active": badge_active,
+				"badge_pending": badge_pending,
+				"btn": btn
+			})
 
 		tree_nodes_container.add_child(card)
+
+
+func _update_skill_widgets() -> void:
+	if not _is_ui_built:
+		_build_ui_once()
+
+	for w in _special_skill_widgets:
+		var active_lvl: int = GameData.active_reincarnation_upgrades.get(w.id, 0)
+		var pending_lvl: int = GameData.pending_reincarnation_upgrades.get(w.id, 0)
+		var is_active := active_lvl > 0
+		var is_pending := not is_active and pending_lvl > 0
+
+		w.badge_active.visible = is_active
+		w.badge_pending.visible = is_pending
+		w.btn.visible = not is_active and not is_pending
+		if w.btn.visible:
+			w.btn.disabled = (GameData.stars < w.cost)
+
+	for w in _tree_node_widgets:
+		var active_lvl: int = GameData.active_reincarnation_upgrades.get(w.id, 0)
+		var pending_lvl: int = GameData.pending_reincarnation_upgrades.get(w.id, 0)
+		var is_active := active_lvl > 0
+		var is_pending := not is_active and pending_lvl > 0
+
+		w.badge_active.visible = is_active
+		w.badge_pending.visible = is_pending
+		w.btn.visible = not is_active and not is_pending
+		if w.btn.visible:
+			w.btn.disabled = (GameData.stars < w.cost)
 
 
 func _reserve_skill(id: String, cost: int) -> void:

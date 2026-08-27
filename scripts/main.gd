@@ -26,8 +26,13 @@ var _token_over_time_timer: Timer = null
 # パフォーマンス最適化
 var _is_border_animating: bool = false
 var _flash_tween: Tween = null
+var _last_flash_ticks: int = 0
+var _last_sound_ticks: int = 0
 var _audio_pool: Array[AudioStreamPlayer] = []
 const AUDIO_POOL_SIZE: int = 4
+
+# ポップアップ生成のソフト上限設定 (n=200)
+@export var max_popup_soft_limit: int = 200
 
 
 func _ready() -> void:
@@ -144,17 +149,18 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 
 
 func _spawn_drop_label(pos: Vector2, text_content: String, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false, crit_weight: int = 0) -> void:
+	if drop_container:
+		var count := drop_container.get_child_count()
+		var n := float(max_popup_soft_limit)
+		if count > n:
+			# n個以下: 100%, 1.25n: 50%, 1.5n以上: 0%
+			var chance := 1.0 - (float(count) - n) / (0.5 * n)
+			if chance <= 0.0 or randf() >= chance:
+				return
+
 	var label := _drop_label_scene.instantiate()
 	drop_container.add_child(label)
 	label.setup(text_content, pos, color, is_corner, is_crit, is_direct, crit_weight)
-
-
-func _set_border_width(w: int) -> void:
-	if _border_style:
-		_border_style.border_width_left = w
-		_border_style.border_width_top = w
-		_border_style.border_width_right = w
-		_border_style.border_width_bottom = w
 
 
 func _start_shake(direction: Vector2, strength: float) -> void:
@@ -164,10 +170,6 @@ func _start_shake(direction: Vector2, strength: float) -> void:
 	# 衝撃強度に応じて境界線パネルを一瞬拡大
 	var scale_factor = 1.0 + (strength * 0.0015)
 	play_area_border.scale = Vector2(scale_factor, scale_factor)
-	
-	# 枠線の太さを一時的に太くする
-	var target_width = int(4 + strength * 0.6)
-	_set_border_width(target_width)
 	
 	# 枠線の色を一瞬真っ白にする
 	if _border_style:
@@ -185,15 +187,6 @@ func _process(delta: float) -> void:
 		play_area_border.scale = play_area_border.scale.lerp(Vector2.ONE, 12.0 * delta)
 		if (play_area_border.scale - Vector2.ONE).length() < 0.001:
 			play_area_border.scale = Vector2.ONE
-		else:
-			all_settled = false
-			
-	# 枚線の太さを 4 に戻す
-	if _border_style and _border_style.border_width_left > 4:
-		var cur_w = lerp(float(_border_style.border_width_left), 4.0, 12.0 * delta)
-		_set_border_width(int(cur_w))
-		if _border_style.border_width_left <= 4:
-			_set_border_width(4)
 		else:
 			all_settled = false
 			
@@ -215,6 +208,11 @@ func _process(delta: float) -> void:
 
 func _flash_background() -> void:
 	## Brief flash effect when a corner hit occurs.
+	var current_ticks := Time.get_ticks_msec()
+	if current_ticks - _last_flash_ticks < 250:
+		return
+	_last_flash_ticks = current_ticks
+
 	if is_instance_valid(_flash_tween) and _flash_tween.is_running():
 		_flash_tween.kill()
 
@@ -307,7 +305,7 @@ func _on_over_time_timeout() -> void:
 	var final_amount := int(base_over_time_gold * boost_mult)
 	final_amount = max(1, final_amount)
 	
-	# ゴールドを一括加算し、すべてのロゴからポップアップを表示
+	# ゴールドを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
 	var total_gold := final_amount * logo_count
 	GameData.add_gold(total_gold)
@@ -318,6 +316,11 @@ func _on_over_time_timeout() -> void:
 
 
 func _play_sound(stream: AudioStream) -> void:
+	var current_ticks := Time.get_ticks_msec()
+	if current_ticks - _last_sound_ticks < 80:
+		return
+	_last_sound_ticks = current_ticks
+
 	# オーディオプールから空きプレイヤーを検索
 	for player in _audio_pool:
 		if not player.playing:
@@ -342,7 +345,7 @@ func _on_token_over_time_timeout() -> void:
 	var final_amount := int(base_over_time_token * boost_mult)
 	final_amount = max(1, final_amount)
 	
-	# トークンを一括加算し、すべてのロゴからポップアップを表示
+	# トークンを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
 	var total_tokens := final_amount * logo_count
 	GameData.add_tokens(total_tokens)

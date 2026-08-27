@@ -157,17 +157,22 @@ func _apply_color() -> void:
 	$Sprite2D.modulate = current_color
 
 
+var _bounce_tween: Tween = null
+
+
 func _play_bounce_effect(is_corner: bool) -> void:
+	if is_instance_valid(_bounce_tween) and _bounce_tween.is_running():
+		_bounce_tween.kill()
+
 	var sprite := $Sprite2D
+	_bounce_tween = create_tween()
 	if is_corner:
-		sprite.scale = _base_sprite_scale * 1.4
-		var tween := create_tween()
-		tween.tween_property(sprite, "scale", _base_sprite_scale, 0.4)\
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
+		sprite.scale = _base_sprite_scale * 1.35
+		_bounce_tween.tween_property(sprite, "scale", _base_sprite_scale, 0.25)\
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	else:
 		sprite.scale = _base_sprite_scale * 1.1
-		var tween := create_tween()
-		tween.tween_property(sprite, "scale", _base_sprite_scale, 0.15)\
+		_bounce_tween.tween_property(sprite, "scale", _base_sprite_scale, 0.15)\
 			.set_ease(Tween.EASE_OUT)
 
 

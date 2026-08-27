@@ -48,10 +48,17 @@ var _is_reincarnation_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 var _corner_tween: Tween = null
+var _last_corner_announce_ticks: int = 0
 
 # パフォーマンス最適化: アップグレードボタン更新のスロットリング
 var _upgrade_buttons_dirty: bool = false
 var _upgrade_update_timer: Timer = null
+
+# パフォーマンス最適化: デバッグ表示 & ステータス更新スロットリング
+var _debug_label: Label = null
+var _debug_timer: Timer = null
+var _stats_dirty: bool = false
+var _last_drop_pop_ticks: int = 0
 
 # パフォーマンス最適化: ボタン子ラベルのキャッシュ
 var _lbl_title_size: Label
@@ -193,6 +200,7 @@ func _ready() -> void:
 	
 	_init_slot_buttons()
 	GameData.equipment_changed.connect(_on_equipment_changed)
+	GameData.inventory_updated.connect(_on_inventory_updated)
 	btn_close_inventory.pressed.connect(close_inventory)
 	if reincarnation_window.has_signal("closed"):
 		reincarnation_window.closed.connect(close_reincarnation)
@@ -205,6 +213,25 @@ func _ready() -> void:
 	_upgrade_update_timer.timeout.connect(_on_upgrade_update_timer)
 	add_child(_upgrade_update_timer)
 	
+	# デバッグ表示ラベルと更新タイマーのセットアップ
+	_debug_label = Label.new()
+	_debug_label.name = "DebugLabel"
+	_debug_label.position = Vector2(1240, 70)
+	_debug_label.size = Vector2(280, 150)
+	_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_debug_label.add_theme_font_size_override("font_size", 14)
+	_debug_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0, 0.9))
+	_debug_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_debug_label.add_theme_constant_override("shadow_offset_x", 1)
+	_debug_label.add_theme_constant_override("shadow_offset_y", 1)
+	add_child(_debug_label)
+
+	_debug_timer = Timer.new()
+	_debug_timer.wait_time = 0.1
+	_debug_timer.autostart = true
+	_debug_timer.timeout.connect(_update_debug_and_stats_info)
+	add_child(_debug_timer)
+
 	# Initialize equipment grid frames and adjust separation spacing
 	_setup_grid_frames()
 	
@@ -223,7 +250,7 @@ func _ready() -> void:
 
 
 func _on_gold_changed(_amount: float) -> void:
-	gold_label.text = "🪙 " + _format_number(GameData.gold)
+	_stats_dirty = true
 	# アップグレードボタンの更新をスロットリング (0.2秒に1回に制限)
 	if not _upgrade_buttons_dirty:
 		_upgrade_buttons_dirty = true
@@ -237,12 +264,31 @@ func _on_upgrade_update_timer() -> void:
 
 
 func _on_tokens_changed(_amount: float) -> void:
-	token_label.text = "💎 " + _format_number(GameData.tokens)
+	_stats_dirty = true
 
 
 func _on_stats_changed() -> void:
-	bounce_label.text = "Bounces: " + _format_number(GameData.total_bounces)
-	corner_label.text = "★ Corners: " + str(GameData.corner_hits)
+	_stats_dirty = true
+
+
+func _update_debug_and_stats_info() -> void:
+	if _stats_dirty:
+		_stats_dirty = false
+		gold_label.text = "🪙 " + _format_number(GameData.gold)
+		token_label.text = "💎 " + _format_number(GameData.tokens)
+		bounce_label.text = "Bounces: " + _format_number(GameData.total_bounces)
+		corner_label.text = "★ Corners: " + str(GameData.corner_hits)
+		
+	if _debug_label:
+		var fps := Engine.get_frames_per_second()
+		var cpu_proc := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+		var cpu_phys := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+		var node_count := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
+		var orphan_count := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+		
+		_debug_label.text = "FPS: %d\nCPU Proc: %.2f ms\nPhysics: %.2f ms\nNodes: %d (Orphans: %d)\nLogos: %d" % [
+			fps, cpu_proc, cpu_phys, node_count, orphan_count, GameData.logo_count
+		]
 
 
 func _on_upgrades_changed() -> void:
@@ -329,6 +375,11 @@ func _update_special_skill_custom_ui() -> void:
 
 func _on_corner_hit() -> void:
 	## Show announcement when a corner hit occurs.
+	var current_ticks := Time.get_ticks_msec()
+	if current_ticks - _last_corner_announce_ticks < 250:
+		return
+	_last_corner_announce_ticks = current_ticks
+
 	# 既存のTweenをKillして連続ヒット時の文字消失バグを防止
 	if is_instance_valid(_corner_tween) and _corner_tween.is_running():
 		_corner_tween.kill()
@@ -782,7 +833,17 @@ func _on_equipment_changed() -> void:
 	_update_inventory_ui()
 
 
+func _on_inventory_updated() -> void:
+	if _is_inventory_open:
+		_update_inventory_ui()
+
+
 func show_equipment_drop_pop(item_data: Dictionary) -> void:
+	var current_ticks := Time.get_ticks_msec()
+	if current_ticks - _last_drop_pop_ticks < 100:
+		return
+	_last_drop_pop_ticks = current_ticks
+
 	var item_name: String = item_data.get("name", "")
 	var item_type: String = item_data.get("type", "")
 	var item_icon: String = item_data.get("icon", "")
