@@ -3,13 +3,22 @@ extends Node
 ## Manages currencies, statistics, and game state.
 
 # --- Currency ---
-var gold: int = 10000
-var tokens: int = 10000
+var gold: float = 10000.0
+var tokens: float = 10000.0
 var stars: int = 0
-var infused_tokens: int = 0
+var infused_tokens: float = 0.0
 var is_infusing_tokens: bool = false
 var star_level: int = 0
-var base_star_threshold: int = 1000
+var base_star_threshold: float = 1000.0
+
+
+func format_num(val: float) -> String:
+	var abs_v := absf(val)
+	if abs_v >= 1e10:
+		var exp_val := floorf(log(abs_v) / log(10.0))
+		var mantissa := val / pow(10.0, exp_val)
+		return "%.2fe+%d" % [mantissa, int(exp_val)]
+	return "%.0f" % val
 var reincarnation_level: int = 0
 var pending_reincarnation_upgrades: Dictionary = {} # { "upgrade_id": level_int }
 var active_reincarnation_upgrades: Dictionary = {}  # { "upgrade_id": level_int }
@@ -84,20 +93,49 @@ var special_skill_drop_chance: float = 0.03 # 基本確率 3%
 var special_skill_color: Color = Color(0.85, 0.45, 1.0, 1.0) # ソフトコーディング用カラー (紫/アストラル系)
 
 var special_skill_defs: Dictionary = {
-	"spec_void_aura": {
-		"id": "spec_void_aura",
-		"name": "虚空のオーラ",
-		"desc_template": "周囲に虚空波動を展開。3秒ごとにアトミックエネルギーを回収 (Lv.%d)",
+	"spec_diversity": {
+		"id": "spec_diversity",
+		"name": "多様性",
+		"desc_template": "装備レア度3種以上で%s倍、6種で%s倍",
 		"has_custom_ui": true,
-		"ui_title": "虚空オーラ"
-	},
-	"spec_time_warp": {
-		"id": "spec_time_warp",
-		"name": "時空歪曲",
-		"desc_template": "壁反射時のバウンス威力を +%d%% 増加させ、減速を抑制",
-		"has_custom_ui": false
+		"ui_title": "多様性"
 	}
 }
+
+
+func get_equipped_unique_rarities() -> Array[String]:
+	var result: Array[String] = []
+	for slot_key in equipped_items:
+		if not is_slot_unlocked(slot_key):
+			continue
+		var item = equipped_items[slot_key]
+		if item != null and item is Dictionary and not item.is_empty():
+			var r: String = item.get("rarity", "コモン")
+			if not result.has(r):
+				result.append(r)
+	return result
+
+
+func get_diversity_multiplier() -> float:
+	var total_lvl := 0
+	for slot_key in equipped_items:
+		if not is_slot_unlocked(slot_key):
+			continue
+		var item = equipped_items[slot_key]
+		if item != null and item is Dictionary and not item.is_empty():
+			var skills: Array = item.get("equip_skill", [])
+			for sk in skills:
+				if sk is Dictionary and sk.get("id", "") == "spec_diversity":
+					total_lvl += int(sk.get("level", 1))
+	if total_lvl <= 0:
+		return 1.0
+
+	var unique_rarity_count := get_equipped_unique_rarities().size()
+	if unique_rarity_count >= 6:
+		return pow(50.0, float(total_lvl))
+	elif unique_rarity_count >= 3:
+		return pow(25.0, float(total_lvl))
+	return 1.0
 
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
 var equipment_skill_defs: Dictionary = {}
@@ -183,8 +221,8 @@ func set_slot_unlocked(slot_key: String, unlocked: bool) -> void:
 	equipment_changed.emit()
 
 # --- Signals ---
-signal gold_changed(new_amount: int)
-signal tokens_changed(new_amount: int)
+signal gold_changed(new_amount: float)
+signal tokens_changed(new_amount: float)
 signal stars_changed(new_amount: int)
 signal stats_changed()
 signal corner_hit_occurred()
@@ -196,7 +234,7 @@ signal equipment_changed()
 signal reincarnation_performed()
 
 
-func add_gold(amount: int) -> void:
+func add_gold(amount: float) -> void:
 	gold += amount
 	gold_changed.emit(gold)
 
@@ -214,9 +252,9 @@ func use_stars(amount: int) -> bool:
 	return false
 
 
-func get_next_star_cost() -> int:
+func get_next_star_cost() -> float:
 	# 1スター上がるごとに必要トークン量が2倍 (1,000 * 2^star_level)
-	return int(base_star_threshold * pow(2, star_level))
+	return base_star_threshold * pow(2.0, float(star_level))
 
 
 func toggle_token_infusion() -> bool:
@@ -225,13 +263,13 @@ func toggle_token_infusion() -> bool:
 	return is_infusing_tokens
 
 
-func add_tokens(amount: int) -> void:
-	if amount <= 0:
+func add_tokens(amount: float) -> void:
+	if amount <= 0.0:
 		return
 	if is_infusing_tokens:
 		infused_tokens += amount
 		var cost = get_next_star_cost()
-		while infused_tokens >= cost and cost > 0:
+		while infused_tokens >= cost and cost > 0.0:
 			infused_tokens -= cost
 			stars += 1
 			star_level += 1
@@ -314,24 +352,24 @@ func record_bounce(is_corner: bool) -> void:
 
 # --- Upgrade Logic ---
 
-func get_logo_upgrade_cost() -> int:
-	var base := int(100 * pow(2.0, logo_count - 1))
-	return int(base * get_equipped_saving_cost_multiplier())
+func get_logo_upgrade_cost() -> float:
+	var base := 100.0 * pow(2.0, float(logo_count - 1))
+	return base * get_equipped_saving_cost_multiplier()
 
 
-func get_speed_upgrade_cost() -> int:
-	var base := int(10 + speed_level * 15)
-	return int(base * get_equipped_saving_cost_multiplier())
+func get_speed_upgrade_cost() -> float:
+	var base := 10.0 + float(speed_level) * 15.0
+	return base * get_equipped_saving_cost_multiplier()
 
 
-func get_boost_upgrade_cost() -> int:
-	var base := int(20 + boost_level * 25)
-	return int(base * get_equipped_saving_cost_multiplier())
+func get_boost_upgrade_cost() -> float:
+	var base := 20.0 + float(boost_level) * 25.0
+	return base * get_equipped_saving_cost_multiplier()
 
 
-func get_size_upgrade_cost() -> int:
-	var base := int(15 + size_level * 20)
-	return int(base * get_equipped_saving_cost_multiplier())
+func get_size_upgrade_cost() -> float:
+	var base := 15.0 + float(size_level) * 20.0
+	return base * get_equipped_saving_cost_multiplier()
 
 
 func get_ascension_multiplier() -> float:
@@ -555,8 +593,9 @@ func _recalculate_all_cumulative_levels() -> void:
 func _recalculate_cached_multipliers() -> void:
 	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
 	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult
+	var div_mult := get_diversity_multiplier()
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult
 	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level)
 	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level)
 	_cached_ascension_mult = get_ascension_multiplier()
@@ -834,7 +873,15 @@ func generate_random_equipment() -> Dictionary:
 		var spec_def: Dictionary = special_skill_defs[spec_id]
 		var spec_lvl: int = maxi(1, int(ceil(float(level) / 100.0)))
 		var desc_tmpl: String = spec_def.get("desc_template", "%s")
-		var formatted_desc: String = desc_tmpl % spec_lvl if "%d" in desc_tmpl else desc_tmpl
+		var formatted_desc: String = desc_tmpl
+		if spec_id == "spec_diversity":
+			var m25 := pow(25.0, float(spec_lvl))
+			var m50 := pow(50.0, float(spec_lvl))
+			var s25 := "%.0f" % m25 if m25 < 1e12 else "%.2e" % m25
+			var s50 := "%.0f" % m50 if m50 < 1e12 else "%.2e" % m50
+			formatted_desc = desc_tmpl % [s25, s50]
+		elif "%d" in desc_tmpl:
+			formatted_desc = desc_tmpl % spec_lvl
 
 		item_skills.append({
 			"id": spec_id,

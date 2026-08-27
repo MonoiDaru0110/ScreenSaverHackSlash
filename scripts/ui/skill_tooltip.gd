@@ -133,7 +133,7 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	var cost = skill_node.get_upgrade_cost(current_level)
 	
 	var lvl_str = "[Lv MAX]" if current_level >= max_level else "[Lv %d/%d]" % [current_level, max_level]
-	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %d" % cost
+	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %s" % GameData.format_num(cost)
 	
 	var skill_name = skill_node.skill_name if not skill_node.skill_name.is_empty() else skill_node.skill_id
 	var full_desc = skill_node.description
@@ -205,6 +205,6 @@ func _on_skill_data_changed(upgraded_skill_id: String, _new_level: int) -> void:
 		call_deferred(&"setup_from_node", _target_node)
 
 
-func _on_tokens_changed(_new_tokens: int) -> void:
+func _on_tokens_changed(_new_tokens: float) -> void:
 	if _target_node:
 		call_deferred(&"setup_from_node", _target_node)

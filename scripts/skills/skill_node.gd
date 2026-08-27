@@ -238,7 +238,7 @@ func _update_ui_actual() -> void:
 	var cost = get_upgrade_cost(current_level)
 	
 	var lvl_str = "MAX" if current_level >= max_level else "Lvl %d/%d" % [current_level, max_level]
-	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %d" % cost
+	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %s" % GameData.format_num(cost)
 	
 	# マニュアル管理ツールチップを使用するため、Godot標準のポップアップは完全に無効化します
 	tooltip_text = ""
@@ -283,10 +283,10 @@ func _update_ui_actual() -> void:
 		modulate = Color(0.65, 0.65, 0.65, 1.0)
 
 
-func get_upgrade_cost(level: int) -> int:
-	var raw_cost := int(base_cost * pow(cost_multiplier, level))
+func get_upgrade_cost(level: int) -> float:
+	var raw_cost := float(base_cost) * pow(cost_multiplier, float(level))
 	var discount := GameData.get_equipped_token_saving_cost_multiplier()
-	return maxi(1, int(raw_cost * discount))
+	return maxf(1.0, raw_cost * discount)
 
 
 func is_playable() -> bool:
@@ -320,7 +320,7 @@ func _on_visibility_changed() -> void:
 		_update_ui_actual()
 
 
-func _on_tokens_changed(_new_tokens: int) -> void:
+func _on_tokens_changed(_new_tokens: float) -> void:
 	queue_update_ui()
 
 

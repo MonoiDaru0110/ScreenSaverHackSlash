@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3 uid="uid://diversity_skill_ui_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/special_skills/diversity_skill_ui.gd" id="1_diversity_ui"]
+
+[node name="DiversitySkillUI" type="Control"]
+custom_minimum_size = Vector2(260, 260)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 260.0
+offset_bottom = 260.0
+script = ExtResource("1_diversity_ui")
+
+[node name="HexDrawControl" type="Control" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 260)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MultiplierLabel" type="Label" parent="HexDrawControl"]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -30.0
+offset_right = 100.0
+offset_bottom = 30.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.93, 0.35, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_colors/font_outline_color = Color(0.08, 0.04, 0.12, 0.95)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 32
+text = "x25.0"
+horizontal_alignment = 1
+vertical_alignment = 1

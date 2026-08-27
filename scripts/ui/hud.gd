@@ -222,7 +222,7 @@ func _ready() -> void:
 	_update_all()
 
 
-func _on_gold_changed(_amount: int) -> void:
+func _on_gold_changed(_amount: float) -> void:
 	gold_label.text = "🪙 " + _format_number(GameData.gold)
 	# アップグレードボタンの更新をスロットリング (0.2秒に1回に制限)
 	if not _upgrade_buttons_dirty:
@@ -236,7 +236,7 @@ func _on_upgrade_update_timer() -> void:
 		_update_upgrade_buttons()
 
 
-func _on_tokens_changed(_amount: int) -> void:
+func _on_tokens_changed(_amount: float) -> void:
 	token_label.text = "💎 " + _format_number(GameData.tokens)
 
 
@@ -280,38 +280,51 @@ func _update_special_skill_custom_ui() -> void:
 
 	special_skill_ui_container.visible = true
 
-	# 専用UIパネルの生成（ミニカード表示）
+	# 専用UIパネルの動的生成（専用シーンがあれば優先ロード）
+	const SPECIAL_SKILL_UI_MAP := {
+		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn"
+	}
+
 	for sk in active_spec_skills:
-		var panel = PanelContainer.new()
-		panel.custom_minimum_size = Vector2(150, 34)
+		var sk_id: String = sk.get("id", "")
+		if SPECIAL_SKILL_UI_MAP.has(sk_id) and ResourceLoader.exists(SPECIAL_SKILL_UI_MAP[sk_id]):
+			var scene: PackedScene = load(SPECIAL_SKILL_UI_MAP[sk_id])
+			var custom_ui = scene.instantiate()
+			if custom_ui.has_method("set_skill_data"):
+				custom_ui.set_skill_data(sk)
+			special_skill_ui_container.add_child(custom_ui)
+		else:
+			# フォールバック表示（デフォルトミニカード）
+			var panel = PanelContainer.new()
+			panel.custom_minimum_size = Vector2(150, 34)
 
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color(0.15, 0.1, 0.25, 0.9)
-		style.border_width_left = 1
-		style.border_width_top = 1
-		style.border_width_right = 1
-		style.border_width_bottom = 1
-		style.border_color = GameData.special_skill_color
-		style.set_corner_radius_all(6)
-		panel.add_theme_stylebox_override("panel", style)
+			var style = StyleBoxFlat.new()
+			style.bg_color = Color(0.15, 0.1, 0.25, 0.9)
+			style.border_width_left = 1
+			style.border_width_top = 1
+			style.border_width_right = 1
+			style.border_width_bottom = 1
+			style.border_color = GameData.special_skill_color
+			style.set_corner_radius_all(6)
+			panel.add_theme_stylebox_override("panel", style)
 
-		var margin = MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 8)
-		margin.add_theme_constant_override("margin_right", 8)
-		panel.add_child(margin)
+			var margin = MarginContainer.new()
+			margin.add_theme_constant_override("margin_left", 8)
+			margin.add_theme_constant_override("margin_right", 8)
+			panel.add_child(margin)
 
-		var hbox = HBoxContainer.new()
-		hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		margin.add_child(hbox)
+			var hbox = HBoxContainer.new()
+			hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+			margin.add_child(hbox)
 
-		var title_lbl = Label.new()
-		var ui_title: String = sk.get("ui_title", sk.get("name", "特殊スキル"))
-		title_lbl.text = "%s Lv.%d" % [ui_title, sk.get("level", 1)]
-		title_lbl.add_theme_color_override("font_color", GameData.special_skill_color)
-		title_lbl.add_theme_font_size_override("font_size", 13)
-		hbox.add_child(title_lbl)
+			var title_lbl = Label.new()
+			var ui_title: String = sk.get("ui_title", sk.get("name", "特殊スキル"))
+			title_lbl.text = "%s Lv.%d" % [ui_title, sk.get("level", 1)]
+			title_lbl.add_theme_color_override("font_color", GameData.special_skill_color)
+			title_lbl.add_theme_font_size_override("font_size", 13)
+			hbox.add_child(title_lbl)
 
-		special_skill_ui_container.add_child(panel)
+			special_skill_ui_container.add_child(panel)
 
 
 func _on_corner_hit() -> void:
@@ -320,18 +333,16 @@ func _on_corner_hit() -> void:
 	if is_instance_valid(_corner_tween) and _corner_tween.is_running():
 		_corner_tween.kill()
 
-	corner_announce.text = "★ CORNER HIT! ★"
-	corner_announce.pivot_offset = corner_announce.size / 2.0
-	corner_announce.scale = Vector2(1.2, 1.2)
-	corner_announce.modulate.a = 1.0
-	corner_announce.visible = true
-
-	_corner_tween = create_tween()
-	_corner_tween.set_parallel(true)
-	_corner_tween.tween_property(corner_announce, "scale", Vector2.ONE, 0.2)\
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	_corner_tween.tween_property(corner_announce, "modulate:a", 0.0, 1.0)\
-		.set_ease(Tween.EASE_IN).set_delay(0.4)
+	if corner_announce:
+		corner_announce.visible = true
+		corner_announce.modulate.a = 1.0
+		corner_announce.scale = Vector2(1.0, 1.0)
+		
+		_corner_tween = create_tween()
+		_corner_tween.set_parallel(true)
+		# シンプルな拡大アニメーション（1.2倍）
+		_corner_tween.tween_property(corner_announce, "scale", Vector2(1.2, 1.2), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_corner_tween.tween_property(corner_announce, "modulate:a", 0.0, 0.5).set_delay(0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 
 func _update_all() -> void:
@@ -399,19 +410,9 @@ func _on_ascend_pressed() -> void:
 	GameData.perform_ascension()
 
 
-## Formats a number with comma separators (e.g., 1,234,567).
-func _format_number(n: int) -> String:
-	var s := str(n)
-	if n < 1000:
-		return s
-	var result := ""
-	var count := 0
-	for i in range(s.length() - 1, -1, -1):
-		result = s[i] + result
-		count += 1
-		if count % 3 == 0 and i > 0:
-			result = "," + result
-	return result
+## Formats a number using GameData.format_num (e.g., 1234 for <1e10, 1.23e+10 for >=1e10).
+func _format_number(n: float) -> String:
+	return GameData.format_num(n)
 
 
 func _on_stars_changed(new_amount: int) -> void:
