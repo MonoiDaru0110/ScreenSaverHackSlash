@@ -116,8 +116,12 @@ func get_equipped_unique_rarities() -> Array[String]:
 	return result
 
 
+func get_special_skill_active_level(skill_id: String) -> int:
+	return active_reincarnation_upgrades.get(skill_id, 0)
+
+
 func get_diversity_multiplier() -> float:
-	var total_lvl := 0
+	var total_lvl := get_special_skill_active_level("spec_diversity")
 	for slot_key in equipped_items:
 		if not is_slot_unlocked(slot_key):
 			continue
