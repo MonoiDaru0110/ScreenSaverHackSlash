@@ -43,14 +43,9 @@ func update_ui() -> void:
 
 	if multiplier_label:
 		if is_mult_active:
-			if mult >= 1e9:
-				multiplier_label.text = "x%.1e" % mult
-			elif mult >= 10000.0:
-				multiplier_label.text = "x%.0f" % mult
-			else:
-				multiplier_label.text = "x%.1f" % mult
+			multiplier_label.text = "x" + GameData.format_num(mult)
 		else:
-			multiplier_label.text = "x1.0"
+			multiplier_label.text = "x1"
 			# 未発動時のシックなフォントスタイル
 			multiplier_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75, 0.9))
 			multiplier_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.95))

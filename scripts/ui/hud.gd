@@ -316,21 +316,36 @@ func _update_special_skill_custom_ui() -> void:
 	for child in special_skill_ui_container.get_children():
 		child.queue_free()
 
-	# 装備中のアイテムから has_custom_ui == true の特殊スキルをスキャン
+	# 特殊スキルの収集:
+	# 1. 転生画面で強化されている特殊スキル (GameData.special_skill_defs に定義があり total_level > 0)
+	# 2. 装備中アイテムに付与されている特殊スキル
 	var active_spec_skills: Array[Dictionary] = []
+
+	# 1. 転生解放済み特殊スキル
+	for spec_id in GameData.special_skill_defs:
+		var total_lvl := GameData.get_special_skill_total_level(spec_id)
+		if total_lvl > 0:
+			var def: Dictionary = GameData.special_skill_defs[spec_id].duplicate()
+			def["level"] = total_lvl
+			active_spec_skills.append(def)
+
+	# 2. 装備品に付与された特殊スキル（まだ追加されていないものやレベル更新）
 	for slot_key in GameData.equipped_items:
 		var item = GameData.equipped_items[slot_key]
 		if item != null:
 			var skills: Array = item.get("equip_skill", [])
 			for sk in skills:
 				if sk.get("is_special", false) and sk.get("has_custom_ui", false):
-					var already_added := false
+					var sk_id: String = sk.get("id", "")
+					var found := false
 					for existing in active_spec_skills:
-						if existing.get("id") == sk.get("id"):
-							already_added = true
+						if existing.get("id") == sk_id:
+							found = true
 							break
-					if not already_added:
-						active_spec_skills.append(sk)
+					if not found:
+						var sk_entry: Dictionary = sk.duplicate()
+						sk_entry["level"] = GameData.get_special_skill_total_level(sk_id)
+						active_spec_skills.append(sk_entry)
 
 	if active_spec_skills.is_empty():
 		special_skill_ui_container.visible = false
@@ -450,7 +465,7 @@ func _update_upgrade_buttons() -> void:
 	btn_ascend.disabled = !ascend_ok
 	_lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
 	_lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
-	_lbl_cost_ascend.text = "🪙 1,000"
+	_lbl_cost_ascend.text = "🪙 " + _format_number(1000.0)
 	_lbl_cost_ascend.add_theme_color_override("font_color", Color.RED if !ascend_ok else Color(0.85, 0.85, 0.85))
 
 
@@ -473,9 +488,11 @@ func _on_ascend_pressed() -> void:
 	GameData.perform_ascension()
 
 
-## Formats a number using GameData.format_num (e.g., 1234 for <1e10, 1.23e+10 for >=1e10).
-func _format_number(n: float) -> String:
-	return GameData.format_num(n)
+## Formats a number using GameData.format_num.
+## |val| >= 1: integers up to 1e10, then scientific notation.
+## |val| < 1: 2 decimal places down to 1e-2, then scientific notation.
+func _format_number(n) -> String:
+	return GameData.format_num(float(n))
 
 
 func _on_stars_changed(new_amount: int) -> void:
@@ -667,7 +684,7 @@ func _load_skills_from_json() -> void:
 		node.icon_char = s.get("icon", "❓")
 		node.description = s.get("description", "")
 		node.max_level = int(s.get("max_level", 5))
-		node.base_cost = int(s.get("base_cost", 1))
+		node.base_cost = float(s.get("base_cost", 1.0))
 		node.cost_multiplier = float(s.get("cost_multiplier", 1.5))
 		# パネル間の隙間を微調整（枠のさらなる太枠化に伴い、元の0.95倍から1.1倍に変更）して辺の長さを調整する
 		node.position = Vector2(s.get("x", 0), s.get("y", 0)) * 1.1
@@ -902,11 +919,11 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 			hbox.add_child(rect)
 			
 	var is_sold: bool = item_data.get("is_sold", false)
-	var sell_price: int = item_data.get("sell_price", 100)
+	var sell_price: float = float(item_data.get("sell_price", 100.0))
 	
 	var label := Label.new()
 	if is_sold:
-		label.text = "[%s] %s (Lv.%d) を手に入れた！(売却🪙+%d)" % [item_rarity, item_name, item_level, sell_price]
+		label.text = "[%s] %s (Lv.%d) を手に入れた！(売却🪙+%s)" % [item_rarity, item_name, item_level, _format_number(sell_price)]
 	else:
 		label.text = "[%s] %s (Lv.%d) を手に入れた！" % [item_rarity, item_name, item_level]
 	label.add_theme_font_size_override("font_size", 20)

@@ -7,7 +7,7 @@ class_name SkillNode
 @export var icon_char: String = "❓"
 @export_multiline var description: String = ""
 @export var max_level: int = 5
-@export var base_cost: int = 1
+@export var base_cost: float = 1.0
 @export var cost_multiplier: float = 1.5
 @export var prerequisites: Array[String] = []
 var _lines: Array[Line2D] = []

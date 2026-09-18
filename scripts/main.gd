@@ -105,8 +105,8 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 
 	if is_corner:
 		_play_sound(_sound_corner)
-		var base_gold := (50 + GameData.boost_level * 10) * mult * gold_skill_mult
-		var gold_amount := int(base_gold * gold_mult)
+		var base_gold := (50.0 + GameData.boost_level * 10.0) * mult * gold_skill_mult
+		var gold_amount := base_gold * gold_mult
 		
 		var token_crit := GameData.roll_token_critical()
 		var token_direct := GameData.roll_token_direct()
@@ -114,12 +114,12 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 
 		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
 		var token_skill_mult := GameData._cached_token_skill_mult
-		var base_tokens := (1 + GameData.boost_level) * mult * token_skill_mult
+		var base_tokens := (1.0 + GameData.boost_level) * mult * token_skill_mult
 		# Apply token_luck skill (30% chance for +1 token per level)
 		var token_luck_level := GameData.get_skill_level("token_luck")
 		if token_luck_level > 0 and randf() < token_luck_level * 0.3:
-			base_tokens += 1
-		var token_amount := int(base_tokens * token_mult)
+			base_tokens += 1.0
+		var token_amount := base_tokens * token_mult
 
 		GameData.record_bounce(true)
 		GameData.add_gold(gold_amount)
@@ -127,17 +127,17 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		_flash_background()
 
 		# Spawn separate labels for Gold and Tokens
-		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%d" % gold_amount, Color(1.0, 0.95, 0.3), true, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
-		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%d" % token_amount, Color(0.3, 0.75, 1.0), true, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
+		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%s" % GameData.format_num(gold_amount), Color(1.0, 0.95, 0.3), true, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
+		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%s" % GameData.format_num(token_amount), Color(0.3, 0.75, 1.0), true, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
 		_start_shake(direction.normalized(), 15.0)
 	else:
-		var base_gold := (1 + GameData.boost_level) * mult * gold_skill_mult
-		var gold_amount := int(base_gold * gold_mult)
+		var base_gold := (1.0 + GameData.boost_level) * mult * gold_skill_mult
+		var gold_amount := base_gold * gold_mult
 
 		GameData.record_bounce(false)
 		GameData.add_gold(gold_amount)
 
-		_spawn_drop_label(pos, "🪙 +%d" % gold_amount, Color(1.0, 1.0, 0.95), false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
+		_spawn_drop_label(pos, "🪙 +%s" % GameData.format_num(gold_amount), Color(1.0, 1.0, 0.95), false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
 		_start_shake(direction, 5.0)
 
 	# --- Equipment Drop Logic ---
@@ -298,21 +298,21 @@ func _on_over_time_timeout() -> void:
 	var gold_skill_mult := GameData._cached_gold_skill_mult
 	
 	# Base amount is 10% of normal wall bounce gold
-	var base_hit_gold := int((1 + GameData.boost_level) * mult * gold_skill_mult)
+	var base_hit_gold := (1.0 + GameData.boost_level) * mult * gold_skill_mult
 	var base_over_time_gold := base_hit_gold * 0.1
 	
 	var boost_mult := GameData._cached_gold_over_time_boost_mult
-	var final_amount := int(base_over_time_gold * boost_mult)
-	final_amount = max(1, final_amount)
+	var final_amount := base_over_time_gold * boost_mult
+	final_amount = maxf(1.0, final_amount)
 	
 	# ゴールドを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
-	var total_gold := final_amount * logo_count
+	var total_gold := final_amount * float(logo_count)
 	GameData.add_gold(total_gold)
 	
 	for logo in logos:
 		if logo is Node2D:
-			_spawn_drop_label(logo.global_position, "🪙 +%d" % final_amount, Color(1.0, 1.0, 1.0, 0.7), false)
+			_spawn_drop_label(logo.global_position, "🪙 +%s" % GameData.format_num(final_amount), Color(1.0, 1.0, 1.0, 0.7), false)
 
 
 func _play_sound(stream: AudioStream) -> void:
@@ -338,18 +338,18 @@ func _on_token_over_time_timeout() -> void:
 	var mult := GameData._cached_ascension_mult
 	
 	# Base amount is 10% of normal corner bounce tokens
-	var base_corner_tokens := (1 + GameData.boost_level) * mult * GameData._cached_token_skill_mult
+	var base_corner_tokens := (1.0 + GameData.boost_level) * mult * GameData._cached_token_skill_mult
 	var base_over_time_token := base_corner_tokens * 0.1
 	
 	var boost_mult := GameData._cached_token_over_time_boost_mult
-	var final_amount := int(base_over_time_token * boost_mult)
-	final_amount = max(1, final_amount)
+	var final_amount := base_over_time_token * boost_mult
+	final_amount = maxf(1.0, final_amount)
 	
 	# トークンを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
-	var total_tokens := final_amount * logo_count
+	var total_tokens := final_amount * float(logo_count)
 	GameData.add_tokens(total_tokens)
 	
 	for logo in logos:
 		if logo is Node2D:
-			_spawn_drop_label(logo.global_position, "💎 +%d" % final_amount, Color(0.3, 0.75, 1.0, 0.7), false)
+			_spawn_drop_label(logo.global_position, "💎 +%s" % GameData.format_num(final_amount), Color(0.3, 0.75, 1.0, 0.7), false)

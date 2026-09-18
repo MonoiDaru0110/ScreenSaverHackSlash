@@ -14,11 +14,51 @@ var base_star_threshold: float = 1000.0
 
 func format_num(val: float) -> String:
 	var abs_v := absf(val)
-	if abs_v >= 1e10:
-		var exp_val := floorf(log(abs_v) / log(10.0))
-		var mantissa := val / pow(10.0, exp_val)
-		return "%.2fe+%d" % [mantissa, int(exp_val)]
-	return "%.0f" % val
+	if abs_v == 0.0:
+		return "0"
+
+	var sign_str := "-" if val < 0.0 else ""
+
+	# 1. 絶対値が1以上
+	if abs_v >= 1.0:
+		if abs_v < 1e10:
+			# 1e10までは整数で表記する
+			return "%s%.0f" % [sign_str, roundf(abs_v)]
+		else:
+			# 1e10以降は1e10などの簡易表示を行う
+			var exp_val := floori(log(abs_v) / log(10.0))
+			var mantissa := abs_v / pow(10.0, float(exp_val))
+			if mantissa >= 9.995:
+				mantissa = 1.0
+				exp_val += 1
+			var m_str := "%.2f" % mantissa
+			if m_str.contains("."):
+				m_str = m_str.rstrip("0").rstrip(".")
+			return "%s%se%d" % [sign_str, m_str, exp_val]
+
+	# 2. 絶対値が1未満
+	if abs_v >= 1e-2:
+		# 1e-2までは2桁まで表示した少数で表示(0.90,0.023など)
+		var exp_val := floori(log(abs_v) / log(10.0))
+		var decimals := -exp_val + 1
+		var factor := pow(10.0, float(decimals))
+		var rounded: float = roundf(abs_v * factor) / factor
+		if rounded >= 1.0:
+			return "%s1" % sign_str
+		var new_exp := floori(log(rounded) / log(10.0))
+		var new_decimals := -new_exp + 1
+		return ("%s%." + str(new_decimals) + "f") % [sign_str, rounded]
+	else:
+		# それより小さい数値は指数表記する
+		var exp_val := floori(log(abs_v) / log(10.0))
+		var mantissa := abs_v / pow(10.0, float(exp_val))
+		if mantissa >= 9.995:
+			mantissa = 1.0
+			exp_val += 1
+		var m_str := "%.2f" % mantissa
+		if m_str.contains("."):
+			m_str = m_str.rstrip("0").rstrip(".")
+		return "%s%se%d" % [sign_str, m_str, exp_val]
 var reincarnation_level: int = 0
 var pending_reincarnation_upgrades: Dictionary = {} # { "upgrade_id": level_int }
 var active_reincarnation_upgrades: Dictionary = {}  # { "upgrade_id": level_int }
@@ -99,6 +139,27 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "装備レア度3種以上で%s倍、6種で%s倍",
 		"has_custom_ui": true,
 		"ui_title": "多様性"
+	},
+	"spec_aura": {
+		"id": "spec_aura",
+		"name": "星輝のオーラ",
+		"desc_template": "転生後、自動でオーラを発動しゴールド・トークン獲得を常時アシスト",
+		"has_custom_ui": true,
+		"ui_title": "星輝のオーラ"
+	},
+	"spec_warp": {
+		"id": "spec_warp",
+		"name": "時空の歪み",
+		"desc_template": "壁バウンス時の基本速度と加速能力を永続的に底上げ",
+		"has_custom_ui": true,
+		"ui_title": "時空の歪み"
+	},
+	"spec_resonance": {
+		"id": "spec_resonance",
+		"name": "クリティカル共鳴",
+		"desc_template": "ダイレクトヒット時のトークン・装備ドロップ率を倍増",
+		"has_custom_ui": true,
+		"ui_title": "クリティカル共鳴"
 	}
 }
 
@@ -120,8 +181,8 @@ func get_special_skill_active_level(skill_id: String) -> int:
 	return active_reincarnation_upgrades.get(skill_id, 0)
 
 
-func get_diversity_multiplier() -> float:
-	var total_lvl := get_special_skill_active_level("spec_diversity")
+func get_special_skill_total_level(skill_id: String) -> int:
+	var total_lvl := get_special_skill_active_level(skill_id)
 	for slot_key in equipped_items:
 		if not is_slot_unlocked(slot_key):
 			continue
@@ -129,8 +190,13 @@ func get_diversity_multiplier() -> float:
 		if item != null and item is Dictionary and not item.is_empty():
 			var skills: Array = item.get("equip_skill", [])
 			for sk in skills:
-				if sk is Dictionary and sk.get("id", "") == "spec_diversity":
+				if sk is Dictionary and sk.get("id", "") == skill_id:
 					total_lvl += int(sk.get("level", 1))
+	return total_lvl
+
+
+func get_diversity_multiplier() -> float:
+	var total_lvl := get_special_skill_total_level("spec_diversity")
 	if total_lvl <= 0:
 		return 1.0
 
@@ -314,40 +380,41 @@ func execute_reincarnation() -> void:
 	reincarnation_level += 1
 	is_infusing_tokens = false
 
-	# 1. トークン、ゴールドを0に (スターの注入状況 stars, infused_tokens, star_level は維持)
-	tokens = 0.0
-	tokens_changed.emit(0.0)
-	gold = 0.0
-	gold_changed.emit(0.0)
+	# --- 転生時のリセット要素（※一時的にすべて無効化） ---
+	# 1. トークン、ゴールドを0に
+	# tokens = 0.0
+	# tokens_changed.emit(0.0)
+	# gold = 0.0
+	# gold_changed.emit(0.0)
 
 	# 2. 右枠のステータス強化リセット
-	size_level = 0
-	speed_level = 0
-	boost_level = 0
-	ascension_level = 0
-	logo_count = 1
-	logo_reset_requested.emit()
+	# size_level = 0
+	# speed_level = 0
+	# boost_level = 0
+	# ascension_level = 0
+	# logo_count = 1
+	# logo_reset_requested.emit()
 
 	# 3. 所持装備を装備欄含めてすべて未所持の状態にリセット
-	equipped_items = {
-		"main": null,
-		"sub": null,
-		"accessory_1": null,
-		"accessory_2": null,
-		"accessory_3": null,
-		"accessory_4": null
-	}
-	for type in ["main", "sub", "accessory"]:
-		inventories[type] = []
-		for i in range(MAX_TYPE_INVENTORY_SIZE):
-			inventories[type].append(null)
-	_recalculate_equipped_skill_levels()
-	equipment_changed.emit()
-	inventory_updated.emit()
+	# equipped_items = {
+	# 	"main": null,
+	# 	"sub": null,
+	# 	"accessory_1": null,
+	# 	"accessory_2": null,
+	# 	"accessory_3": null,
+	# 	"accessory_4": null
+	# }
+	# for type in ["main", "sub", "accessory"]:
+	# 	inventories[type] = []
+	# 	for i in range(MAX_TYPE_INVENTORY_SIZE):
+	# 		inventories[type].append(null)
+	# _recalculate_equipped_skill_levels()
+	# equipment_changed.emit()
+	# inventory_updated.emit()
 
 	# 4. トークンによるスキルをリセット
-	skill_levels.clear()
-	_recalculate_all_cumulative_levels()
+	# skill_levels.clear()
+	# _recalculate_all_cumulative_levels()
 
 	# 倍率キャッシュ等の再計算
 	_recalculate_cached_multipliers()
@@ -388,7 +455,7 @@ func get_pending_reincarnation_multiplier() -> float:
 	return (1.0 + (star_boost * 0.5) + (tree_boost * 0.25)) * pow(1.1, float(reincarnation_level + 1))
 
 
-func use_tokens(amount: int) -> bool:
+func use_tokens(amount: float) -> bool:
 	if tokens >= amount:
 		tokens -= amount
 		tokens_changed.emit(tokens)
@@ -396,7 +463,7 @@ func use_tokens(amount: int) -> bool:
 	return false
 
 
-func use_gold(amount: int) -> bool:
+func use_gold(amount: float) -> bool:
 	if gold >= amount:
 		gold -= amount
 		gold_changed.emit(gold)
@@ -716,7 +783,7 @@ func _update_cumulative_levels(skill_id: String) -> void:
 	_recalculate_cached_multipliers()
 
 
-func buy_skill_upgrade(skill_id: String, cost: int, max_level: int) -> bool:
+func buy_skill_upgrade(skill_id: String, cost: float, max_level: int) -> bool:
 	if tokens >= cost:
 		var current_lvl = get_skill_level(skill_id)
 		if current_lvl < max_level:
@@ -943,8 +1010,8 @@ func generate_random_equipment() -> Dictionary:
 		if spec_id == "spec_diversity":
 			var m25 := pow(25.0, float(spec_lvl))
 			var m50 := pow(50.0, float(spec_lvl))
-			var s25 := "%.0f" % m25 if m25 < 1e12 else "%.2e" % m25
-			var s50 := "%.0f" % m50 if m50 < 1e12 else "%.2e" % m50
+			var s25 := format_num(m25)
+			var s50 := format_num(m50)
 			formatted_desc = desc_tmpl % [s25, s50]
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
@@ -1001,7 +1068,7 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 			return item
 		else:
 			# インベントリ満タン時: インベントリには追加せず、売却金を追加して通知用データを返す
-			var sell_price := 100
+			var sell_price: float = 100.0
 			add_gold(sell_price)
 			item["is_sold"] = true
 			item["sell_price"] = sell_price

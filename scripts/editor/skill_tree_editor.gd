@@ -141,8 +141,8 @@ func _on_sidebar_value_changed(_value: float) -> void:
 	if _updating_sidebar or not _selected_node:
 		return
 	_selected_node.set_meta("max_level", int(sidebar_max_spin.value))
-	_selected_node.set_meta("base_cost", int(sidebar_cost_spin.value))
-	_selected_node.set_meta("cost_multiplier", sidebar_mult_spin.value)
+	_selected_node.set_meta("base_cost", float(sidebar_cost_spin.value))
+	_selected_node.set_meta("cost_multiplier", float(sidebar_mult_spin.value))
 
 
 func _on_sidebar_delete_pressed() -> void:
@@ -439,7 +439,7 @@ func save_data() -> void:
 				"icon": child.get_meta("icon_char", "❓"),
 				"description": child.get_meta("description", ""),
 				"max_level": int(child.get_meta("max_level", 5)),
-				"base_cost": int(child.get_meta("base_cost", 1)),
+				"base_cost": float(child.get_meta("base_cost", 1.0)),
 				"cost_multiplier": float(child.get_meta("cost_multiplier", 1.5)),
 				"x": child.position_offset.x,
 				"y": child.position_offset.y,
@@ -510,8 +510,8 @@ func load_data() -> void:
 			s.get("icon", "❓"),
 			s.get("description", ""),
 			s.get("max_level", 5),
-			s.get("base_cost", 1),
-			s.get("cost_multiplier", 1.5),
+			float(s.get("base_cost", 1.0)),
+			float(s.get("cost_multiplier", 1.5)),
 			pos
 		)
 		created_nodes[skill_id] = node.name

@@ -109,7 +109,10 @@ func update_ui() -> void:
 
 	lbl_equip_lvl_bonus.text = "装備レベル+%d" % cur_equip_lvl
 	lbl_auto_skills_bonus.text = "スキル自動解放+%d" % cur_auto_skills
-	lbl_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % cur_mult
+	if cur_mult >= 1e10:
+		lbl_multiplier_bonus.text = "ゴールド/トークン倍率×%s" % GameData.format_num(cur_mult)
+	else:
+		lbl_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % cur_mult
 
 	var next_equip_lvl = GameData.get_pending_base_equip_level_bonus()
 	var next_auto_skills = GameData.get_pending_auto_unlocked_skill_count()
@@ -117,7 +120,10 @@ func update_ui() -> void:
 
 	lbl_next_equip_lvl_bonus.text = "装備レベル+%d" % next_equip_lvl
 	lbl_next_auto_skills_bonus.text = "スキル自動解放+%d" % next_auto_skills
-	lbl_next_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % next_mult
+	if next_mult >= 1e10:
+		lbl_next_multiplier_bonus.text = "ゴールド/トークン倍率×%s" % GameData.format_num(next_mult)
+	else:
+		lbl_next_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % next_mult
 
 	var highlight_color := Color(0.4, 0.95, 0.6)
 	var normal_color := Color(0.75, 0.85, 0.95)
@@ -381,16 +387,8 @@ func _on_close_pressed() -> void:
 	closed.emit()
 
 
-func _format_number(value: int) -> String:
-	var string_val = str(value)
-	var result = ""
-	var count = 0
-	for i in range(string_val.length() - 1, -1, -1):
-		if count > 0 and count % 3 == 0:
-			result = "," + result
-		result = string_val[i] + result
-		count += 1
-	return result
+func _format_number(value) -> String:
+	return GameData.format_num(float(value))
 
 
 # --- Tooltip Implementation for Special Skills ---
