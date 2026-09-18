@@ -208,3 +208,99 @@ func _on_skill_data_changed(upgraded_skill_id: String, _new_level: int) -> void:
 func _on_tokens_changed(_new_tokens: float) -> void:
 	if _target_node:
 		call_deferred(&"setup_from_node", _target_node)
+
+
+var _target_reinc_node: ReincarnationSkillNode = null
+
+
+func setup_from_reinc_node(reinc_node: ReincarnationSkillNode) -> void:
+	_ensure_nodes()
+	_target_reinc_node = reinc_node
+	
+	if not GameData.stars_changed.is_connected(_on_reinc_stars_changed):
+		GameData.stars_changed.connect(_on_reinc_stars_changed)
+	if not GameData.upgrades_changed.is_connected(_on_reinc_upgrades_changed):
+		GameData.upgrades_changed.connect(_on_reinc_upgrades_changed)
+		
+	var active_lvl = GameData.active_reincarnation_upgrades.get(reinc_node.skill_id, 0)
+	var pending_lvl = GameData.pending_reincarnation_upgrades.get(reinc_node.skill_id, 0)
+	var total_lvl = active_lvl + pending_lvl
+	var max_lvl = reinc_node.max_level
+	var cost = reinc_node.get_upgrade_cost(total_lvl)
+	
+	var lvl_str = ""
+	if total_lvl >= max_lvl:
+		lvl_str = "[Lv MAX]"
+	elif pending_lvl > 0:
+		lvl_str = "[Lv %d (+%d)/%d]" % [active_lvl, pending_lvl, max_lvl]
+	else:
+		lvl_str = "[Lv %d/%d]" % [active_lvl, max_lvl]
+		
+	var cost_str = ""
+	if total_lvl >= max_lvl:
+		cost_str = "最大レベルに達しました"
+	else:
+		cost_str = "コスト: ⚛️ %d" % cost
+		
+	var skill_name = reinc_node.skill_name if not reinc_node.skill_name.is_empty() else reinc_node.skill_id
+	var full_desc = reinc_node.description
+	
+	var border_color = Color(0.6, 0.4, 0.8)
+	var node_style = reinc_node.get_theme_stylebox("normal")
+	if node_style is StyleBoxFlat:
+		border_color = node_style.border_color
+		
+	var icon_panel = get_node_or_null("TooltipMargin/TooltipPanel/PaddingMargin/VBoxContainer/Header/IconPanel")
+	if icon_panel and node_style is StyleBoxFlat:
+		var icon_style = node_style.duplicate() as StyleBoxFlat
+		icon_style.expand_margin_left = 0
+		icon_style.expand_margin_top = 0
+		icon_style.expand_margin_right = 0
+		icon_style.expand_margin_bottom = 0
+		icon_style.border_width_left = 6
+		icon_style.border_width_top = 6
+		icon_style.border_width_right = 6
+		icon_style.border_width_bottom = 6
+		icon_panel.add_theme_stylebox_override("panel", icon_style)
+		
+		var icon_char_label = icon_panel.get_node_or_null("IconChar") as Label
+		if reinc_node._icon_texture:
+			if icon_char_label:
+				icon_char_label.visible = false
+			if icon_rect:
+				icon_rect.visible = true
+				icon_rect.texture = reinc_node._icon_texture
+		else:
+			if icon_rect:
+				icon_rect.visible = false
+			if icon_char_label:
+				icon_char_label.visible = true
+				icon_char_label.text = reinc_node.icon_char
+				icon_char_label.add_theme_color_override("font_color", border_color.lightened(0.2))
+				
+	if name_label:
+		name_label.text = skill_name
+		name_label.add_theme_color_override("font_color", border_color.lightened(0.2))
+	if level_label:
+		level_label.text = lvl_str
+	if cost_label:
+		cost_label.visible = true
+		cost_label.text = cost_str
+	if desc_label:
+		desc_label.text = full_desc
+		
+	if tooltip_panel:
+		var tooltip_style := tooltip_panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+		if tooltip_style:
+			tooltip_style.border_color = border_color
+			tooltip_panel.add_theme_stylebox_override("panel", tooltip_style)
+
+
+func _on_reinc_stars_changed(_stars: int) -> void:
+	if _target_reinc_node:
+		call_deferred(&"setup_from_reinc_node", _target_reinc_node)
+
+
+func _on_reinc_upgrades_changed() -> void:
+	if _target_reinc_node:
+		call_deferred(&"setup_from_reinc_node", _target_reinc_node)

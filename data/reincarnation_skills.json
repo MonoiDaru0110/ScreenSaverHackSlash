@@ -1,0 +1,80 @@
+{
+	"skills": {
+		"tree_node_root": {
+			"name": "宇宙の源流",
+			"icon": "⚛️",
+			"description": "最上位転生システムの基本ノード (初期開放)",
+			"max_level": 1,
+			"base_cost": 0,
+			"cost_multiplier": 1.0,
+			"x": 0.0,
+			"y": 0.0,
+			"prerequisites": []
+		},
+		"tree_node_equip_lvl": {
+			"name": "根源の装備力",
+			"icon": "⚔️",
+			"description": "獲得装備の初期レベルを恒常的に +Lv. 5 底上げ",
+			"max_level": 10,
+			"base_cost": 1,
+			"cost_multiplier": 1.5,
+			"x": 160.0,
+			"y": -80.0,
+			"prerequisites": [
+				"tree_node_root"
+			]
+		},
+		"tree_node_auto_skills": {
+			"name": "叡智の解放",
+			"icon": "📜",
+			"description": "転生時に通常スキルツリーの初期解禁数を +2 個追加",
+			"max_level": 5,
+			"base_cost": 2,
+			"cost_multiplier": 1.5,
+			"x": 320.0,
+			"y": -80.0,
+			"prerequisites": [
+				"tree_node_equip_lvl"
+			]
+		},
+		"tree_node_mult": {
+			"name": "宇宙の超越倍率",
+			"icon": "🌌",
+			"description": "ゴールド・トークンの全獲得基礎倍率を常時 +25% 加算",
+			"max_level": 10,
+			"base_cost": 3,
+			"cost_multiplier": 1.5,
+			"x": 480.0,
+			"y": -80.0,
+			"prerequisites": [
+				"tree_node_auto_skills"
+			]
+		},
+		"tree_node_slot": {
+			"name": "スロット拡張",
+			"icon": "💎",
+			"description": "上位スキルツリーの同時配置スロット枠を +1 解禁",
+			"max_level": 3,
+			"base_cost": 5,
+			"cost_multiplier": 2.0,
+			"x": 160.0,
+			"y": 80.0,
+			"prerequisites": [
+				"tree_node_root"
+			]
+		},
+		"tree_node_breakthrough": {
+			"name": "限界突破",
+			"icon": "🌟",
+			"description": "全アビリティの上限を突破し、転生パッシブ倍率を 1.5倍",
+			"max_level": 1,
+			"base_cost": 10,
+			"cost_multiplier": 1.0,
+			"x": 320.0,
+			"y": 80.0,
+			"prerequisites": [
+				"tree_node_slot"
+			]
+		}
+	}
+}

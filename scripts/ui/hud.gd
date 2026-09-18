@@ -201,6 +201,7 @@ func _ready() -> void:
 	_init_slot_buttons()
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	GameData.inventory_updated.connect(_on_inventory_updated)
+	GameData.reincarnation_performed.connect(_on_reincarnation_performed)
 	btn_close_inventory.pressed.connect(close_inventory)
 	if reincarnation_window.has_signal("closed"):
 		reincarnation_window.closed.connect(close_reincarnation)
@@ -295,6 +296,17 @@ func _on_upgrades_changed() -> void:
 	_update_upgrade_buttons()
 	_update_sidebar_star_progress()
 	_update_special_skill_custom_ui()
+
+
+func _on_reincarnation_performed() -> void:
+	_update_upgrade_buttons()
+	_update_sidebar_star_progress()
+	_update_slots_ui()
+	_update_inventory_ui()
+	_update_special_skill_custom_ui()
+	_update_skill_nodes()
+	if skill_tree_scroll:
+		skill_tree_scroll.update_culling()
 
 
 func _update_special_skill_custom_ui() -> void:

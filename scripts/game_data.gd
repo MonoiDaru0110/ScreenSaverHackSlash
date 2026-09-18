@@ -314,11 +314,43 @@ func execute_reincarnation() -> void:
 	reincarnation_level += 1
 	is_infusing_tokens = false
 
-	# 通常通貨等のリセット
-	tokens = 0
-	tokens_changed.emit(0)
-	gold = 1000
-	gold_changed.emit(1000)
+	# 1. トークン、ゴールドを0に (スターの注入状況 stars, infused_tokens, star_level は維持)
+	tokens = 0.0
+	tokens_changed.emit(0.0)
+	gold = 0.0
+	gold_changed.emit(0.0)
+
+	# 2. 右枠のステータス強化リセット
+	size_level = 0
+	speed_level = 0
+	boost_level = 0
+	ascension_level = 0
+	logo_count = 1
+	logo_reset_requested.emit()
+
+	# 3. 所持装備を装備欄含めてすべて未所持の状態にリセット
+	equipped_items = {
+		"main": null,
+		"sub": null,
+		"accessory_1": null,
+		"accessory_2": null,
+		"accessory_3": null,
+		"accessory_4": null
+	}
+	for type in ["main", "sub", "accessory"]:
+		inventories[type] = []
+		for i in range(MAX_TYPE_INVENTORY_SIZE):
+			inventories[type].append(null)
+	_recalculate_equipped_skill_levels()
+	equipment_changed.emit()
+	inventory_updated.emit()
+
+	# 4. トークンによるスキルをリセット
+	skill_levels.clear()
+	_recalculate_all_cumulative_levels()
+
+	# 倍率キャッシュ等の再計算
+	_recalculate_cached_multipliers()
 
 	reincarnation_performed.emit()
 	upgrades_changed.emit()
@@ -326,18 +358,34 @@ func execute_reincarnation() -> void:
 
 func get_base_equip_level_bonus() -> int:
 	var lvl = active_reincarnation_upgrades.get("tree_node_equip_lvl", 0)
-	return lvl * 5
+	return (lvl * 5) + (reincarnation_level * 10)
+
+
+func get_pending_base_equip_level_bonus() -> int:
+	var lvl = active_reincarnation_upgrades.get("tree_node_equip_lvl", 0) + pending_reincarnation_upgrades.get("tree_node_equip_lvl", 0)
+	return (lvl * 5) + ((reincarnation_level + 1) * 10)
 
 
 func get_auto_unlocked_skill_count() -> int:
 	var lvl = active_reincarnation_upgrades.get("tree_node_auto_skills", 0)
-	return lvl * 2
+	return (lvl * 2) + (reincarnation_level * 5)
+
+
+func get_pending_auto_unlocked_skill_count() -> int:
+	var lvl = active_reincarnation_upgrades.get("tree_node_auto_skills", 0) + pending_reincarnation_upgrades.get("tree_node_auto_skills", 0)
+	return (lvl * 2) + ((reincarnation_level + 1) * 5)
 
 
 func get_reincarnation_multiplier() -> float:
 	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0)
 	var tree_boost = active_reincarnation_upgrades.get("tree_node_mult", 0)
-	return 1.0 + (star_boost * 0.5) + (tree_boost * 0.25)
+	return (1.0 + (star_boost * 0.5) + (tree_boost * 0.25)) * pow(1.1, float(reincarnation_level))
+
+
+func get_pending_reincarnation_multiplier() -> float:
+	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0) + pending_reincarnation_upgrades.get("upgrade_star_boost", 0)
+	var tree_boost = active_reincarnation_upgrades.get("tree_node_mult", 0) + pending_reincarnation_upgrades.get("tree_node_mult", 0)
+	return (1.0 + (star_boost * 0.5) + (tree_boost * 0.25)) * pow(1.1, float(reincarnation_level + 1))
 
 
 func use_tokens(amount: int) -> bool:
@@ -608,10 +656,11 @@ func _recalculate_cached_multipliers() -> void:
 	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
 	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
 	var div_mult := get_diversity_multiplier()
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult
-	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level)
-	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level)
+	var reinc_mult := get_reincarnation_multiplier()
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * reinc_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * reinc_mult
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * reinc_mult
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * reinc_mult
 	_cached_ascension_mult = get_ascension_multiplier()
 
 
@@ -763,7 +812,8 @@ func generate_random_equipment() -> Dictionary:
 	var base_asc := float(maxi(1, ascension_level))
 	var rand_factor := randf_range(0.9, 1.1)
 	var tree_level_bonus := float(total_equip_drop_level_boost_level * 10)
-	var raw_level := (base_asc * rand_factor) + tree_level_bonus
+	var reinc_level_bonus := float(get_base_equip_level_bonus())
+	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus
 	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
 	
 	# Generate random rarity using Gaussian (Normal) Distribution model

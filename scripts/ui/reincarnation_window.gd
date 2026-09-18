@@ -14,14 +14,20 @@ signal closed()
 @onready var lbl_equip_lvl_bonus: Label = %LblEquipLevelBonus
 @onready var lbl_auto_skills_bonus: Label = %LblAutoSkillsBonus
 @onready var lbl_multiplier_bonus: Label = %LblMultiplierBonus
+@onready var lbl_next_equip_lvl_bonus: Label = %LblNextEquipLevelBonus
+@onready var lbl_next_auto_skills_bonus: Label = %LblNextAutoSkillsBonus
+@onready var lbl_next_multiplier_bonus: Label = %LblNextMultiplierBonus
 
 # Containers
 @onready var special_skills_list: VBoxContainer = %SpecialSkillsList
-@onready var tree_nodes_container: VBoxContainer = %TreeNodesContainer
+@onready var reinc_tree_scroll: ReincarnationSkillTreeController = %ReincTreeScroll
+@onready var reinc_tree_viewport: Control = %ReincTreeViewport
 
 @onready var btn_close: Button = %CloseBtn
 @onready var btn_reincarnate: Button = %ReincarnateBtn
-@onready var lbl_reincarnation_count: Label = %ReincarnationCountLabel
+
+var _reinc_skill_nodes: Array[ReincarnationSkillNode] = []
+var _has_centered_reinc_tree: bool = false
 
 # Data definition for Special Skills
 const SPECIAL_SKILLS_DATA = [
@@ -47,52 +53,6 @@ const SPECIAL_SKILLS_DATA = [
 	}
 ]
 
-# Data definition for Vertical Skill Tree
-const TREE_NODES_DATA = [
-	{
-		"id": "tree_node_root",
-		"name": "⚛️ Root: 宇宙の源流",
-		"desc": "最上位転生システムの基本ノード (初期開放)",
-		"cost": 0,
-		"type": "root"
-	},
-	{
-		"id": "tree_node_equip_lvl",
-		"name": "装備鍛錬 (装備レベル底上げ)",
-		"desc": "転生時、ドロップ装備の初期レベルを +Lv. 5 底上げ",
-		"cost": 1,
-		"type": "node"
-	},
-	{
-		"id": "tree_node_auto_skills",
-		"name": "スキル覚醒 (初期自動習得)",
-		"desc": "転生時、基礎スキルツリーの初期スキルを 2個 自動解禁",
-		"cost": 2,
-		"type": "node"
-	},
-	{
-		"id": "tree_node_mult",
-		"name": "エーテル共鳴 (全体倍率アップ)",
-		"desc": "転生後の全リソース獲得倍率を +25% 増加",
-		"cost": 3,
-		"type": "node"
-	},
-	{
-		"id": "tree_node_slot",
-		"name": "スロット拡張 (スキル配置枠)",
-		"desc": "上位スキルツリーの同時配置スロット枠を +1 解禁",
-		"cost": 5,
-		"type": "node"
-	},
-	{
-		"id": "tree_node_breakthrough",
-		"name": "限界突破 (最終超越)",
-		"desc": "全アビリティの上限を突破し、転生パッシブ倍率を 1.5倍",
-		"cost": 10,
-		"type": "node"
-	}
-]
-
 
 func _ready() -> void:
 	btn_close.pressed.connect(_on_close_pressed)
@@ -105,6 +65,11 @@ func _ready() -> void:
 	visibility_changed.connect(func():
 		if not visible:
 			_hide_skill_tooltip()
+		else:
+			if reinc_tree_scroll and not _has_centered_reinc_tree:
+				_has_centered_reinc_tree = true
+				await get_tree().process_frame
+				reinc_tree_scroll.center_on_root()
 	)
 	tree_exiting.connect(_hide_skill_tooltip)
 
@@ -138,12 +103,27 @@ func update_ui() -> void:
 	]
 
 	# 基礎パッシブボーナスの更新
-	lbl_equip_lvl_bonus.text = "・ 装備初期レベル底上げ: +Lv. %d" % GameData.get_base_equip_level_bonus()
-	lbl_auto_skills_bonus.text = "・ 初期自動解禁スキル数: +%d 個" % GameData.get_auto_unlocked_skill_count()
-	lbl_multiplier_bonus.text = "・ 転生オール倍率: x %.2f" % GameData.get_reincarnation_multiplier()
+	var cur_equip_lvl = GameData.get_base_equip_level_bonus()
+	var cur_auto_skills = GameData.get_auto_unlocked_skill_count()
+	var cur_mult = GameData.get_reincarnation_multiplier()
 
-	# 転生回数表示
-	lbl_reincarnation_count.text = "現在の転生回数: Lv. %d" % GameData.reincarnation_level
+	lbl_equip_lvl_bonus.text = "装備レベル+%d" % cur_equip_lvl
+	lbl_auto_skills_bonus.text = "スキル自動解放+%d" % cur_auto_skills
+	lbl_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % cur_mult
+
+	var next_equip_lvl = GameData.get_pending_base_equip_level_bonus()
+	var next_auto_skills = GameData.get_pending_auto_unlocked_skill_count()
+	var next_mult = GameData.get_pending_reincarnation_multiplier()
+
+	lbl_next_equip_lvl_bonus.text = "装備レベル+%d" % next_equip_lvl
+	lbl_next_auto_skills_bonus.text = "スキル自動解放+%d" % next_auto_skills
+	lbl_next_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % next_mult
+
+	var highlight_color := Color(0.4, 0.95, 0.6)
+	var normal_color := Color(0.75, 0.85, 0.95)
+	lbl_next_equip_lvl_bonus.add_theme_color_override("font_color", highlight_color if next_equip_lvl > cur_equip_lvl else normal_color)
+	lbl_next_auto_skills_bonus.add_theme_color_override("font_color", highlight_color if next_auto_skills > cur_auto_skills else normal_color)
+	lbl_next_multiplier_bonus.add_theme_color_override("font_color", highlight_color if next_mult > cur_mult else normal_color)
 
 	var pending_count = GameData.pending_reincarnation_upgrades.size()
 	btn_reincarnate.disabled = pending_count == 0 and GameData.reincarnation_level == 0
@@ -153,7 +133,6 @@ func update_ui() -> void:
 
 
 var _special_skill_widgets: Array[Dictionary] = []
-var _tree_node_widgets: Array[Dictionary] = []
 var _is_ui_built: bool = false
 
 
@@ -236,7 +215,7 @@ func _build_ui_once() -> void:
 
 		var level_label := Label.new()
 		level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		level_label.text = "+0→+0"
+		level_label.text = "+0 [+0]"
 		level_label.add_theme_font_size_override("font_size", 17)
 		header_hbox.add_child(level_label)
 
@@ -263,92 +242,87 @@ func _build_ui_once() -> void:
 
 		special_skills_list.add_child(btn)
 
-	# --- 2. 縦型ツリーノードの固定構築 ---
-	for child in tree_nodes_container.get_children():
+	# --- 2. 転生スキルツリーの構築 ---
+	_load_reincarnation_skills_from_json()
+
+
+func _load_reincarnation_skills_from_json() -> void:
+	if not reinc_tree_viewport:
+		return
+
+	for child in reinc_tree_viewport.get_children():
 		child.queue_free()
-	_tree_node_widgets.clear()
+	_reinc_skill_nodes.clear()
 
-	for i in range(TREE_NODES_DATA.size()):
-		var node_data = TREE_NODES_DATA[i]
+	var file_path = "res://data/reincarnation_skills.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("Reincarnation skills data file not found: %s" % file_path)
+		return
 
-		if i > 0:
-			var line_container = CenterContainer.new()
-			line_container.custom_minimum_size = Vector2(0, 16)
-			var line = ColorRect.new()
-			line.custom_minimum_size = Vector2(3, 16)
-			line.color = Color(0.5, 0.35, 0.75, 0.8)
-			line_container.add_child(line)
-			tree_nodes_container.add_child(line_container)
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		push_warning("Failed to open %s" % file_path)
+		return
 
-		var card = PanelContainer.new()
-		card.custom_minimum_size = Vector2(0, 64)
+	var json_str = file.get_as_text()
+	file.close()
 
-		var margin = MarginContainer.new()
-		margin.add_theme_constant_override("margin_left", 12)
-		margin.add_theme_constant_override("margin_top", 6)
-		margin.add_theme_constant_override("margin_right", 12)
-		margin.add_theme_constant_override("margin_bottom", 6)
-		card.add_child(margin)
+	var test_json_conv = JSON.new()
+	var error = test_json_conv.parse(json_str)
+	if error != OK:
+		push_warning("JSON Parse Error in %s: %s" % [file_path, test_json_conv.get_error_message()])
+		return
 
-		var hbox = HBoxContainer.new()
-		margin.add_child(hbox)
+	var data = test_json_conv.data
+	if not data is Dictionary or not data.has("skills"):
+		return
 
-		var vbox = VBoxContainer.new()
-		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		hbox.add_child(vbox)
+	var skills_dict: Dictionary = data["skills"]
+	var node_scene = preload("res://scenes/skills/reincarnation_skill_node.tscn")
 
-		var name_lbl = Label.new()
-		name_lbl.text = node_data["name"]
-		name_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5) if node_data["type"] == "root" else Color(0.8, 0.9, 1.0))
-		name_lbl.add_theme_font_size_override("font_size", 14)
-		vbox.add_child(name_lbl)
+	for s_id in skills_dict:
+		var s_data: Dictionary = skills_dict[s_id]
+		var node = node_scene.instantiate() as ReincarnationSkillNode
+		node.skill_id = s_id
+		node.skill_name = s_data.get("name", "")
+		node.icon_char = s_data.get("icon", "⚛️")
+		node.description = s_data.get("description", "")
+		node.max_level = s_data.get("max_level", 5)
+		node.base_cost = s_data.get("base_cost", 1)
+		node.cost_multiplier = s_data.get("cost_multiplier", 1.5)
+		var x: float = s_data.get("x", 0.0)
+		var y: float = s_data.get("y", 0.0)
+		node.position = Vector2(x, y)
 
-		var desc_lbl = Label.new()
-		desc_lbl.text = node_data["desc"]
-		desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
-		desc_lbl.add_theme_font_size_override("font_size", 11)
-		vbox.add_child(desc_lbl)
+		var prereqs = s_data.get("prerequisites", [])
+		var prereq_array: Array[String] = []
+		for p in prereqs:
+			prereq_array.append(str(p))
+		node.prerequisites = prereq_array
 
-		var id: String = node_data["id"]
-		var cost: int = node_data["cost"]
-		var is_root: bool = (node_data["type"] == "root")
+		node.pressed.connect(func(): _on_reinc_skill_node_pressed(node))
+		reinc_tree_viewport.add_child(node)
+		_reinc_skill_nodes.append(node)
 
-		if is_root:
-			var badge = Label.new()
-			badge.text = "⚡ 常時有効"
-			badge.add_theme_color_override("font_color", Color(0.4, 0.9, 0.6))
-			badge.add_theme_font_size_override("font_size", 12)
-			hbox.add_child(badge)
-		else:
-			var badge_active := Label.new()
-			badge_active.text = "✅ 解禁済み"
-			badge_active.add_theme_color_override("font_color", Color(0.3, 0.9, 0.4))
-			badge_active.add_theme_font_size_override("font_size", 12)
-			hbox.add_child(badge_active)
+	for node in _reinc_skill_nodes:
+		node.refresh()
 
-			var badge_pending := Label.new()
-			badge_pending.text = "🔒 [予約済み]"
-			badge_pending.add_theme_color_override("font_color", Color(1.0, 0.7, 0.2))
-			badge_pending.add_theme_font_size_override("font_size", 12)
-			hbox.add_child(badge_pending)
+	await get_tree().process_frame
+	if is_instance_valid(reinc_tree_scroll):
+		reinc_tree_scroll.center_on_root()
 
-			var btn := Button.new()
-			btn.custom_minimum_size = Vector2(100, 34)
-			btn.text = "⚛️ %d 予約" % cost
-			btn.add_theme_font_size_override("font_size", 13)
-			btn.pressed.connect(func(): _reserve_skill(id, cost))
-			hbox.add_child(btn)
 
-			_tree_node_widgets.append({
-				"id": id,
-				"cost": cost,
-				"badge_active": badge_active,
-				"badge_pending": badge_pending,
-				"btn": btn
-			})
-
-		tree_nodes_container.add_child(card)
+func _on_reinc_skill_node_pressed(node: ReincarnationSkillNode) -> void:
+	if not node.is_playable():
+		return
+	var active_lvl: int = GameData.active_reincarnation_upgrades.get(node.skill_id, 0)
+	var pending_lvl: int = GameData.pending_reincarnation_upgrades.get(node.skill_id, 0)
+	var total_lvl: int = active_lvl + pending_lvl
+	if total_lvl >= node.max_level:
+		return
+	var cost: int = node.get_upgrade_cost(total_lvl)
+	if GameData.reserve_reincarnation_upgrade(node.skill_id, cost):
+		update_ui()
 
 
 func _update_skill_widgets() -> void:
@@ -361,7 +335,7 @@ func _update_skill_widgets() -> void:
 		var target_lvl: int = active_lvl + pending_lvl
 		var next_cost: int = target_lvl + 1
 
-		w.level_label.text = "+%d→+%d" % [active_lvl, target_lvl]
+		w.level_label.text = "+%d [+%d]" % [active_lvl, pending_lvl]
 		w.cost_label.text = "⚛️ %d" % next_cost
 		var can_afford: bool = (GameData.stars >= next_cost)
 		w.btn.disabled = not can_afford
@@ -375,17 +349,9 @@ func _update_skill_widgets() -> void:
 			w.level_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4, 0.4))
 			w.cost_label.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4, 0.85))
 
-	for w in _tree_node_widgets:
-		var active_lvl: int = GameData.active_reincarnation_upgrades.get(w.id, 0)
-		var pending_lvl: int = GameData.pending_reincarnation_upgrades.get(w.id, 0)
-		var is_active := active_lvl > 0
-		var is_pending := not is_active and pending_lvl > 0
-
-		w.badge_active.visible = is_active
-		w.badge_pending.visible = is_pending
-		w.btn.visible = not is_active and not is_pending
-		if w.btn.visible:
-			w.btn.disabled = (GameData.stars < w.cost)
+	for node in _reinc_skill_nodes:
+		if is_instance_valid(node):
+			node.queue_update_ui()
 
 
 func _reserve_special_skill(id: String) -> void:
@@ -397,11 +363,6 @@ func _reserve_special_skill(id: String) -> void:
 	if GameData.reserve_reincarnation_upgrade(id, next_cost):
 		update_ui()
 		_update_active_tooltip()
-
-
-func _reserve_skill(id: String, cost: int) -> void:
-	if GameData.reserve_reincarnation_upgrade(id, cost):
-		update_ui()
 
 
 func _on_toggle_infuse_pressed() -> void:

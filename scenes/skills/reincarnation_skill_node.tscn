@@ -1,0 +1,81 @@
+[gd_scene load_steps=7 format=3 uid="uid://dnjmamrucb6nc"]
+
+[ext_resource type="Script" path="res://scripts/skills/reincarnation_skill_node.gd" id="1_skill"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_522ik"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p2hsv"]
+bg_color = Color(0.12, 0.08, 0.18, 1)
+border_width_left = 9
+border_width_top = 9
+border_width_right = 9
+border_width_bottom = 9
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 9.0
+expand_margin_top = 9.0
+expand_margin_right = 9.0
+expand_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cs5l0"]
+bg_color = Color(0.22, 0.14, 0.32, 1)
+border_width_left = 9
+border_width_top = 9
+border_width_right = 9
+border_width_bottom = 9
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 9.0
+expand_margin_top = 9.0
+expand_margin_right = 9.0
+expand_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mx63b"]
+bg_color = Color(0.1, 0.06, 0.16, 1)
+border_width_left = 9
+border_width_top = 9
+border_width_right = 9
+border_width_bottom = 9
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 9.0
+expand_margin_top = 9.0
+expand_margin_right = 9.0
+expand_margin_bottom = 9.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qs7b7"]
+bg_color = Color(0.15, 0.1, 0.22, 1)
+border_width_left = 9
+border_width_top = 9
+border_width_right = 9
+border_width_bottom = 9
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+expand_margin_left = 9.0
+expand_margin_top = 9.0
+expand_margin_right = 9.0
+expand_margin_bottom = 9.0
+
+[node name="ReincarnationSkillNode" type="Button"]
+custom_minimum_size = Vector2(60, 60)
+offset_right = 60.0
+offset_bottom = 60.0
+pivot_offset = Vector2(30, 30)
+focus_mode = 0
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("StyleBoxEmpty_522ik")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_p2hsv")
+theme_override_styles/hover = SubResource("StyleBoxFlat_cs5l0")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mx63b")
+theme_override_styles/normal = SubResource("StyleBoxFlat_qs7b7")
+action_mode = 0
+text = "⚛️"
+script = ExtResource("1_skill")
