@@ -1,44 +1,52 @@
 extends Control
 class_name ReincarnationSkillTreeController
 
-@export var min_zoom := 0.3
-@export var max_zoom := 2.0
-@export var zoom_speed := 0.1
+@export var scroll_speed: float = 45.0
 
 @onready var viewport: Control = %ReincTreeViewport
 
-var _zoom := 1.0
 var _is_dragging := false
 var _last_mouse_pos := Vector2.ZERO
+
+var _cached_min_y: float = -400.0
+var _cached_max_y: float = 0.0
 
 
 func _ready() -> void:
 	clip_contents = true
-	
+	resized.connect(_on_resized)
+
 	await get_tree().process_frame
 	if viewport:
 		viewport.mouse_filter = Control.MOUSE_FILTER_PASS
-		
-		var child_size = Vector2(400, 400)
+		viewport.scale = Vector2.ONE
+		viewport.pivot_offset = Vector2.ZERO
+
 		for child in viewport.get_children():
 			if not child is ReincarnationSkillNode and child is Control:
 				child.mouse_filter = Control.MOUSE_FILTER_PASS
-				child_size = child.size
-				
-		viewport.pivot_offset = Vector2.ZERO
-		viewport.position = (size - child_size) / 2.0
+
+		_calculate_tree_bounds()
+		center_on_root()
+
+
+func _on_resized() -> void:
+	_update_x_position()
+	_clamp_y_position()
 
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.is_pressed():
+			# ホイールによる上下スクロール
 			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-				_zoom_at_mouse(zoom_speed)
+				scroll_vertical(scroll_speed)
 				accept_event()
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-				_zoom_at_mouse(-zoom_speed)
+				scroll_vertical(-scroll_speed)
 				accept_event()
-		
+
+		# ドラッグによる上下スクロール
 		if event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
 			if event.is_pressed():
 				_is_dragging = true
@@ -49,72 +57,71 @@ func _gui_input(event: InputEvent) -> void:
 				_is_dragging = false
 				mouse_default_cursor_shape = Control.CURSOR_ARROW
 				accept_event()
-				
+
 	elif event is InputEventMouseMotion:
 		if _is_dragging:
 			var diff = event.global_position - _last_mouse_pos
-			if viewport:
-				viewport.position += diff
+			scroll_vertical(diff.y)
 			_last_mouse_pos = event.global_position
 			accept_event()
 
 
-func _zoom_at_mouse(factor: float) -> void:
+func scroll_vertical(amount: float) -> void:
 	if not viewport:
 		return
-		
-	var old_zoom = _zoom
-	_zoom = clamp(_zoom + factor, min_zoom, max_zoom)
-	if old_zoom == _zoom:
+	viewport.position.y += amount
+	_clamp_y_position()
+
+
+func _update_x_position() -> void:
+	if not viewport:
 		return
-		
-	var mouse_local = viewport.get_local_mouse_position()
-	viewport.scale = Vector2(_zoom, _zoom)
-	var shift = mouse_local * (_zoom - old_zoom)
-	viewport.position -= shift
+	viewport.position.x = (size.x / 2.0) - 30.0
 
 
-func center_on_root(target_window: Control = null) -> void:
-	_zoom = 1.0
-	if viewport:
-		viewport.scale = Vector2.ONE
-		
-	var root_node: ReincarnationSkillNode = null
-	if viewport:
-		for child in viewport.get_children():
-			if child is ReincarnationSkillNode:
-				if child.prerequisites.is_empty():
-					root_node = child
-					break
+func _calculate_tree_bounds() -> void:
+	if not viewport:
+		return
+	var min_y := 0.0
+	var max_y := 0.0
+	var found := false
+	for child in viewport.get_children():
+		if child is ReincarnationSkillNode:
+			var pos_y: float = child.position.y
+			if not found:
+				min_y = pos_y
+				max_y = pos_y
+				found = true
 			else:
-				for sub_child in child.get_children():
-					if sub_child is ReincarnationSkillNode and sub_child.prerequisites.is_empty():
-						root_node = sub_child
-						break
-			if root_node:
-				break
-			
-	if root_node:
-		var target_global_center: Vector2 = Vector2.ZERO
-		if target_window:
-			var w_size = target_window.size
-			if w_size.x <= 100 or w_size.y <= 100:
-				w_size = target_window.custom_minimum_size
-			target_global_center = target_window.global_position + w_size / 2.0
-		else:
-			var parent_size = size
-			if parent_size.x <= 0 or parent_size.y <= 0:
-				parent_size = Vector2(600, 600)
-			target_global_center = global_position + parent_size / 2.0
-			
-		var node_size = root_node.size
-		if node_size.x <= 0 or node_size.y <= 0:
-			node_size = root_node.custom_minimum_size
-		if node_size.x <= 0 or node_size.y <= 0:
-			node_size = Vector2(60, 60)
-			
-		var node_global_center = root_node.global_position + node_size / 2.0
-		var diff = target_global_center - node_global_center
-		viewport.position += diff
-	elif viewport:
-		viewport.position = size / 2.0
+				min_y = minf(min_y, pos_y)
+				max_y = maxf(max_y, pos_y)
+	if found:
+		_cached_min_y = min_y
+		_cached_max_y = max_y
+
+
+func _clamp_y_position() -> void:
+	if not viewport:
+		return
+	var parent_h = size.y if size.y > 0 else 500.0
+	var min_allowed_pos_y = -_cached_max_y + 80.0
+	var max_allowed_pos_y = -_cached_min_y + parent_h - 140.0
+
+	if min_allowed_pos_y > max_allowed_pos_y:
+		var mid = (min_allowed_pos_y + max_allowed_pos_y) / 2.0
+		min_allowed_pos_y = mid - 50.0
+		max_allowed_pos_y = mid + 50.0
+
+	viewport.position.y = clampf(viewport.position.y, min_allowed_pos_y, max_allowed_pos_y)
+
+
+func center_on_root(_target_window: Control = null) -> void:
+	if not viewport:
+		return
+	viewport.scale = Vector2.ONE
+	_calculate_tree_bounds()
+	_update_x_position()
+
+	var parent_h = size.y if size.y > 0 else 500.0
+	viewport.position.y = parent_h * 0.72 - _cached_max_y
+	_clamp_y_position()

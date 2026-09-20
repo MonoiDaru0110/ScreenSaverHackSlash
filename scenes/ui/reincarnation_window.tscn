@@ -123,9 +123,8 @@ size_flags_vertical = 3
 theme_override_constants/separation = 16
 
 [node name="LeftStation" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody"]
+custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.58
 theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
 
 [node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation"]
@@ -163,9 +162,16 @@ theme_override_styles/background = SubResource("StyleBoxFlat_progress_bg")
 theme_override_styles/fill = SubResource("StyleBoxFlat_progress_fill")
 show_percentage = false
 
-[node name="InfusedTokensLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
-unique_name_in_owner = true
+[node name="TokenLabelContainer" type="Control" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
+
+[node name="InfusedTokensLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol/TokenLabelContainer"]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 18.0
 theme_override_colors/font_color = Color(0.3, 0.8, 0.9, 1)
 theme_override_font_sizes/font_size = 13
 text = "注入済み: 💎 0"
@@ -200,11 +206,14 @@ theme_override_colors/font_color = Color(0.9, 0.6, 1, 1)
 theme_override_font_sizes/font_size = 28
 text = "⚛️ 0"
 horizontal_alignment = 1
+clip_text = true
+text_overrun_behavior = 3
 
 [node name="SpecialScroll" type="ScrollContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_vertical = 3
+horizontal_scroll_mode = 0
 
 [node name="SpecialSkillsList" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/SpecialScroll"]
 unique_name_in_owner = true
@@ -225,17 +234,26 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin"]
+[node name="TreeAndDetailSplit" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ReincTreeScroll" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox"]
-unique_name_in_owner = true
+[node name="TreeContainer" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+
+[node name="ReincTreeScroll" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("2_reinc_controller")
 
-[node name="ReincTreeScrollBg" type="Panel" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox/ReincTreeScroll"]
+[node name="ReincTreeScrollBg" type="Panel" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -245,11 +263,66 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_reinc_scroll_bg")
 
-[node name="ReincTreeViewport" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/VBox/ReincTreeScroll"]
+[node name="ReincTreeViewport" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
 anchors_preset = 0
+
+[node name="SkillDetailPanel" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="DetailVBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderHBox" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DetailIconLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "⚛️"
+
+[node name="DetailNameLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "宇宙の源流"
+
+[node name="HSeparator1" type="HSeparator" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+layout_mode = 2
+
+[node name="DetailDescLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 13
+text = "最上位転生システムの基本ノード"
+autowrap_mode = 2
+
+[node name="BtnUpgradeDetailSkill" type="Button" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 66)
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "⚛️ 0"
 
 [node name="BonusBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
 layout_mode = 2

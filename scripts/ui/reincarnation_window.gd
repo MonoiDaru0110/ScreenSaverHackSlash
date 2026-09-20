@@ -23,10 +23,17 @@ signal closed()
 @onready var reinc_tree_scroll: ReincarnationSkillTreeController = %ReincTreeScroll
 @onready var reinc_tree_viewport: Control = %ReincTreeViewport
 
+# Skill Detail Panel references
+@onready var lbl_detail_icon: Label = %DetailIconLabel
+@onready var lbl_detail_name: Label = %DetailNameLabel
+@onready var lbl_detail_desc: Label = %DetailDescLabel
+@onready var btn_upgrade_detail_skill: Button = %BtnUpgradeDetailSkill
+
 @onready var btn_close: Button = %CloseBtn
 @onready var btn_reincarnate: Button = %ReincarnateBtn
 
 var _reinc_skill_nodes: Array[ReincarnationSkillNode] = []
+var _selected_skill_node: ReincarnationSkillNode = null
 var _has_centered_reinc_tree: bool = false
 
 # Data definition for Special Skills
@@ -55,9 +62,13 @@ const SPECIAL_SKILLS_DATA = [
 
 
 func _ready() -> void:
+	_setup_button_styles()
+
 	btn_close.pressed.connect(_on_close_pressed)
 	btn_toggle_infuse.pressed.connect(_on_toggle_infuse_pressed)
 	btn_reincarnate.pressed.connect(_on_reincarnate_pressed)
+	if btn_upgrade_detail_skill:
+		btn_upgrade_detail_skill.pressed.connect(_on_upgrade_detail_skill_pressed)
 
 	GameData.tokens_changed.connect(func(_val): update_ui())
 	GameData.stars_changed.connect(func(_val): update_ui())
@@ -132,7 +143,7 @@ func update_ui() -> void:
 	lbl_next_multiplier_bonus.add_theme_color_override("font_color", highlight_color if next_mult > cur_mult else normal_color)
 
 	var pending_count = GameData.pending_reincarnation_upgrades.size()
-	btn_reincarnate.disabled = pending_count == 0 and GameData.reincarnation_level == 0
+	btn_reincarnate.disabled = (pending_count == 0)
 
 	# リスト項目の軽量更新
 	_update_skill_widgets()
@@ -176,6 +187,23 @@ func _setup_button_styles() -> void:
 	_style_btn_disabled.set_border_width_all(2)
 	_style_btn_disabled.set_corner_radius_all(6)
 
+	if btn_reincarnate:
+		btn_reincarnate.add_theme_stylebox_override("normal", _style_btn_normal)
+		btn_reincarnate.add_theme_stylebox_override("hover", _style_btn_hover)
+		btn_reincarnate.add_theme_stylebox_override("pressed", _style_btn_pressed)
+		btn_reincarnate.add_theme_stylebox_override("disabled", _style_btn_disabled)
+		btn_reincarnate.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		btn_reincarnate.add_theme_color_override("font_disabled_color", Color(0.7, 0.65, 0.8, 0.5))
+		btn_reincarnate.focus_mode = Control.FOCUS_NONE
+
+	if btn_upgrade_detail_skill:
+		btn_upgrade_detail_skill.add_theme_stylebox_override("normal", _style_btn_normal)
+		btn_upgrade_detail_skill.add_theme_stylebox_override("hover", _style_btn_hover)
+		btn_upgrade_detail_skill.add_theme_stylebox_override("pressed", _style_btn_pressed)
+		btn_upgrade_detail_skill.add_theme_stylebox_override("disabled", _style_btn_disabled)
+		btn_upgrade_detail_skill.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		btn_upgrade_detail_skill.focus_mode = Control.FOCUS_NONE
+
 
 func _build_ui_once() -> void:
 	if _is_ui_built:
@@ -216,20 +244,20 @@ func _build_ui_once() -> void:
 		var title_lbl := Label.new()
 		title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		title_lbl.text = skill["name"]
-		title_lbl.add_theme_font_size_override("font_size", 18)
+		title_lbl.add_theme_font_size_override("font_size", 22)
 		header_hbox.add_child(title_lbl)
 
 		var level_label := Label.new()
 		level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		level_label.text = "+0 [+0]"
-		level_label.add_theme_font_size_override("font_size", 17)
+		level_label.add_theme_font_size_override("font_size", 20)
 		header_hbox.add_child(level_label)
 
 		var cost_label := Label.new()
 		cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cost_label.text = "⚛️ 1"
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		cost_label.add_theme_font_size_override("font_size", 16)
+		cost_label.add_theme_font_size_override("font_size", 20)
 		content.add_child(cost_label)
 
 		var id: String = skill["id"]
@@ -313,22 +341,90 @@ func _load_reincarnation_skills_from_json() -> void:
 	for node in _reinc_skill_nodes:
 		node.refresh()
 
+	if _reinc_skill_nodes.size() > 0:
+		_select_skill_node(_reinc_skill_nodes[0])
+
 	await get_tree().process_frame
 	if is_instance_valid(reinc_tree_scroll):
 		reinc_tree_scroll.center_on_root()
 
 
+func _select_skill_node(node: ReincarnationSkillNode) -> void:
+	if _selected_skill_node and is_instance_valid(_selected_skill_node):
+		_selected_skill_node.is_selected = false
+	_selected_skill_node = node
+	if _selected_skill_node and is_instance_valid(_selected_skill_node):
+		_selected_skill_node.is_selected = true
+	_update_detail_panel()
+
+
 func _on_reinc_skill_node_pressed(node: ReincarnationSkillNode) -> void:
+	if _selected_skill_node != node:
+		_select_skill_node(node)
+	else:
+		_try_upgrade_selected_skill()
+
+
+func _on_upgrade_detail_skill_pressed() -> void:
+	_try_upgrade_selected_skill()
+
+
+func _try_upgrade_selected_skill() -> void:
+	if not _selected_skill_node or not is_instance_valid(_selected_skill_node):
+		return
+	var node = _selected_skill_node
+	if node.is_acquired():
+		return
 	if not node.is_playable():
 		return
-	var active_lvl: int = GameData.active_reincarnation_upgrades.get(node.skill_id, 0)
-	var pending_lvl: int = GameData.pending_reincarnation_upgrades.get(node.skill_id, 0)
-	var total_lvl: int = active_lvl + pending_lvl
-	if total_lvl >= node.max_level:
+	var cost: int = node.base_cost
+	if GameData.stars < cost:
 		return
-	var cost: int = node.get_upgrade_cost(total_lvl)
 	if GameData.reserve_reincarnation_upgrade(node.skill_id, cost):
 		update_ui()
+		_update_detail_panel()
+
+
+func _update_detail_panel() -> void:
+	if not is_inside_tree() or not is_visible_in_tree():
+		return
+	if not lbl_detail_name:
+		return
+
+	if not _selected_skill_node or not is_instance_valid(_selected_skill_node):
+		lbl_detail_icon.text = "⚛️"
+		lbl_detail_name.text = "スキル未選択"
+		lbl_detail_desc.text = "ツリー上のスキルノードをクリックして選択してください。"
+		btn_upgrade_detail_skill.disabled = true
+		btn_upgrade_detail_skill.text = "-"
+		return
+
+	var node = _selected_skill_node
+	lbl_detail_icon.text = node.icon_char
+	lbl_detail_name.text = node.skill_name
+	lbl_detail_desc.text = node.description
+
+	var is_acquired: bool = node.is_acquired()
+	var cost: int = node.base_cost
+	var is_playable: bool = node.is_playable()
+	var can_afford: bool = (GameData.stars >= cost)
+
+	if is_acquired:
+		btn_upgrade_detail_skill.disabled = true
+		btn_upgrade_detail_skill.text = "習得済み"
+		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.8, 0.6))
+	elif not is_playable:
+		btn_upgrade_detail_skill.disabled = true
+		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.95, 0.4, 0.4, 0.85))
+	elif not can_afford:
+		btn_upgrade_detail_skill.disabled = true
+		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.95, 0.4, 0.4, 0.85))
+	else:
+		btn_upgrade_detail_skill.disabled = false
+		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.add_theme_color_override("font_color", Color(0.9, 0.85, 1.0, 1.0))
 
 
 func _update_skill_widgets() -> void:
@@ -358,6 +454,8 @@ func _update_skill_widgets() -> void:
 	for node in _reinc_skill_nodes:
 		if is_instance_valid(node):
 			node.queue_update_ui()
+
+	_update_detail_panel()
 
 
 func _reserve_special_skill(id: String) -> void:
@@ -564,8 +662,8 @@ func _format_special_skill_bbcode(skill_id: String, skill_name: String, level: i
 	elif skill_id == "spec_diversity":
 		var m25 := pow(25.0, float(level))
 		var m50 := pow(50.0, float(level))
-		var s25 := "%.0f" % m25 if m25 < 1e12 else "%.2e" % m25
-		var s50 := "%.0f" % m50 if m50 < 1e12 else "%.2e" % m50
+		var s25 := GameData.format_num(m25)
+		var s50 := GameData.format_num(m50)
 		raw_desc = "装備レア度3種以上で%s倍、6種で%s倍" % [s25, s50]
 	else:
 		var base_desc := _get_skill_base_desc(skill_id)

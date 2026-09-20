@@ -24,6 +24,12 @@ var _style_hover: StyleBoxFlat
 var _style_pressed: StyleBoxFlat
 var _style_disabled: StyleBoxFlat
 
+var is_selected: bool = false:
+	set(val):
+		if is_selected != val:
+			is_selected = val
+			queue_update_ui()
+
 
 func _load_icon_if_needed() -> void:
 	if _icon_loaded and _last_loaded_icon_char == icon_char:
@@ -200,25 +206,25 @@ func _update_ui_actual() -> void:
 		icon = null
 		text = icon_char
 	
-	var active_lvl = GameData.active_reincarnation_upgrades.get(skill_id, 0)
-	var pending_lvl = GameData.pending_reincarnation_upgrades.get(skill_id, 0)
-	var total_lvl = active_lvl + pending_lvl
-	var cost = get_upgrade_cost(total_lvl)
+	var acquired = is_acquired()
+	var playable = is_playable()
+	var cost = base_cost
 	
 	tooltip_text = ""
-	var playable = is_playable()
 	var is_affordable = (GameData.stars >= cost)
 	
 	var border_color = Color(0.9, 0.2, 0.2)
-	if total_lvl >= max_level:
-		border_color = Color(1.0, 0.82, 0.0) # MAX
+	if is_selected:
+		border_color = Color(0.3, 0.95, 1.0) # 選択中ハイライト (シアン)
+	elif acquired:
+		border_color = Color(1.0, 0.82, 0.0) # 習得済み (ゴールド)
 	elif playable:
 		if is_affordable:
-			border_color = Color(0.2, 0.9, 0.2) # 購入可能
+			border_color = Color(0.2, 0.9, 0.2) # 習得可能 (緑)
 		else:
 			border_color = Color(0.9, 0.2, 0.2) # スター不足
 	else:
-		border_color = Color(0.9, 0.2, 0.2) # ロック中
+		border_color = Color(0.5, 0.2, 0.2) # ロック中
 		
 	if _style_normal:
 		_style_normal.border_color = border_color
@@ -230,19 +236,27 @@ func _update_ui_actual() -> void:
 		_style_disabled.border_color = border_color
 		
 	self_modulate = Color(1.0, 1.0, 1.0)
-	if total_lvl > 0:
+	if acquired:
 		modulate = Color(1.0, 1.0, 1.0)
+	elif playable:
+		modulate = Color(0.9, 0.9, 0.9)
 	else:
-		modulate = Color(0.65, 0.65, 0.65, 1.0)
+		modulate = Color(0.5, 0.5, 0.5, 0.9)
 
 
-func get_upgrade_cost(level: int) -> int:
-	if base_cost == 0:
-		return 0
-	return maxi(1, int(round(float(base_cost) * pow(cost_multiplier, float(level)))))
+func is_acquired() -> bool:
+	var act = GameData.active_reincarnation_upgrades.get(skill_id, 0)
+	var pnd = GameData.pending_reincarnation_upgrades.get(skill_id, 0)
+	return (act + pnd) > 0
+
+
+func get_upgrade_cost(_level: int = 0) -> int:
+	return base_cost
 
 
 func is_playable() -> bool:
+	if is_acquired():
+		return false
 	for prereq_id in prerequisites:
 		if prereq_id.is_empty():
 			continue
