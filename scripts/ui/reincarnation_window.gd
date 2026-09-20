@@ -76,6 +76,7 @@ func _ready() -> void:
 	visibility_changed.connect(func():
 		if not visible:
 			_hide_skill_tooltip()
+			set_process(false)
 		else:
 			if reinc_tree_scroll and not _has_centered_reinc_tree:
 				_has_centered_reinc_tree = true
@@ -94,12 +95,21 @@ func update_ui() -> void:
 
 	# トグルボタン状態
 	var is_infusing = GameData.is_infusing_tokens
+	btn_toggle_infuse.modulate = Color.WHITE
+	btn_toggle_infuse.focus_mode = Control.FOCUS_NONE
+	btn_toggle_infuse.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn_toggle_infuse.add_theme_stylebox_override("disabled", _style_btn_disabled)
+
 	if is_infusing:
-		btn_toggle_infuse.text = "⏹️ 注入を中止"
-		btn_toggle_infuse.modulate = Color(1.0, 0.45, 0.45, 1.0)
+		btn_toggle_infuse.text = "注入を中止"
+		btn_toggle_infuse.add_theme_stylebox_override("normal", _style_btn_red_normal)
+		btn_toggle_infuse.add_theme_stylebox_override("hover", _style_btn_red_hover)
+		btn_toggle_infuse.add_theme_stylebox_override("pressed", _style_btn_red_pressed)
 	else:
-		btn_toggle_infuse.text = "🔮 トークンを注入"
-		btn_toggle_infuse.modulate = Color(0.7, 0.5, 1.0, 1.0)
+		btn_toggle_infuse.text = "トークンを注入"
+		btn_toggle_infuse.add_theme_stylebox_override("normal", _style_btn_normal)
+		btn_toggle_infuse.add_theme_stylebox_override("hover", _style_btn_hover)
+		btn_toggle_infuse.add_theme_stylebox_override("pressed", _style_btn_pressed)
 
 	# スター所持表示
 	lbl_big_stars.text = "⚛️ %s" % _format_number(GameData.stars)
@@ -142,8 +152,7 @@ func update_ui() -> void:
 	lbl_next_auto_skills_bonus.add_theme_color_override("font_color", highlight_color if next_auto_skills > cur_auto_skills else normal_color)
 	lbl_next_multiplier_bonus.add_theme_color_override("font_color", highlight_color if next_mult > cur_mult else normal_color)
 
-	var pending_count = GameData.pending_reincarnation_upgrades.size()
-	btn_reincarnate.disabled = (pending_count == 0)
+	btn_reincarnate.disabled = not GameData.has_spent_stars_in_current_cycle()
 
 	# リスト項目の軽量更新
 	_update_skill_widgets()
@@ -157,6 +166,10 @@ var _style_btn_normal: StyleBoxFlat
 var _style_btn_hover: StyleBoxFlat
 var _style_btn_pressed: StyleBoxFlat
 var _style_btn_disabled: StyleBoxFlat
+
+var _style_btn_red_normal: StyleBoxFlat
+var _style_btn_red_hover: StyleBoxFlat
+var _style_btn_red_pressed: StyleBoxFlat
 
 
 func _setup_button_styles() -> void:
@@ -186,6 +199,25 @@ func _setup_button_styles() -> void:
 	_style_btn_disabled.border_color = Color(0.28, 0.20, 0.38, 0.8)
 	_style_btn_disabled.set_border_width_all(2)
 	_style_btn_disabled.set_corner_radius_all(6)
+
+	# 赤色ボタンスタイル (注入中止用)
+	_style_btn_red_normal = StyleBoxFlat.new()
+	_style_btn_red_normal.bg_color = Color(0.68, 0.18, 0.22, 1.0)
+	_style_btn_red_normal.border_color = Color(0.95, 0.40, 0.45, 1.0)
+	_style_btn_red_normal.set_border_width_all(2)
+	_style_btn_red_normal.set_corner_radius_all(6)
+
+	_style_btn_red_hover = StyleBoxFlat.new()
+	_style_btn_red_hover.bg_color = Color(0.80, 0.24, 0.28, 1.0)
+	_style_btn_red_hover.border_color = Color(1.0, 0.55, 0.60, 1.0)
+	_style_btn_red_hover.set_border_width_all(2)
+	_style_btn_red_hover.set_corner_radius_all(6)
+
+	_style_btn_red_pressed = StyleBoxFlat.new()
+	_style_btn_red_pressed.bg_color = Color(0.50, 0.12, 0.16, 1.0)
+	_style_btn_red_pressed.border_color = Color(0.85, 0.32, 0.36, 1.0)
+	_style_btn_red_pressed.set_border_width_all(2)
+	_style_btn_red_pressed.set_corner_radius_all(6)
 
 	if btn_reincarnate:
 		btn_reincarnate.add_theme_stylebox_override("normal", _style_btn_normal)
@@ -321,9 +353,7 @@ func _load_reincarnation_skills_from_json() -> void:
 		node.skill_name = s_data.get("name", "")
 		node.icon_char = s_data.get("icon", "⚛️")
 		node.description = s_data.get("description", "")
-		node.max_level = s_data.get("max_level", 5)
 		node.base_cost = s_data.get("base_cost", 1)
-		node.cost_multiplier = s_data.get("cost_multiplier", 1.5)
 		var x: float = s_data.get("x", 0.0)
 		var y: float = s_data.get("y", 0.0)
 		node.position = Vector2(x, y)
@@ -380,7 +410,7 @@ func _try_upgrade_selected_skill() -> void:
 	var cost: int = node.base_cost
 	if GameData.stars < cost:
 		return
-	if GameData.reserve_reincarnation_upgrade(node.skill_id, cost):
+	if GameData.unlock_reincarnation_skill(node.skill_id, cost):
 		update_ui()
 		_update_detail_panel()
 
@@ -415,15 +445,15 @@ func _update_detail_panel() -> void:
 		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.8, 0.6))
 	elif not is_playable:
 		btn_upgrade_detail_skill.disabled = true
-		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.text = "⚛️ %s" % _format_number(cost)
 		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.95, 0.4, 0.4, 0.85))
 	elif not can_afford:
 		btn_upgrade_detail_skill.disabled = true
-		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.text = "⚛️ %s" % _format_number(cost)
 		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.95, 0.4, 0.4, 0.85))
 	else:
 		btn_upgrade_detail_skill.disabled = false
-		btn_upgrade_detail_skill.text = "⚛️ %d" % cost
+		btn_upgrade_detail_skill.text = "⚛️ %s" % _format_number(cost)
 		btn_upgrade_detail_skill.add_theme_color_override("font_color", Color(0.9, 0.85, 1.0, 1.0))
 
 
@@ -438,7 +468,7 @@ func _update_skill_widgets() -> void:
 		var next_cost: int = target_lvl + 1
 
 		w.level_label.text = "+%d [+%d]" % [active_lvl, pending_lvl]
-		w.cost_label.text = "⚛️ %d" % next_cost
+		w.cost_label.text = "⚛️ %s" % _format_number(next_cost)
 		var can_afford: bool = (GameData.stars >= next_cost)
 		w.btn.disabled = not can_afford
 
@@ -670,7 +700,7 @@ func _format_special_skill_bbcode(skill_id: String, skill_name: String, level: i
 		raw_desc = "%s (Lv.%d)" % [base_desc, level]
 
 	var regex := RegEx.new()
-	regex.compile("(?:\\+|x|×|\\*)?\\d+(?:\\.\\d+)?%?")
+	regex.compile("(?:\\+|x|×|\\*)?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?%?")
 	var highlighted_desc := regex.sub(raw_desc, "[color=%s]$0[/color]" % green_color, true)
 
 	return "%s %s: %s" % [sk_name_bb, level_str, highlighted_desc]

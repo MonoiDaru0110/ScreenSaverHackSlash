@@ -278,7 +278,7 @@ func _update_debug_and_stats_info() -> void:
 		gold_label.text = "🪙 " + _format_number(GameData.gold)
 		token_label.text = "💎 " + _format_number(GameData.tokens)
 		bounce_label.text = "Bounces: " + _format_number(GameData.total_bounces)
-		corner_label.text = "★ Corners: " + str(GameData.corner_hits)
+		corner_label.text = "★ Corners: " + _format_number(GameData.corner_hits)
 		
 	if _debug_label:
 		var fps := Engine.get_frames_per_second()

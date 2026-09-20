@@ -6,9 +6,7 @@ class_name ReincarnationSkillNode
 @export var skill_name: String = ""
 @export var icon_char: String = "⚛️"
 @export_multiline var description: String = ""
-@export var max_level: int = 5
 @export var base_cost: int = 1
-@export var cost_multiplier: float = 1.5
 @export var prerequisites: Array[String] = []
 
 var _lines: Array[Line2D] = []
@@ -17,7 +15,6 @@ var _icon_loaded: bool = false
 var _last_loaded_icon_char: String = ""
 var _is_dirty: bool = true
 var _deferred_pending: bool = false
-var _custom_tooltip: SkillTooltip = null
 
 var _style_normal: StyleBoxFlat
 var _style_hover: StyleBoxFlat
@@ -85,12 +82,6 @@ func _ready() -> void:
 		GameData.stars_changed.connect(_on_stars_changed)
 		GameData.upgrades_changed.connect(_on_upgrades_changed)
 		visibility_changed.connect(_on_visibility_changed)
-		
-		mouse_entered.connect(_on_mouse_entered_tooltip)
-		mouse_exited.connect(_on_mouse_exited_tooltip)
-		visibility_changed.connect(_on_mouse_exited_tooltip)
-		tree_exited.connect(_on_mouse_exited_tooltip)
-		set_process(false)
 	
 	_update_connections()
 	queue_update_ui()
@@ -99,8 +90,6 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		_update_ui_editor()
-	else:
-		_update_tooltip_position()
 
 
 func _update_connections() -> void:
@@ -245,13 +234,7 @@ func _update_ui_actual() -> void:
 
 
 func is_acquired() -> bool:
-	var act = GameData.active_reincarnation_upgrades.get(skill_id, 0)
-	var pnd = GameData.pending_reincarnation_upgrades.get(skill_id, 0)
-	return (act + pnd) > 0
-
-
-func get_upgrade_cost(_level: int = 0) -> int:
-	return base_cost
+	return GameData.is_reincarnation_skill_unlocked(skill_id)
 
 
 func is_playable() -> bool:
@@ -260,9 +243,7 @@ func is_playable() -> bool:
 	for prereq_id in prerequisites:
 		if prereq_id.is_empty():
 			continue
-		var act = GameData.active_reincarnation_upgrades.get(prereq_id, 0)
-		var pnd = GameData.pending_reincarnation_upgrades.get(prereq_id, 0)
-		if (act + pnd) == 0:
+		if not GameData.is_reincarnation_skill_unlocked(prereq_id):
 			return false
 	return true
 
@@ -299,64 +280,3 @@ func _on_upgrades_changed() -> void:
 		queue_update_ui()
 	else:
 		_is_dirty = true
-
-
-func _on_mouse_entered_tooltip() -> void:
-	if Engine.is_editor_hint():
-		return
-	if not is_visible_in_tree():
-		return
-		
-	_remove_tooltip()
-	
-	var tooltip_scene = preload("res://scenes/ui/skill_tooltip.tscn")
-	_custom_tooltip = tooltip_scene.instantiate() as SkillTooltip
-	
-	var parent_node = get_parent()
-	var canvas_layer: CanvasLayer = null
-	while parent_node:
-		if parent_node is CanvasLayer:
-			canvas_layer = parent_node as CanvasLayer
-			break
-		parent_node = parent_node.get_parent()
-		
-	if canvas_layer:
-		canvas_layer.add_child(_custom_tooltip)
-	else:
-		_custom_tooltip.top_level = true
-		add_child(_custom_tooltip)
-	
-	_custom_tooltip.setup_from_reinc_node(self)
-	_update_tooltip_position()
-	set_process(true)
-
-
-func _on_mouse_exited_tooltip() -> void:
-	_remove_tooltip()
-
-
-func _remove_tooltip() -> void:
-	if is_instance_valid(_custom_tooltip):
-		_custom_tooltip.queue_free()
-	_custom_tooltip = null
-	if not Engine.is_editor_hint():
-		set_process(false)
-
-
-func _update_tooltip_position() -> void:
-	if not is_instance_valid(_custom_tooltip):
-		return
-		
-	var mouse_pos = get_global_mouse_position()
-	var offset = Vector2(15, 15)
-	var target_pos = mouse_pos + offset
-	
-	var viewport_size = get_viewport().get_visible_rect().size
-	var tooltip_size = _custom_tooltip.get_combined_minimum_size()
-	
-	if target_pos.x + tooltip_size.x > viewport_size.x:
-		target_pos.x = mouse_pos.x - tooltip_size.x - 15
-	if target_pos.y + tooltip_size.y > viewport_size.y:
-		target_pos.y = mouse_pos.y - tooltip_size.y - 15
-		
-	_custom_tooltip.global_position = target_pos

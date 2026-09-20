@@ -152,7 +152,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
-text = "🔮 トークンを注入"
+text = "トークンを注入"
 
 [node name="InfuseProgressBar" type="ProgressBar" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
 unique_name_in_owner = true

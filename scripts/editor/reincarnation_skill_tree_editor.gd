@@ -10,9 +10,7 @@ extends Control
 @onready var sidebar_name_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/NameRow/SidebarNameEdit
 @onready var sidebar_icon_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow/SidebarIconEdit
 @onready var sidebar_desc_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/DescRow/SidebarDescEdit
-@onready var sidebar_max_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow/SidebarMaxSpin
 @onready var sidebar_cost_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow/SidebarCostSpin
-@onready var sidebar_mult_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow/SidebarMultSpin
 @onready var prereq_list_vbox: VBoxContainer = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/PrereqScroll/PrereqListVBox
 @onready var sidebar_delete_btn: Button = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/SidebarDeleteBtn
 @onready var select_icon_btn: Button = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow/SelectIconBtn
@@ -49,9 +47,7 @@ func _ready() -> void:
 	sidebar_icon_edit.text_changed.connect(_on_sidebar_text_changed)
 	sidebar_desc_edit.text_changed.connect(_on_sidebar_text_changed)
 	
-	sidebar_max_spin.value_changed.connect(_on_sidebar_value_changed)
 	sidebar_cost_spin.value_changed.connect(_on_sidebar_value_changed)
-	sidebar_mult_spin.value_changed.connect(_on_sidebar_value_changed)
 	
 	sidebar_delete_btn.pressed.connect(_on_sidebar_delete_pressed)
 	select_icon_btn.pressed.connect(_on_select_icon_btn_pressed)
@@ -115,9 +111,7 @@ func _on_node_selected(node: Node) -> void:
 	sidebar_name_edit.text = node.get_meta("skill_name", "")
 	sidebar_icon_edit.text = node.get_meta("icon_char", "❓")
 	sidebar_desc_edit.text = node.get_meta("description", "")
-	sidebar_max_spin.value = node.get_meta("max_level", 5)
 	sidebar_cost_spin.value = node.get_meta("base_cost", 1)
-	sidebar_mult_spin.value = node.get_meta("cost_multiplier", 1.5)
 	
 	_update_prereq_checklist()
 	
@@ -153,9 +147,7 @@ func _on_sidebar_text_changed(_new_text: String) -> void:
 func _on_sidebar_value_changed(_value: float) -> void:
 	if _updating_sidebar or not _selected_node:
 		return
-	_selected_node.set_meta("max_level", int(sidebar_max_spin.value))
 	_selected_node.set_meta("base_cost", int(sidebar_cost_spin.value))
-	_selected_node.set_meta("cost_multiplier", sidebar_mult_spin.value)
 
 
 func _on_sidebar_delete_pressed() -> void:
@@ -215,7 +207,7 @@ func _update_prereq_checklist() -> void:
 			prereq_list_vbox.add_child(checkbox)
 
 
-func add_new_node(id := "", name_str := "", icon := "❓", desc := "", max_lvl := 5, cost := 1, mult := 1.5, pos := Vector2(100, 100)) -> GraphNode:
+func add_new_node(id := "", name_str := "", icon := "❓", desc := "", cost := 1, pos := Vector2(100, 100)) -> GraphNode:
 	var node = GraphNode.new()
 	node.title = "" # No title text to keep it visual
 	node.position_offset = (pos / 80.0).round() * 80.0
@@ -279,9 +271,7 @@ func add_new_node(id := "", name_str := "", icon := "❓", desc := "", max_lvl :
 	node.set_meta("skill_name", name_str)
 	node.set_meta("icon_char", icon)
 	node.set_meta("description", desc)
-	node.set_meta("max_level", max_lvl)
 	node.set_meta("base_cost", cost)
-	node.set_meta("cost_multiplier", mult)
 	
 	_update_node_icon_preview(node, icon)
 	
@@ -310,7 +300,7 @@ func _on_add_button_pressed() -> void:
 	var new_name = "新しい転生スキル %d" % n
 
 	var center = graph_edit.scroll_offset + graph_edit.size / 2.0 - Vector2(40, 40)
-	var node = add_new_node(new_id, new_name, "⚛️", "説明を入力してください", 5, 1, 1.5, center)
+	var node = add_new_node(new_id, new_name, "⚛️", "説明を入力してください", 1, center)
 	status_label.text = "ノードを追加しました: %s" % new_id
 	node.selected = true
 	_on_node_selected(node)
@@ -326,9 +316,7 @@ func copy_selected_node() -> void:
 		"skill_name": _selected_node.get_meta("skill_name", ""),
 		"icon_char": _selected_node.get_meta("icon_char", "⚛️"),
 		"description": _selected_node.get_meta("description", ""),
-		"max_level": _selected_node.get_meta("max_level", 5),
-		"base_cost": _selected_node.get_meta("base_cost", 1),
-		"cost_multiplier": _selected_node.get_meta("cost_multiplier", 1.5)
+		"base_cost": _selected_node.get_meta("base_cost", 1)
 	}
 	status_label.text = "スキル '%s' をコピーしました。" % _copied_skill_data["src_id"]
 
@@ -344,25 +332,21 @@ func paste_skill_data() -> void:
 	var name_str: String = _copied_skill_data.get("skill_name", "")
 	var icon: String = _copied_skill_data.get("icon_char", "⚛️")
 	var desc: String = _copied_skill_data.get("description", "")
-	var max_lvl: int = _copied_skill_data.get("max_level", 5)
 	var cost: int = _copied_skill_data.get("base_cost", 1)
-	var mult: float = _copied_skill_data.get("cost_multiplier", 1.5)
 	
 	if _selected_node:
 		_selected_node.set_meta("skill_id", new_id)
 		_selected_node.set_meta("skill_name", name_str)
 		_selected_node.set_meta("icon_char", icon)
 		_selected_node.set_meta("description", desc)
-		_selected_node.set_meta("max_level", max_lvl)
 		_selected_node.set_meta("base_cost", cost)
-		_selected_node.set_meta("cost_multiplier", mult)
 		
 		_update_node_icon_preview(_selected_node, icon)
 		_on_node_selected(_selected_node)
 		status_label.text = "選択ノードにペーストしました (新ID: %s)" % new_id
 	else:
 		var center = graph_edit.scroll_offset + graph_edit.size / 2.0 - Vector2(40, 40)
-		var node = add_new_node(new_id, name_str, icon, desc, max_lvl, cost, mult, center)
+		var node = add_new_node(new_id, name_str, icon, desc, cost, center)
 		node.selected = true
 		_on_node_selected(node)
 		status_label.text = "新しいノードとしてペーストしました (新ID: %s)" % new_id
@@ -438,9 +422,7 @@ func save_data() -> void:
 				"name": child.get_meta("skill_name", ""),
 				"icon": child.get_meta("icon_char", "⚛️"),
 				"description": child.get_meta("description", ""),
-				"max_level": int(child.get_meta("max_level", 5)),
 				"base_cost": int(child.get_meta("base_cost", 1)),
-				"cost_multiplier": float(child.get_meta("cost_multiplier", 1.5)),
 				"x": child.position_offset.x,
 				"y": child.position_offset.y,
 				"prerequisites": []
@@ -507,9 +489,7 @@ func load_data() -> void:
 			s.get("name", ""),
 			s.get("icon", "⚛️"),
 			s.get("description", ""),
-			s.get("max_level", 5),
 			s.get("base_cost", 1),
-			s.get("cost_multiplier", 1.5),
 			pos
 		)
 		created_nodes[skill_id] = node.name

@@ -1,6 +1,7 @@
 extends Control
 class_name ReincarnationSkillTreeController
 
+@export var tree_scale: float = 0.95
 @export var scroll_speed: float = 45.0
 
 @onready var viewport: Control = %ReincTreeViewport
@@ -19,7 +20,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	if viewport:
 		viewport.mouse_filter = Control.MOUSE_FILTER_PASS
-		viewport.scale = Vector2.ONE
+		viewport.scale = Vector2(tree_scale, tree_scale)
 		viewport.pivot_offset = Vector2.ZERO
 
 		for child in viewport.get_children():
@@ -76,7 +77,9 @@ func scroll_vertical(amount: float) -> void:
 func _update_x_position() -> void:
 	if not viewport:
 		return
-	viewport.position.x = (size.x / 2.0) - 30.0
+	# ツリーの中心（X=0）をコントローラーの水平中央に配置
+	# ノードのサイズ（60px）の中心（30px）を揃えるため -30.0 * tree_scale をオフセット
+	viewport.position.x = (size.x / 2.0) - (30.0 * tree_scale)
 
 
 func _calculate_tree_bounds() -> void:
@@ -104,13 +107,15 @@ func _clamp_y_position() -> void:
 	if not viewport:
 		return
 	var parent_h = size.y if size.y > 0 else 500.0
-	var min_allowed_pos_y = -_cached_max_y + 80.0
-	var max_allowed_pos_y = -_cached_min_y + parent_h - 140.0
+	var scaled_min_y = _cached_min_y * tree_scale
+	var scaled_max_y = _cached_max_y * tree_scale
+	var min_allowed_pos_y = -scaled_max_y + 80.0
+	var max_allowed_pos_y = -scaled_min_y + parent_h - (100.0 * tree_scale)
 
 	if min_allowed_pos_y > max_allowed_pos_y:
 		var mid = (min_allowed_pos_y + max_allowed_pos_y) / 2.0
-		min_allowed_pos_y = mid - 50.0
-		max_allowed_pos_y = mid + 50.0
+		min_allowed_pos_y = mid - 40.0
+		max_allowed_pos_y = mid + 40.0
 
 	viewport.position.y = clampf(viewport.position.y, min_allowed_pos_y, max_allowed_pos_y)
 
@@ -118,10 +123,10 @@ func _clamp_y_position() -> void:
 func center_on_root(_target_window: Control = null) -> void:
 	if not viewport:
 		return
-	viewport.scale = Vector2.ONE
+	viewport.scale = Vector2(tree_scale, tree_scale)
 	_calculate_tree_bounds()
 	_update_x_position()
 
 	var parent_h = size.y if size.y > 0 else 500.0
-	viewport.position.y = parent_h * 0.72 - _cached_max_y
+	viewport.position.y = parent_h * 0.72 - (_cached_max_y * tree_scale)
 	_clamp_y_position()

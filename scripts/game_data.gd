@@ -12,6 +12,21 @@ var star_level: int = 0
 var base_star_threshold: float = 1000.0
 
 
+static func add_commas(int_str: String) -> String:
+	var prefix := ""
+	var s := int_str
+	if s.begins_with("-"):
+		prefix = "-"
+		s = s.substr(1)
+	var res := ""
+	var n := s.length()
+	for i in range(n):
+		if i > 0 and (n - i) % 3 == 0:
+			res += ","
+		res += s[i]
+	return prefix + res
+
+
 func format_num(val: float) -> String:
 	var abs_v := absf(val)
 	if abs_v == 0.0:
@@ -21,9 +36,11 @@ func format_num(val: float) -> String:
 
 	# 1. 絶対値が1以上
 	if abs_v >= 1.0:
-		if abs_v < 1e10:
-			# 1e10までは整数で表記する
-			return "%s%.0f" % [sign_str, roundf(abs_v)]
+		var rounded_v := roundf(abs_v)
+		if rounded_v < 1e10:
+			# 1e10までは整数で3桁カンマ区切り表記する
+			var int_str := "%d" % int(rounded_v)
+			return "%s%s" % [sign_str, add_commas(int_str)]
 		else:
 			# 1e10以降は1e10などの簡易表示を行う
 			var exp_val := floori(log(abs_v) / log(10.0))
@@ -60,8 +77,10 @@ func format_num(val: float) -> String:
 			m_str = m_str.rstrip("0").rstrip(".")
 		return "%s%se%d" % [sign_str, m_str, exp_val]
 var reincarnation_level: int = 0
-var pending_reincarnation_upgrades: Dictionary = {} # { "upgrade_id": level_int }
-var active_reincarnation_upgrades: Dictionary = {}  # { "upgrade_id": level_int }
+var pending_reincarnation_upgrades: Dictionary = {} # 特殊スキル予約 { "upgrade_id": level_int }
+var active_reincarnation_upgrades: Dictionary = {}  # 特殊スキル適用済み { "upgrade_id": level_int }
+var unlocked_reincarnation_skills: Dictionary = {"tree_node_root": true} # 転生スキルツリー解放状況 { "skill_id": true }
+var stars_spent_in_current_cycle: int = 0 # 現サイクルで消費したスター数
 
 # --- Statistics ---
 var total_bounces: int = 0
@@ -74,6 +93,9 @@ var boost_level: int = 100
 var size_level: int = 100
 var ascension_level: int = 100
 var skill_levels: Dictionary = {} # { "skill_id": level_int }
+var auto_unlock_skill_order: Array[String] = []
+var skill_max_levels: Dictionary = {} # { "skill_id": max_level_int }
+var permanently_unlocked_skills: Dictionary = {} # { "skill_id": true }
 
 # --- Cumulative Skill Levels ---
 var total_gold_boost_level: int = 0
@@ -162,6 +184,115 @@ var special_skill_defs: Dictionary = {
 		"ui_title": "クリティカル共鳴"
 	}
 }
+
+
+func init_skill_tree_auto_unlock_order() -> void:
+	auto_unlock_skill_order.clear()
+	skill_max_levels.clear()
+	
+	var json_path := "res://data/skills.json"
+	if not FileAccess.file_exists(json_path):
+		printerr("スキルデータファイルが見つかりません: ", json_path)
+		return
+	
+	var file := FileAccess.open(json_path, FileAccess.READ)
+	if not file:
+		printerr("スキルデータファイルのオープンに失敗しました: ", json_path)
+		return
+		
+	var text := file.get_as_text()
+	file.close()
+	
+	var json := JSON.new()
+	if json.parse(text) != OK:
+		printerr("スキルデータファイルのJSONパースに失敗しました")
+		return
+		
+	var data: Variant = json.get_data()
+	if not data is Dictionary or not data.has("skills"):
+		printerr("スキルデータのフォーマットが不正です")
+		return
+		
+	var skills: Dictionary = data["skills"]
+	var children_map: Dictionary = {}
+	var root_skill_id: String = ""
+	
+	for skill_id: String in skills:
+		children_map[skill_id] = []
+		var s: Dictionary = skills[skill_id]
+		skill_max_levels[skill_id] = int(s.get("max_level", 5))
+	
+	for skill_id: String in skills:
+		var s: Dictionary = skills[skill_id]
+		var prereqs: Array = s.get("prerequisites", [])
+		if prereqs.is_empty():
+			root_skill_id = skill_id
+		else:
+			for p in prereqs:
+				var parent_id: String = str(p)
+				if children_map.has(parent_id):
+					(children_map[parent_id] as Array).append(skill_id)
+				else:
+					children_map[parent_id] = [skill_id]
+					
+	if root_skill_id.is_empty():
+		printerr("前提スキルが0個のルートスキルが見つかりません")
+		return
+		
+	# BFS でルートスキルからの最短経路距離（ホップ数）を計算
+	var dist: Dictionary = {}
+	dist[root_skill_id] = 0
+	var queue: Array[String] = [root_skill_id]
+	
+	while not queue.is_empty():
+		var curr: String = queue.pop_front()
+		var d: int = dist[curr]
+		var next_nodes: Array = children_map.get(curr, [])
+		for nxt: String in next_nodes:
+			if not dist.has(nxt):
+				dist[nxt] = d + 1
+				queue.append(nxt)
+				
+	# 全スキルを 最短距離昇順、同距離なら skill_id 辞書順昇順 でソート
+	var all_skills: Array = skills.keys()
+	all_skills.sort_custom(func(a: String, b: String) -> bool:
+		var d_a: int = dist.get(a, 999999)
+		var d_b: int = dist.get(b, 999999)
+		if d_a != d_b:
+			return d_a < d_b
+		return a < b
+	)
+	
+	for sk: String in all_skills:
+		auto_unlock_skill_order.append(sk)
+
+
+func apply_auto_unlocked_skills() -> void:
+	if auto_unlock_skill_order.is_empty():
+		init_skill_tree_auto_unlock_order()
+		
+	var target_count: int = get_auto_unlocked_skill_count()
+	var unlock_count: int = mini(target_count, auto_unlock_skill_order.size())
+	
+	var any_changed: bool = false
+	for i in range(unlock_count):
+		var sk_id: String = auto_unlock_skill_order[i]
+		permanently_unlocked_skills[sk_id] = true
+		var max_lvl: int = skill_max_levels.get(sk_id, 5)
+		if skill_levels.get(sk_id, 0) < max_lvl:
+			skill_levels[sk_id] = max_lvl
+			any_changed = true
+			skill_upgraded.emit(sk_id, max_lvl)
+			
+	if any_changed:
+		_recalculate_all_cumulative_levels()
+		_recalculate_cached_multipliers()
+		equipment_changed.emit()
+		upgrades_changed.emit()
+
+
+func is_skill_permanently_unlocked(skill_id: String) -> bool:
+	return permanently_unlocked_skills.get(skill_id, false)
 
 
 func get_equipped_unique_rarities() -> Array[String]:
@@ -365,9 +496,32 @@ func reserve_reincarnation_upgrade(upgrade_id: String, star_cost: int) -> bool:
 	if use_stars(star_cost):
 		var current_lvl = pending_reincarnation_upgrades.get(upgrade_id, 0)
 		pending_reincarnation_upgrades[upgrade_id] = current_lvl + 1
+		stars_spent_in_current_cycle += star_cost
 		upgrades_changed.emit()
 		return true
 	return false
+
+
+func is_reincarnation_skill_unlocked(skill_id: String) -> bool:
+	return unlocked_reincarnation_skills.get(skill_id, false)
+
+
+func unlock_reincarnation_skill(skill_id: String, star_cost: int) -> bool:
+	if is_reincarnation_skill_unlocked(skill_id):
+		return false
+	if star_cost == 0 or use_stars(star_cost):
+		unlocked_reincarnation_skills[skill_id] = true
+		stars_spent_in_current_cycle += star_cost
+		_recalculate_cached_multipliers()
+		if skill_id == "tree_node_auto_skills":
+			apply_auto_unlocked_skills()
+		upgrades_changed.emit()
+		return true
+	return false
+
+
+func has_spent_stars_in_current_cycle() -> bool:
+	return stars_spent_in_current_cycle > 0
 
 
 func execute_reincarnation() -> void:
@@ -377,6 +531,7 @@ func execute_reincarnation() -> void:
 		active_reincarnation_upgrades[id] = current_active + pending_reincarnation_upgrades[id]
 	pending_reincarnation_upgrades.clear()
 
+	stars_spent_in_current_cycle = 0
 	reincarnation_level += 1
 	is_infusing_tokens = false
 
@@ -416,6 +571,9 @@ func execute_reincarnation() -> void:
 	# skill_levels.clear()
 	# _recalculate_all_cumulative_levels()
 
+	# 転生ボーナスによるスキルの自動解放を適用
+	apply_auto_unlocked_skills()
+
 	# 倍率キャッシュ等の再計算
 	_recalculate_cached_multipliers()
 
@@ -424,35 +582,35 @@ func execute_reincarnation() -> void:
 
 
 func get_base_equip_level_bonus() -> int:
-	var lvl = active_reincarnation_upgrades.get("tree_node_equip_lvl", 0)
-	return (lvl * 5) + (reincarnation_level * 10)
+	var bonus := 5 if is_reincarnation_skill_unlocked("tree_node_equip_lvl") else 0
+	return bonus + (reincarnation_level * 10)
 
 
 func get_pending_base_equip_level_bonus() -> int:
-	var lvl = active_reincarnation_upgrades.get("tree_node_equip_lvl", 0) + pending_reincarnation_upgrades.get("tree_node_equip_lvl", 0)
-	return (lvl * 5) + ((reincarnation_level + 1) * 10)
+	var bonus := 5 if is_reincarnation_skill_unlocked("tree_node_equip_lvl") else 0
+	return bonus + ((reincarnation_level + 1) * 10)
 
 
 func get_auto_unlocked_skill_count() -> int:
-	var lvl = active_reincarnation_upgrades.get("tree_node_auto_skills", 0)
-	return (lvl * 2) + (reincarnation_level * 5)
+	var bonus := 2 if is_reincarnation_skill_unlocked("tree_node_auto_skills") else 0
+	return bonus + (reincarnation_level * 5)
 
 
 func get_pending_auto_unlocked_skill_count() -> int:
-	var lvl = active_reincarnation_upgrades.get("tree_node_auto_skills", 0) + pending_reincarnation_upgrades.get("tree_node_auto_skills", 0)
-	return (lvl * 2) + ((reincarnation_level + 1) * 5)
+	var bonus := 2 if is_reincarnation_skill_unlocked("tree_node_auto_skills") else 0
+	return bonus + ((reincarnation_level + 1) * 5)
 
 
 func get_reincarnation_multiplier() -> float:
 	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0)
-	var tree_boost = active_reincarnation_upgrades.get("tree_node_mult", 0)
-	return (1.0 + (star_boost * 0.5) + (tree_boost * 0.25)) * pow(1.1, float(reincarnation_level))
+	var tree_boost := 0.25 if is_reincarnation_skill_unlocked("tree_node_mult") else 0.0
+	return (1.0 + (star_boost * 0.5) + tree_boost) * pow(1.1, float(reincarnation_level))
 
 
 func get_pending_reincarnation_multiplier() -> float:
 	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0) + pending_reincarnation_upgrades.get("upgrade_star_boost", 0)
-	var tree_boost = active_reincarnation_upgrades.get("tree_node_mult", 0) + pending_reincarnation_upgrades.get("tree_node_mult", 0)
-	return (1.0 + (star_boost * 0.5) + (tree_boost * 0.25)) * pow(1.1, float(reincarnation_level + 1))
+	var tree_boost := 0.25 if is_reincarnation_skill_unlocked("tree_node_mult") else 0.0
+	return (1.0 + (star_boost * 0.5) + tree_boost) * pow(1.1, float(reincarnation_level + 1))
 
 
 func use_tokens(amount: float) -> bool:
@@ -669,6 +827,8 @@ func roll_token_direct() -> Dictionary:
 
 
 func _ready() -> void:
+	init_skill_tree_auto_unlock_order()
+	apply_auto_unlocked_skills()
 	_load_equipment_skill_defs()
 	_ensure_inventory_sizes()
 	_recalculate_all_cumulative_levels()

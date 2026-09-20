@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://kl5dbgb6dtmm"]
+[gd_scene load_steps=2 format=3 uid="uid://b2cuxsckdq3ne"]
 
-[ext_resource type="Script" path="res://scripts/editor/reincarnation_skill_tree_editor.gd" id="1_editor"]
+[ext_resource type="Script" uid="uid://c58o75cwhgrmj" path="res://scripts/editor/reincarnation_skill_tree_editor.gd" id="1_editor"]
 
 [node name="ReincarnationSkillTreeEditor" type="Control"]
 layout_mode = 3
@@ -168,20 +168,6 @@ text = "説明文:"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MaxRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
-custom_minimum_size = Vector2(85, 0)
-layout_mode = 2
-text = "最大レベル:"
-
-[node name="SidebarMaxSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 1.0
-value = 5.0
-
 [node name="CostRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2
 
@@ -193,25 +179,8 @@ text = "スターコスト:"
 [node name="SidebarCostSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 0.0
 max_value = 9999.0
 value = 1.0
-
-[node name="MultRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow"]
-custom_minimum_size = Vector2(85, 0)
-layout_mode = 2
-text = "上昇倍率:"
-
-[node name="SidebarMultSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-min_value = 1.0
-max_value = 10.0
-step = 0.1
-value = 1.5
 
 [node name="HSeparator3" type="HSeparator" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2
