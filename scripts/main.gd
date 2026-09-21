@@ -140,6 +140,8 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		_spawn_drop_label(pos, "🪙 +%s" % GameData.format_num(gold_amount), Color(1.0, 1.0, 0.95), false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
 		_start_shake(direction, 5.0)
 
+	GameData.record_accumulation_bounce()
+
 	# --- Equipment Drop Logic ---
 	var dropped_item := GameData.roll_equipment_drop(is_corner)
 	if not dropped_item.is_empty():

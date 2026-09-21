@@ -18,7 +18,7 @@ extends CanvasLayer
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
 @onready var btn_reincarnation_tab: Button = %ReincarnationTabBtn
-@onready var special_skill_ui_container: HBoxContainer = %SpecialSkillUIContainer
+@onready var special_skill_ui_container: Control = %SpecialSkillUIContainer
 @onready var grid_equipment: GridContainer = %GridContainer
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
@@ -353,9 +353,14 @@ func _update_special_skill_custom_ui() -> void:
 
 	special_skill_ui_container.visible = true
 
-	# 専用UIパネルの動的生成（専用シーンがあれば優先ロード）
+	# 専用UIパネルの動的生成（完全指定位置に配置）
 	const SPECIAL_SKILL_UI_MAP := {
-		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn"
+		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn",
+		"spec_accumulation": "res://scenes/ui/special_skills/accumulation_skill_ui.tscn"
+	}
+	const SPECIAL_SKILL_POSITIONS := {
+		"spec_diversity": Vector2(20.0, 20.0),
+		"spec_accumulation": Vector2(20.0, 290.0)
 	}
 
 	for sk in active_spec_skills:
@@ -365,6 +370,8 @@ func _update_special_skill_custom_ui() -> void:
 			var custom_ui = scene.instantiate()
 			if custom_ui.has_method("set_skill_data"):
 				custom_ui.set_skill_data(sk)
+			if SPECIAL_SKILL_POSITIONS.has(sk_id):
+				custom_ui.position = SPECIAL_SKILL_POSITIONS[sk_id]
 			special_skill_ui_container.add_child(custom_ui)
 		else:
 			# フォールバック表示（デフォルトミニカード）

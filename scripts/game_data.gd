@@ -154,6 +154,11 @@ const MAX_TYPE_INVENTORY_SIZE: int = 50
 var special_skill_drop_chance: float = 0.03 # 基本確率 3%
 var special_skill_color: Color = Color(0.85, 0.45, 1.0, 1.0) # ソフトコーディング用カラー (紫/アストラル系)
 
+# --- Accumulation Special Skill ---
+var accumulation_rank: int = 0
+var accumulation_bounces_in_rank: int = 0
+signal accumulation_changed(ranked_up: bool)
+
 var special_skill_defs: Dictionary = {
 	"spec_diversity": {
 		"id": "spec_diversity",
@@ -161,6 +166,13 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "装備レア度3種以上で%s倍、6種で%s倍",
 		"has_custom_ui": true,
 		"ui_title": "多様性"
+	},
+	"spec_accumulation": {
+		"id": "spec_accumulation",
+		"name": "累積",
+		"desc_template": "ゴールド、トークン入手量×2^(レベル) 一定回数衝突するごとにさらに倍率+2^(レベル)",
+		"has_custom_ui": true,
+		"ui_title": "累積"
 	},
 	"spec_aura": {
 		"id": "spec_aura",
@@ -337,6 +349,41 @@ func get_diversity_multiplier() -> float:
 	elif unique_rarity_count >= 3:
 		return pow(25.0, float(total_lvl))
 	return 1.0
+
+
+func get_accumulation_req_bounces(rank: int) -> int:
+	# ランクアップに必要な衝突回数は 2^(n+2)
+	# n=0: 4, n=1: 8, n=2: 16, n=3: 32, ...
+	return int(round(pow(2.0, float(rank + 2))))
+
+
+func get_accumulation_multiplier() -> float:
+	var m: int = get_special_skill_total_level("spec_accumulation")
+	if m <= 0:
+		return 1.0
+	var n: int = accumulation_rank
+	# (n + 1) * 2^m
+	return float(n + 1) * pow(2.0, float(m))
+
+
+func record_accumulation_bounce() -> void:
+	var m: int = get_special_skill_total_level("spec_accumulation")
+	if m <= 0:
+		return
+	
+	accumulation_bounces_in_rank += 1
+	var req := get_accumulation_req_bounces(accumulation_rank)
+	var ranked_up := false
+	while accumulation_bounces_in_rank >= req:
+		accumulation_bounces_in_rank -= req
+		accumulation_rank += 1
+		ranked_up = true
+		req = get_accumulation_req_bounces(accumulation_rank)
+	
+	if ranked_up:
+		_recalculate_cached_multipliers()
+	accumulation_changed.emit(ranked_up)
+
 
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
 var equipment_skill_defs: Dictionary = {}
@@ -570,6 +617,11 @@ func execute_reincarnation() -> void:
 	# 4. トークンによるスキルをリセット
 	# skill_levels.clear()
 	# _recalculate_all_cumulative_levels()
+
+	# 5. 特殊スキル「累積」のリセット
+	accumulation_rank = 0
+	accumulation_bounces_in_rank = 0
+	accumulation_changed.emit(false)
 
 	# 転生ボーナスによるスキルの自動解放を適用
 	apply_auto_unlocked_skills()
@@ -839,6 +891,7 @@ func _ready() -> void:
 
 func _on_equipment_changed_internal() -> void:
 	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
 	upgrades_changed.emit()
 
 
@@ -883,11 +936,12 @@ func _recalculate_cached_multipliers() -> void:
 	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
 	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
 	var div_mult := get_diversity_multiplier()
+	var accum_mult := get_accumulation_multiplier()
 	var reinc_mult := get_reincarnation_multiplier()
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * reinc_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * reinc_mult
-	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * reinc_mult
-	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * reinc_mult
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult
 	_cached_ascension_mult = get_ascension_multiplier()
 
 
@@ -1173,6 +1227,10 @@ func generate_random_equipment() -> Dictionary:
 			var s25 := format_num(m25)
 			var s50 := format_num(m50)
 			formatted_desc = desc_tmpl % [s25, s50]
+		elif spec_id == "spec_accumulation":
+			var base_mult := int(pow(2.0, float(spec_lvl)))
+			var s_val := format_num(float(base_mult))
+			formatted_desc = "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
 
