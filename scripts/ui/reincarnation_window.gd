@@ -49,6 +49,11 @@ const SPECIAL_SKILLS_DATA = [
 		"desc": "ゴールド、トークン入手量×2^(レベル) 一定回数衝突するごとにさらに倍率+2^(レベル)"
 	},
 	{
+		"id": "spec_trinity",
+		"name": "トリニティ",
+		"desc": "基礎強化の1つを無効化し、他2つのレベルを×(2+0.2(Lv-1))倍に強化"
+	},
+	{
 		"id": "spec_aura",
 		"name": "星輝のオーラ",
 		"desc": "転生後、自動でオーラを発動しゴールド・トークン獲得を常時アシスト"
@@ -704,6 +709,9 @@ func _format_special_skill_bbcode(skill_id: String, skill_name: String, level: i
 		var base_mult := int(pow(2.0, float(level)))
 		var s_val := GameData.format_num(float(base_mult))
 		raw_desc = "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
+	elif skill_id == "spec_trinity":
+		var mult_val := 2.0 + 0.2 * float(level - 1)
+		raw_desc = "基礎強化1つを無効化し、他2つのレベル×%.1f倍" % mult_val
 	else:
 		var base_desc := _get_skill_base_desc(skill_id)
 		raw_desc = "%s (Lv.%d)" % [base_desc, level]

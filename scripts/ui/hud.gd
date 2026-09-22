@@ -58,14 +58,19 @@ var _upgrade_update_timer: Timer = null
 var _debug_label: Label = null
 var _debug_timer: Timer = null
 var _stats_dirty: bool = false
+var _default_upgrade_btn_styles: Dictionary = {}
+var _was_trinity_active: bool = false
 var _last_drop_pop_ticks: int = 0
 
 # パフォーマンス最適化: ボタン子ラベルのキャッシュ
 var _lbl_title_size: Label
+var _lbl_diff_size: Label
 var _lbl_cost_size: Label
 var _lbl_title_speed: Label
+var _lbl_diff_speed: Label
 var _lbl_cost_speed: Label
 var _lbl_title_boost: Label
+var _lbl_diff_boost: Label
 var _lbl_cost_boost: Label
 var _lbl_title_ascend: Label
 var _lbl_cost_ascend: Label
@@ -130,9 +135,20 @@ func _ready() -> void:
 		btn.add_theme_stylebox_override("pressed", style_pressed)
 		btn.add_theme_stylebox_override("disabled", style_disabled)
 		btn.add_theme_stylebox_override("focus", style_focus)
+
+		_default_upgrade_btn_styles[btn] = {
+			"normal": style_normal,
+			"hover": style_hover,
+			"pressed": style_pressed,
+			"disabled": style_disabled
+		}
 		
 		# Make font sizes slightly larger and align the coin emoji visually
-		btn.get_node("Content/TitleLabel").add_theme_font_size_override("font_size", 18)
+		var title_node = btn.get_node_or_null("Content/TitleHBox/TitleLabel")
+		if not title_node:
+			title_node = btn.get_node_or_null("Content/TitleLabel")
+		if title_node:
+			title_node.add_theme_font_size_override("font_size", 18)
 		btn.get_node("Content/CostLabel").add_theme_font_size_override("font_size", 16)
 
 	# Tab button styles setup
@@ -181,6 +197,7 @@ func _ready() -> void:
 	GameData.stats_changed.connect(_on_stats_changed)
 	GameData.corner_hit_occurred.connect(_on_corner_hit)
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
+	GameData.trinity_changed.connect(_on_trinity_changed)
 
 	_on_stars_changed(GameData.stars)
 	_update_sidebar_star_progress()
@@ -237,11 +254,14 @@ func _ready() -> void:
 	_setup_grid_frames()
 	
 	# ボタン子ラベルのキャッシュ
-	_lbl_title_size = btn_size.get_node("Content/TitleLabel")
+	_lbl_title_size = btn_size.get_node("Content/TitleHBox/TitleLabel")
+	_lbl_diff_size = btn_size.get_node("Content/TitleHBox/DiffLabel")
 	_lbl_cost_size = btn_size.get_node("Content/CostLabel")
-	_lbl_title_speed = btn_speed.get_node("Content/TitleLabel")
+	_lbl_title_speed = btn_speed.get_node("Content/TitleHBox/TitleLabel")
+	_lbl_diff_speed = btn_speed.get_node("Content/TitleHBox/DiffLabel")
 	_lbl_cost_speed = btn_speed.get_node("Content/CostLabel")
-	_lbl_title_boost = btn_boost.get_node("Content/TitleLabel")
+	_lbl_title_boost = btn_boost.get_node("Content/TitleHBox/TitleLabel")
+	_lbl_diff_boost = btn_boost.get_node("Content/TitleHBox/DiffLabel")
 	_lbl_cost_boost = btn_boost.get_node("Content/CostLabel")
 	_lbl_title_ascend = btn_ascend.get_node("Content/TitleLabel")
 	_lbl_cost_ascend = btn_ascend.get_node("Content/CostLabel")
@@ -356,11 +376,13 @@ func _update_special_skill_custom_ui() -> void:
 	# 専用UIパネルの動的生成（完全指定位置に配置）
 	const SPECIAL_SKILL_UI_MAP := {
 		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn",
-		"spec_accumulation": "res://scenes/ui/special_skills/accumulation_skill_ui.tscn"
+		"spec_accumulation": "res://scenes/ui/special_skills/accumulation_skill_ui.tscn",
+		"spec_trinity": "res://scenes/ui/special_skills/trinity_skill_ui.tscn"
 	}
 	const SPECIAL_SKILL_POSITIONS := {
 		"spec_diversity": Vector2(20.0, 20.0),
-		"spec_accumulation": Vector2(20.0, 290.0)
+		"spec_accumulation": Vector2(20.0, 290.0),
+		"spec_trinity": Vector2(20.0, 390.0)
 	}
 
 	for sk in active_spec_skills:
@@ -437,8 +459,86 @@ func _update_all() -> void:
 	_update_upgrade_buttons()
 
 
+func _process(_delta: float) -> void:
+	if GameData.is_trinity_active():
+		_was_trinity_active = true
+		_apply_trinity_button_styles()
+	elif _was_trinity_active:
+		_was_trinity_active = false
+		_restore_upgrade_button_styles()
+
+
+func _on_trinity_changed() -> void:
+	_update_upgrade_buttons()
+
+
+func _apply_trinity_button_styles() -> void:
+	var active_stat := GameData.trinity_sacrificed_stat
+	var time := Time.get_ticks_msec() * 0.001
+	var pulse := 0.8 + 0.2 * sin(time * 3.5)
+	var glow_gold := Color(1.0, 0.88, 0.28, 1.0) * pulse
+	glow_gold.a = 1.0
+	var glow_gold_hover := Color(1.0, 0.95, 0.45, 1.0)
+
+	var red_border := Color(0.95, 0.25, 0.30, 0.95)
+	var red_border_hover := Color(1.0, 0.35, 0.40, 1.0)
+
+	var stat_btns := [
+		{ "stat": "size", "btn": btn_size },
+		{ "stat": "speed", "btn": btn_speed },
+		{ "stat": "boost", "btn": btn_boost }
+	]
+
+	for entry in stat_btns:
+		var stat_id: String = entry["stat"]
+		var btn: Button = entry["btn"]
+		var is_sacrificed := (active_stat == stat_id)
+		var defaults: Dictionary = _default_upgrade_btn_styles.get(btn, {})
+
+		var states := ["normal", "hover", "pressed", "disabled"]
+		for state_name in states:
+			var def_style: StyleBoxFlat = defaults.get(state_name, null)
+			var style := StyleBoxFlat.new()
+			style.corner_radius_top_left = 3
+			style.corner_radius_top_right = 3
+			style.corner_radius_bottom_right = 3
+			style.corner_radius_bottom_left = 3
+
+			# 通常時と同様の背景色 (hover時は明るく光る)
+			if def_style:
+				style.bg_color = def_style.bg_color
+			else:
+				style.bg_color = Color(0.33, 0.15, 0.85, 1)
+
+			if is_sacrificed:
+				style.border_color = red_border_hover if state_name == "hover" else red_border
+				style.border_width_left = 2
+				style.border_width_top = 2
+				style.border_width_right = 2
+				style.border_width_bottom = 2
+			else:
+				style.border_color = glow_gold_hover if state_name == "hover" else glow_gold
+				style.border_width_left = 3
+				style.border_width_top = 3
+				style.border_width_right = 3
+				style.border_width_bottom = 3
+
+			btn.add_theme_stylebox_override(state_name, style)
+
+
+func _restore_upgrade_button_styles() -> void:
+	for btn in [btn_size, btn_speed, btn_boost]:
+		if _default_upgrade_btn_styles.has(btn):
+			var defaults: Dictionary = _default_upgrade_btn_styles[btn]
+			btn.add_theme_stylebox_override("normal", defaults["normal"])
+			btn.add_theme_stylebox_override("hover", defaults["hover"])
+			btn.add_theme_stylebox_override("pressed", defaults["pressed"])
+			btn.add_theme_stylebox_override("disabled", defaults["disabled"])
+
+
 func _update_upgrade_buttons() -> void:
 	var gold := GameData.gold
+	var is_trinity := GameData.is_trinity_active()
 
 	# --- Upgrade 1: Logo Size ---
 	var cost_size := GameData.get_size_upgrade_cost()
@@ -449,6 +549,23 @@ func _update_upgrade_buttons() -> void:
 	_lbl_cost_size.text = "🪙 " + _format_number(cost_size)
 	_lbl_cost_size.add_theme_color_override("font_color", Color.RED if !size_ok else Color(0.85, 0.85, 0.85))
 
+	var size_diff := GameData.get_trinity_stat_diff("size")
+	if is_trinity:
+		if GameData.trinity_sacrificed_stat == "size":
+			_lbl_diff_size.visible = true
+			_lbl_diff_size.text = "[無効]"
+			_lbl_diff_size.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+		elif size_diff > 0:
+			_lbl_diff_size.visible = true
+			_lbl_diff_size.text = "[%+d]" % size_diff
+			_lbl_diff_size.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
+		else:
+			_lbl_diff_size.visible = false
+			_lbl_diff_size.text = ""
+	else:
+		_lbl_diff_size.visible = false
+		_lbl_diff_size.text = ""
+
 	# --- Upgrade 2: Speed ---
 	var cost_speed := GameData.get_speed_upgrade_cost()
 	var speed_ok := gold >= cost_speed
@@ -458,6 +575,23 @@ func _update_upgrade_buttons() -> void:
 	_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed)
 	_lbl_cost_speed.add_theme_color_override("font_color", Color.RED if !speed_ok else Color(0.85, 0.85, 0.85))
 
+	var speed_diff := GameData.get_trinity_stat_diff("speed")
+	if is_trinity:
+		if GameData.trinity_sacrificed_stat == "speed":
+			_lbl_diff_speed.visible = true
+			_lbl_diff_speed.text = "[無効]"
+			_lbl_diff_speed.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+		elif speed_diff > 0:
+			_lbl_diff_speed.visible = true
+			_lbl_diff_speed.text = "[%+d]" % speed_diff
+			_lbl_diff_speed.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
+		else:
+			_lbl_diff_speed.visible = false
+			_lbl_diff_speed.text = ""
+	else:
+		_lbl_diff_speed.visible = false
+		_lbl_diff_speed.text = ""
+
 	# --- Upgrade 3: Gold/Token Boost ---
 	var cost_boost := GameData.get_boost_upgrade_cost()
 	var boost_ok := gold >= cost_boost
@@ -466,6 +600,23 @@ func _update_upgrade_buttons() -> void:
 	_lbl_title_boost.add_theme_color_override("font_color", Color.WHITE if boost_ok else Color(1, 1, 1, 0.4))
 	_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost)
 	_lbl_cost_boost.add_theme_color_override("font_color", Color.RED if !boost_ok else Color(0.85, 0.85, 0.85))
+
+	var boost_diff := GameData.get_trinity_stat_diff("boost")
+	if is_trinity:
+		if GameData.trinity_sacrificed_stat == "boost":
+			_lbl_diff_boost.visible = true
+			_lbl_diff_boost.text = "[無効]"
+			_lbl_diff_boost.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+		elif boost_diff > 0:
+			_lbl_diff_boost.visible = true
+			_lbl_diff_boost.text = "[%+d]" % boost_diff
+			_lbl_diff_boost.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
+		else:
+			_lbl_diff_boost.visible = false
+			_lbl_diff_boost.text = ""
+	else:
+		_lbl_diff_boost.visible = false
+		_lbl_diff_boost.text = ""
 
 	# --- Upgrade 4: Ascension ---
 	var ascend_ok := GameData.can_ascend()

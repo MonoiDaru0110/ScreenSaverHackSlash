@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://trinity_skill_ui_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/special_skills/trinity_skill_ui.gd" id="1_trinity_ui"]
+
+[node name="TrinitySkillUI" type="Control"]
+custom_minimum_size = Vector2(260, 200)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 260.0
+offset_bottom = 200.0
+mouse_filter = 0
+script = ExtResource("1_trinity_ui")

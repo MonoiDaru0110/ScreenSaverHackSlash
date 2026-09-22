@@ -159,6 +159,10 @@ var accumulation_rank: int = 0
 var accumulation_bounces_in_rank: int = 0
 signal accumulation_changed(ranked_up: bool)
 
+# --- Trinity Special Skill ---
+var trinity_sacrificed_stat: String = "none" # "none", "size", "speed", "boost"
+signal trinity_changed
+
 var special_skill_defs: Dictionary = {
 	"spec_diversity": {
 		"id": "spec_diversity",
@@ -173,6 +177,13 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "ゴールド、トークン入手量×2^(レベル) 一定回数衝突するごとにさらに倍率+2^(レベル)",
 		"has_custom_ui": true,
 		"ui_title": "累積"
+	},
+	"spec_trinity": {
+		"id": "spec_trinity",
+		"name": "トリニティ",
+		"desc_template": "基礎強化1つを無効化し、他2つのレベル×%s倍",
+		"has_custom_ui": true,
+		"ui_title": "トリニティ"
 	},
 	"spec_aura": {
 		"id": "spec_aura",
@@ -383,6 +394,67 @@ func record_accumulation_bounce() -> void:
 	if ranked_up:
 		_recalculate_cached_multipliers()
 	accumulation_changed.emit(ranked_up)
+
+
+func get_trinity_multiplier() -> float:
+	var n: int = get_special_skill_total_level("spec_trinity")
+	if n <= 0:
+		return 1.0
+	# 2 + 0.2 * (n - 1)
+	return 2.0 + 0.2 * float(n - 1)
+
+
+func is_trinity_active() -> bool:
+	return get_special_skill_total_level("spec_trinity") > 0 and trinity_sacrificed_stat != "none"
+
+
+func set_trinity_sacrificed_stat(stat: String) -> void:
+	if trinity_sacrificed_stat == stat:
+		# 無効化されている項目のボタンをもう一回押すとどれも選択されていない状態に戻る
+		trinity_sacrificed_stat = "none"
+	else:
+		trinity_sacrificed_stat = stat
+	
+	_recalculate_cached_multipliers()
+	trinity_changed.emit()
+	upgrades_changed.emit()
+
+
+func get_effective_size_level() -> int:
+	if not is_trinity_active():
+		return size_level
+	if trinity_sacrificed_stat == "size":
+		return 0
+	return int(round(float(size_level) * get_trinity_multiplier()))
+
+
+func get_effective_speed_level() -> int:
+	if not is_trinity_active():
+		return speed_level
+	if trinity_sacrificed_stat == "speed":
+		return 0
+	return int(round(float(speed_level) * get_trinity_multiplier()))
+
+
+func get_effective_boost_level() -> int:
+	if not is_trinity_active():
+		return boost_level
+	if trinity_sacrificed_stat == "boost":
+		return 0
+	return int(round(float(boost_level) * get_trinity_multiplier()))
+
+
+func get_trinity_stat_diff(stat_type: String) -> int:
+	if not is_trinity_active():
+		return 0
+	match stat_type:
+		"size":
+			return get_effective_size_level() - size_level
+		"speed":
+			return get_effective_speed_level() - speed_level
+		"boost":
+			return get_effective_boost_level() - boost_level
+	return 0
 
 
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
@@ -623,6 +695,10 @@ func execute_reincarnation() -> void:
 	accumulation_bounces_in_rank = 0
 	accumulation_changed.emit(false)
 
+	# 6. 特殊スキル「トリニティ」のリセット
+	trinity_sacrificed_stat = "none"
+	trinity_changed.emit()
+
 	# 転生ボーナスによるスキルの自動解放を適用
 	apply_auto_unlocked_skills()
 
@@ -773,7 +849,7 @@ func get_logo_size_multiplier() -> float:
 	var half_C := max_C * 0.5
 	
 	# 基礎強化レベル A (size_level) による収束寄与
-	var level_A := float(size_level)
+	var level_A := float(get_effective_size_level())
 	var contrib_A := half_C * (1.0 - exp(-0.02 * level_A))
 	
 	# 装備スキルレベル B (size_boost) による収束寄与
@@ -1231,6 +1307,9 @@ func generate_random_equipment() -> Dictionary:
 			var base_mult := int(pow(2.0, float(spec_lvl)))
 			var s_val := format_num(float(base_mult))
 			formatted_desc = "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
+		elif spec_id == "spec_trinity":
+			var mult_val := 2.0 + 0.2 * float(spec_lvl - 1)
+			formatted_desc = "基礎強化1つを無効化し、他2つのレベル×%.1f倍" % mult_val
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
 
