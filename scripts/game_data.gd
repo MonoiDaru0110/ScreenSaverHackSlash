@@ -163,6 +163,16 @@ signal accumulation_changed(ranked_up: bool)
 var trinity_sacrificed_stat: String = "none" # "none", "size", "speed", "boost"
 signal trinity_changed
 
+# --- Gamble Special Skill ---
+const GAMBLE_INTERVAL: float = 300.0 # 5分 (300秒)
+var gamble_timer: float = 300.0
+var gamble_current_slot: int = 0
+var gamble_current_multiplier: float = 1.0
+var _prev_gamble_level: int = 0
+var gamble_should_spin_on_ui_ready: bool = false
+signal gamble_changed(multiplier: float, slot: int, animated: bool)
+signal gamble_timer_updated(remaining_seconds: float)
+
 var special_skill_defs: Dictionary = {
 	"spec_diversity": {
 		"id": "spec_diversity",
@@ -184,6 +194,13 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "基礎強化1つを無効化し、他2つのレベル×%s倍",
 		"has_custom_ui": true,
 		"ui_title": "トリニティ"
+	},
+	"spec_gamble": {
+		"id": "spec_gamble",
+		"name": "ギャンブル",
+		"desc_template": "基礎倍率%s(Lv+1)をもとに、入手量がランダムに乗算(1〜%s倍)。5分ごとにリセット",
+		"has_custom_ui": true,
+		"ui_title": "ギャンブル"
 	},
 	"spec_aura": {
 		"id": "spec_aura",
@@ -457,6 +474,67 @@ func get_trinity_stat_diff(stat_type: String) -> int:
 	return 0
 
 
+# --- Gamble Special Skill Operations ---
+
+func get_gamble_base_multiplier() -> int:
+	var lvl := get_special_skill_total_level("spec_gamble")
+	if lvl <= 0:
+		return 1
+	return lvl + 1
+
+
+func get_gamble_slot_multiplier(slot_idx: int) -> float:
+	var n := float(get_gamble_base_multiplier())
+	return pow(n, float(slot_idx))
+
+
+func get_gamble_multiplier() -> float:
+	if get_special_skill_total_level("spec_gamble") <= 0:
+		return 1.0
+	return gamble_current_multiplier
+
+
+func roll_gamble(animated: bool = true) -> void:
+	var lvl := get_special_skill_total_level("spec_gamble")
+	if lvl <= 0:
+		gamble_current_slot = 0
+		gamble_current_multiplier = 1.0
+		gamble_timer = GAMBLE_INTERVAL
+		gamble_should_spin_on_ui_ready = false
+		return
+
+	# 再抽選 (0〜4 の 5スロット)
+	gamble_current_slot = randi() % 5
+	gamble_current_multiplier = get_gamble_slot_multiplier(gamble_current_slot)
+	# 再抽選が行われた際に、そのタイミングを問わずタイマーを5分にリセット
+	gamble_timer = GAMBLE_INTERVAL
+	if animated:
+		gamble_should_spin_on_ui_ready = true
+	_recalculate_cached_multipliers()
+	gamble_changed.emit(gamble_current_multiplier, gamble_current_slot, animated)
+
+
+func check_gamble_activation() -> void:
+	var lvl := get_special_skill_total_level("spec_gamble")
+	if lvl > 0 and _prev_gamble_level == 0:
+		# スキルレベルが0の状態から正の値になったときのみ再抽選・回転！
+		_prev_gamble_level = lvl
+		roll_gamble(true)
+	elif lvl > 0 and lvl != _prev_gamble_level:
+		# レベルが変わっただけの場合は再抽選しない！
+		# （現在のスロットの倍率のみ新レベルで更新、タイマーやスロットは維持）
+		_prev_gamble_level = lvl
+		gamble_current_multiplier = get_gamble_slot_multiplier(gamble_current_slot)
+		gamble_changed.emit(gamble_current_multiplier, gamble_current_slot, false)
+	elif lvl == 0:
+		_prev_gamble_level = 0
+		gamble_current_slot = 0
+		gamble_current_multiplier = 1.0
+		gamble_timer = GAMBLE_INTERVAL
+		gamble_should_spin_on_ui_ready = false
+
+
+
 const EQUIP_SKILLS_PATH = "res://data/equipment_skills.json"
 var equipment_skill_defs: Dictionary = {}
 var equipped_skill_levels: Dictionary = {}
@@ -698,6 +776,14 @@ func execute_reincarnation() -> void:
 	# 6. 特殊スキル「トリニティ」のリセット
 	trinity_sacrificed_stat = "none"
 	trinity_changed.emit()
+
+	# 7. 特殊スキル「ギャンブル」のリセット
+	gamble_timer = GAMBLE_INTERVAL
+	gamble_current_slot = 0
+	gamble_current_multiplier = 1.0
+	_prev_gamble_level = 0
+	gamble_should_spin_on_ui_ready = false
+	gamble_changed.emit(1.0, 0, false)
 
 	# 転生ボーナスによるスキルの自動解放を適用
 	apply_auto_unlocked_skills()
@@ -965,6 +1051,15 @@ func _ready() -> void:
 	equipment_changed.connect(_on_equipment_changed_internal)
 
 
+func _process(delta: float) -> void:
+	if get_special_skill_total_level("spec_gamble") > 0:
+		gamble_timer -= delta
+		if gamble_timer <= 0.0:
+			roll_gamble(true)
+		else:
+			gamble_timer_updated.emit(gamble_timer)
+
+
 func _on_equipment_changed_internal() -> void:
 	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
@@ -1009,15 +1104,17 @@ func _recalculate_all_cumulative_levels() -> void:
 
 
 func _recalculate_cached_multipliers() -> void:
+	check_gamble_activation()
 	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
 	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
 	var div_mult := get_diversity_multiplier()
 	var accum_mult := get_accumulation_multiplier()
 	var reinc_mult := get_reincarnation_multiplier()
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult
-	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult
-	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult
+	var gamble_mult := get_gamble_multiplier()
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult
 	_cached_ascension_mult = get_ascension_multiplier()
 
 
@@ -1310,6 +1407,10 @@ func generate_random_equipment() -> Dictionary:
 		elif spec_id == "spec_trinity":
 			var mult_val := 2.0 + 0.2 * float(spec_lvl - 1)
 			formatted_desc = "基礎強化1つを無効化し、他2つのレベル×%.1f倍" % mult_val
+		elif spec_id == "spec_gamble":
+			var n := spec_lvl + 1
+			var max_m := int(pow(float(n), 4.0))
+			formatted_desc = "基礎倍率%d(Lv+1)をもとに、入手量がランダムに乗算(1〜%s倍)。5分ごとにリセット" % [n, format_num(float(max_m))]
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
 

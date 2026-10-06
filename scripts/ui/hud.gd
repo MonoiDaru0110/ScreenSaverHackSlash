@@ -333,13 +333,11 @@ func _update_special_skill_custom_ui() -> void:
 	if not special_skill_ui_container:
 		return
 
-	for child in special_skill_ui_container.get_children():
-		child.queue_free()
-
 	# 特殊スキルの収集:
 	# 1. 転生画面で強化されている特殊スキル (GameData.special_skill_defs に定義があり total_level > 0)
 	# 2. 装備中アイテムに付与されている特殊スキル
 	var active_spec_skills: Array[Dictionary] = []
+	var active_skill_ids: Dictionary = {}
 
 	# 1. 転生解放済み特殊スキル
 	for spec_id in GameData.special_skill_defs:
@@ -348,6 +346,7 @@ func _update_special_skill_custom_ui() -> void:
 			var def: Dictionary = GameData.special_skill_defs[spec_id].duplicate()
 			def["level"] = total_lvl
 			active_spec_skills.append(def)
+			active_skill_ids[spec_id] = true
 
 	# 2. 装備品に付与された特殊スキル（まだ追加されていないものやレベル更新）
 	for slot_key in GameData.equipped_items:
@@ -357,39 +356,62 @@ func _update_special_skill_custom_ui() -> void:
 			for sk in skills:
 				if sk.get("is_special", false) and sk.get("has_custom_ui", false):
 					var sk_id: String = sk.get("id", "")
-					var found := false
-					for existing in active_spec_skills:
-						if existing.get("id") == sk_id:
-							found = true
-							break
-					if not found:
+					if not active_skill_ids.has(sk_id):
 						var sk_entry: Dictionary = sk.duplicate()
 						sk_entry["level"] = GameData.get_special_skill_total_level(sk_id)
 						active_spec_skills.append(sk_entry)
+						active_skill_ids[sk_id] = true
 
 	if active_spec_skills.is_empty():
+		for child in special_skill_ui_container.get_children():
+			child.queue_free()
 		special_skill_ui_container.visible = false
 		return
 
 	special_skill_ui_container.visible = true
 
+	# 不要になった既存UI（active_skill_ids に含まれないもの）のみ破棄
+	for child in special_skill_ui_container.get_children():
+		var child_id: String = child.get_meta("skill_id", "")
+		if child_id == "" or not active_skill_ids.has(child_id):
+			child.queue_free()
+
 	# 専用UIパネルの動的生成（完全指定位置に配置）
 	const SPECIAL_SKILL_UI_MAP := {
 		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn",
 		"spec_accumulation": "res://scenes/ui/special_skills/accumulation_skill_ui.tscn",
-		"spec_trinity": "res://scenes/ui/special_skills/trinity_skill_ui.tscn"
+		"spec_trinity": "res://scenes/ui/special_skills/trinity_skill_ui.tscn",
+		"spec_gamble": "res://scenes/ui/special_skills/gamble_skill_ui.tscn"
 	}
 	const SPECIAL_SKILL_POSITIONS := {
 		"spec_diversity": Vector2(20.0, 20.0),
 		"spec_accumulation": Vector2(20.0, 290.0),
-		"spec_trinity": Vector2(20.0, 390.0)
+		"spec_trinity": Vector2(20.0, 390.0),
+		"spec_gamble": Vector2(20.0, 620.0)
 	}
 
 	for sk in active_spec_skills:
 		var sk_id: String = sk.get("id", "")
+
+		# 既にノードが存在するか確認（破棄キューに入っていないもの）
+		var existing_node: Node = null
+		for child in special_skill_ui_container.get_children():
+			if not child.is_queued_for_deletion() and child.get_meta("skill_id", "") == sk_id:
+				existing_node = child
+				break
+
+		if existing_node != null:
+			# 既存ノードがある場合は再利用（データ更新のみ行い、Tweenや描画状態を保持）
+			if existing_node.has_method("set_skill_data"):
+				existing_node.set_skill_data(sk)
+			continue
+
+		# 新規ノード作成
 		if SPECIAL_SKILL_UI_MAP.has(sk_id) and ResourceLoader.exists(SPECIAL_SKILL_UI_MAP[sk_id]):
 			var scene: PackedScene = load(SPECIAL_SKILL_UI_MAP[sk_id])
 			var custom_ui = scene.instantiate()
+			custom_ui.name = sk_id
+			custom_ui.set_meta("skill_id", sk_id)
 			if custom_ui.has_method("set_skill_data"):
 				custom_ui.set_skill_data(sk)
 			if SPECIAL_SKILL_POSITIONS.has(sk_id):
@@ -398,6 +420,8 @@ func _update_special_skill_custom_ui() -> void:
 		else:
 			# フォールバック表示（デフォルトミニカード）
 			var panel = PanelContainer.new()
+			panel.name = sk_id
+			panel.set_meta("skill_id", sk_id)
 			panel.custom_minimum_size = Vector2(150, 34)
 
 			var style = StyleBoxFlat.new()

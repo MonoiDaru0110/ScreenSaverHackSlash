@@ -8,6 +8,10 @@ const POS_BOOST := Vector2(130.0, 42.0)
 const POS_SIZE := Vector2(65.0, 154.0)
 const POS_SPEED := Vector2(195.0, 154.0)
 
+# 正三角形の中心 (重心) と背景円の半径 (3角形の各頂点を通る半径 75.0)
+const CENTER_POS := Vector2(130.0, 116.67)
+const BG_CIRCLE_RADIUS := 75.0
+
 const STAT_ITEMS := [
 	{ "id": "boost", "pos": POS_BOOST, "name": "ゴールド・\nトークン" },
 	{ "id": "size", "pos": POS_SIZE, "name": "ロゴサイズ" },
@@ -25,7 +29,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	# 強化フチの発光パルスがあるため、トリニティ発動中は継続して再描画
+	# 強化フチの発光パルスおよび背景模様の回転のため、トリニティ発動中は継続して再描画
 	if GameData.is_trinity_active() and is_inside_tree() and is_visible_in_tree():
 		queue_redraw()
 
@@ -58,6 +62,17 @@ func _draw() -> void:
 	var mult_val := GameData.get_trinity_multiplier()
 	# 倍率を float (小数第1位) でしっかり表記
 	var mult_str := "x%.1f" % mult_val
+	var time := Time.get_ticks_msec() * 0.001
+
+	# --- 0. 三角形背後の半透明円 (頂点を通る半径75.0) と回転する幾何学模様 ---
+	var bg_circle_color := Color(0.09, 0.05, 0.15, 0.60) # 半透明ダークパープル
+	var bg_circle_border := Color(0.35, 0.20, 0.50, 0.35) if not is_active else Color(0.45, 0.25, 0.65, 0.50)
+	draw_circle(CENTER_POS, BG_CIRCLE_RADIUS, bg_circle_color)
+	draw_arc(CENTER_POS, BG_CIRCLE_RADIUS, 0, TAU, 64, bg_circle_border, 1.2)
+
+	# スキルがアクティブ化されている間は模様が回転 (半分の速度)
+	var rot_angle := (time * 0.35) if is_active else 0.0
+	_draw_background_pattern(CENTER_POS, BG_CIRCLE_RADIUS, rot_angle, is_active)
 
 	# --- 1. 三角形の内部を不透明な領域として描画 ---
 	var tri_poly := PackedVector2Array([POS_BOOST, POS_SPEED, POS_SIZE])
@@ -73,7 +88,6 @@ func _draw() -> void:
 	draw_line(POS_SPEED, POS_BOOST, line_color, 2.0)
 
 	# --- 3. 各頂点円の描画 ---
-	var time := Time.get_ticks_msec() * 0.001
 	var pulse := 0.75 + 0.25 * sin(time * 3.5)
 
 	var font := ThemeDB.fallback_font
@@ -154,3 +168,41 @@ func _draw() -> void:
 				draw_string_outline(font, text_pos, l, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size_title, 2, Color.BLACK)
 				draw_string(font, text_pos, l, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size_title, Color.WHITE)
 				y_offset += 13.0
+
+
+func _draw_background_pattern(center: Vector2, radius: float, rot_angle: float, is_active: bool) -> void:
+	# 背景色 (Color(0.09, 0.05, 0.15)) に近い暗めで落ち着いたトーン
+	var pattern_color := Color(0.22, 0.13, 0.34, 0.35) if not is_active else Color(0.34, 0.19, 0.50, 0.50)
+	var glow_color := Color(0.45, 0.26, 0.65, 0.45)
+
+	# 1. 同心円のインナーリング
+	draw_arc(center, radius * 0.86, 0, TAU, 48, pattern_color, 1.2)
+	draw_arc(center, radius * 0.60, 0, TAU, 48, pattern_color, 1.0)
+
+	# 2. 外周目盛り (12分割)
+	var tick_inner := radius * 0.86
+	var tick_outer := radius * 0.98
+	for i in range(12):
+		var angle := rot_angle + float(i) * (TAU / 12.0)
+		var dir := Vector2.from_angle(angle)
+		draw_line(center + dir * tick_inner, center + dir * tick_outer, pattern_color, 1.2)
+
+	# 3. 回転する幾何学模様 (六芒星ワイヤーフレーム)
+	var hex_r := radius * 0.80
+	for tri_idx in range(2):
+		var base_rot := rot_angle + (float(tri_idx) * PI / 3.0)
+		var p1 := center + Vector2.from_angle(base_rot) * hex_r
+		var p2 := center + Vector2.from_angle(base_rot + TAU / 3.0) * hex_r
+		var p3 := center + Vector2.from_angle(base_rot + TAU * 2.0 / 3.0) * hex_r
+
+		draw_line(p1, p2, pattern_color, 1.2)
+		draw_line(p2, p3, pattern_color, 1.2)
+		draw_line(p3, p1, pattern_color, 1.2)
+
+	# 4. 頂点オーナメント (6つの小さな円)
+	for i in range(6):
+		var angle := rot_angle + float(i) * (TAU / 6.0)
+		var p := center + Vector2.from_angle(angle) * hex_r
+		draw_circle(p, 2.5, pattern_color)
+		if is_active:
+			draw_circle(p, 1.2, glow_color)
