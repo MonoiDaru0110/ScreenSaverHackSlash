@@ -198,7 +198,7 @@ var special_skill_defs: Dictionary = {
 	"spec_gamble": {
 		"id": "spec_gamble",
 		"name": "ギャンブル",
-		"desc_template": "基礎倍率%s(Lv+1)をもとに、入手量がランダムに乗算(1〜%s倍)。5分ごとにリセット",
+		"desc_template": "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット",
 		"has_custom_ui": true,
 		"ui_title": "ギャンブル"
 	},
@@ -1410,7 +1410,7 @@ func generate_random_equipment() -> Dictionary:
 		elif spec_id == "spec_gamble":
 			var n := spec_lvl + 1
 			var max_m := int(pow(float(n), 4.0))
-			formatted_desc = "基礎倍率%d(Lv+1)をもとに、入手量がランダムに乗算(1〜%s倍)。5分ごとにリセット" % [n, format_num(float(max_m))]
+			formatted_desc = "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット" % format_num(float(max_m))
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
 

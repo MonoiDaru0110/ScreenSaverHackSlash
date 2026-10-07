@@ -83,6 +83,8 @@ func setup(item_data: Dictionary) -> void:
 			var level_str := "[color=%s]+%d[/color]" % [green_color, sk_lvl]
 			var raw_desc: String = skill.get("desc", "")
 			var highlighted_desc := regex.sub(raw_desc, "[color=%s]$0[/color]" % green_color, true)
+			# 「5分ごとにリセットされる」の 5 は緑色にしない
+			highlighted_desc = highlighted_desc.replace("[color=%s]5[/color]分" % green_color, "5分")
 			
 			lines.append("%s %s: %s" % [sk_name, level_str, highlighted_desc])
 			
