@@ -126,9 +126,17 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		GameData.add_tokens(token_amount)
 		_flash_background()
 
+		var is_gold_disabled := GameData.is_switch_gold_disabled()
+		var is_token_disabled := GameData.is_switch_token_disabled()
+
+		var gold_str := "🪙 +0!" if is_gold_disabled else ("🪙 +%s" % GameData.format_num(gold_amount))
+		var gold_col := Color(0.95, 0.35, 0.35) if is_gold_disabled else Color(1.0, 0.95, 0.3)
+		var token_str := "💎 +0!" if is_token_disabled else ("💎 +%s" % GameData.format_num(token_amount))
+		var token_col := Color(0.95, 0.35, 0.35) if is_token_disabled else Color(0.3, 0.75, 1.0)
+
 		# Spawn separate labels for Gold and Tokens
-		_spawn_drop_label(pos + Vector2(-45.0, 0.0), "🪙 +%s" % GameData.format_num(gold_amount), Color(1.0, 0.95, 0.3), true, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
-		_spawn_drop_label(pos + Vector2(45.0, 0.0), "💎 +%s" % GameData.format_num(token_amount), Color(0.3, 0.75, 1.0), true, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
+		_spawn_drop_label(pos + Vector2(-45.0, 0.0), gold_str, gold_col, true, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
+		_spawn_drop_label(pos + Vector2(45.0, 0.0), token_str, token_col, true, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
 		_start_shake(direction.normalized(), 15.0)
 	else:
 		var base_gold := (1.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
@@ -137,7 +145,11 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		GameData.record_bounce(false)
 		GameData.add_gold(gold_amount)
 
-		_spawn_drop_label(pos, "🪙 +%s" % GameData.format_num(gold_amount), Color(1.0, 1.0, 0.95), false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
+		var is_gold_disabled := GameData.is_switch_gold_disabled()
+		var gold_str := "🪙 +0!" if is_gold_disabled else ("🪙 +%s" % GameData.format_num(gold_amount))
+		var gold_col := Color(0.95, 0.35, 0.35) if is_gold_disabled else Color(1.0, 1.0, 0.95)
+
+		_spawn_drop_label(pos, gold_str, gold_col, false, gold_crit.is_crit, gold_direct.is_direct, gold_crit.weight)
 		_start_shake(direction, 5.0)
 
 	GameData.record_accumulation_bounce()
@@ -304,17 +316,21 @@ func _on_over_time_timeout() -> void:
 	var base_over_time_gold := base_hit_gold * 0.1
 	
 	var boost_mult := GameData._cached_gold_over_time_boost_mult
-	var final_amount := base_over_time_gold * boost_mult
-	final_amount = maxf(1.0, final_amount)
+	var is_disabled := GameData.is_switch_gold_disabled()
+	var final_amount := 0.0 if is_disabled else maxf(1.0, base_over_time_gold * boost_mult)
 	
 	# ゴールドを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
 	var total_gold := final_amount * float(logo_count)
-	GameData.add_gold(total_gold)
+	if total_gold > 0.0:
+		GameData.add_gold(total_gold)
 	
 	for logo in logos:
 		if logo is Node2D:
-			_spawn_drop_label(logo.global_position, "🪙 +%s" % GameData.format_num(final_amount), Color(1.0, 1.0, 1.0, 0.7), false)
+			if is_disabled:
+				_spawn_drop_label(logo.global_position, "🪙 +0!", Color(1.0, 0.4, 0.4, 0.8), false)
+			else:
+				_spawn_drop_label(logo.global_position, "🪙 +%s" % GameData.format_num(final_amount), Color(1.0, 1.0, 1.0, 0.7), false)
 
 
 func _play_sound(stream: AudioStream) -> void:
@@ -344,14 +360,18 @@ func _on_token_over_time_timeout() -> void:
 	var base_over_time_token := base_corner_tokens * 0.1
 	
 	var boost_mult := GameData._cached_token_over_time_boost_mult
-	var final_amount := base_over_time_token * boost_mult
-	final_amount = maxf(1.0, final_amount)
+	var is_disabled := GameData.is_switch_token_disabled()
+	var final_amount := 0.0 if is_disabled else maxf(1.0, base_over_time_token * boost_mult)
 	
 	# トークンを一括加算し、全ロゴから確率減衰制御付きでポップアップを表示
 	var logo_count := logos.size()
 	var total_tokens := final_amount * float(logo_count)
-	GameData.add_tokens(total_tokens)
+	if total_tokens > 0.0:
+		GameData.add_tokens(total_tokens)
 	
 	for logo in logos:
 		if logo is Node2D:
-			_spawn_drop_label(logo.global_position, "💎 +%s" % GameData.format_num(final_amount), Color(0.3, 0.75, 1.0, 0.7), false)
+			if is_disabled:
+				_spawn_drop_label(logo.global_position, "💎 +0!", Color(1.0, 0.4, 0.4, 0.8), false)
+			else:
+				_spawn_drop_label(logo.global_position, "💎 +%s" % GameData.format_num(final_amount), Color(0.3, 0.75, 1.0, 0.7), false)

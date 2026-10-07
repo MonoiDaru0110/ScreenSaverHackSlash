@@ -54,6 +54,11 @@ const SPECIAL_SKILLS_DATA = [
 		"desc": "基礎強化の1つを無効化し、他2つのレベルを×(2+0.2(Lv-1))倍に強化"
 	},
 	{
+		"id": "spec_switch",
+		"name": "スイッチ",
+		"desc": "ゴールド・トークンの片方を無効化し、もう片方の入手量×(2^Lv)倍"
+	},
+	{
 		"id": "spec_gamble",
 		"name": "ギャンブル",
 		"desc": "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~(Lv+1)^4倍) 5分ごとにリセット"
@@ -721,6 +726,10 @@ func _format_special_skill_bbcode(skill_id: String, skill_name: String, level: i
 		var n := level + 1
 		var max_m := int(pow(float(n), 4.0))
 		raw_desc = "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット" % GameData.format_num(float(max_m))
+	elif skill_id == "spec_switch":
+		var m := int(pow(2.0, float(level)))
+		var s_val := GameData.format_num(float(m))
+		raw_desc = "ゴールド・トークンの片方を無効化し、もう片方の入手量×%s倍" % s_val
 	else:
 		var base_desc := _get_skill_base_desc(skill_id)
 		raw_desc = "%s (Lv.%d)" % [base_desc, level]

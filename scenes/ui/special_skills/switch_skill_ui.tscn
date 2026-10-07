@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://switch_skill_ui_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/special_skills/switch_skill_ui.gd" id="1_switch_ui"]
+
+[node name="SwitchSkillUI" type="Control"]
+custom_minimum_size = Vector2(260, 104)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 260.0
+offset_bottom = 104.0
+mouse_filter = 0
+script = ExtResource("1_switch_ui")

@@ -173,6 +173,10 @@ var gamble_should_spin_on_ui_ready: bool = false
 signal gamble_changed(multiplier: float, slot: int, animated: bool)
 signal gamble_timer_updated(remaining_seconds: float)
 
+# --- Switch Special Skill ---
+var switch_sacrificed_type: String = "none" # "none", "gold", "token"
+signal switch_changed
+
 var special_skill_defs: Dictionary = {
 	"spec_diversity": {
 		"id": "spec_diversity",
@@ -194,6 +198,13 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "基礎強化1つを無効化し、他2つのレベル×%s倍",
 		"has_custom_ui": true,
 		"ui_title": "トリニティ"
+	},
+	"spec_switch": {
+		"id": "spec_switch",
+		"name": "スイッチ",
+		"desc_template": "ゴールド、トークンのいずれかを無効化し、他方の入手量×%s倍",
+		"has_custom_ui": true,
+		"ui_title": "スイッチ"
 	},
 	"spec_gamble": {
 		"id": "spec_gamble",
@@ -530,8 +541,75 @@ func check_gamble_activation() -> void:
 		_prev_gamble_level = 0
 		gamble_current_slot = 0
 		gamble_current_multiplier = 1.0
-		gamble_timer = GAMBLE_INTERVAL
 		gamble_should_spin_on_ui_ready = false
+
+
+# --- Switch Special Skill Operations ---
+
+func get_switch_multiplier() -> float:
+	var lvl := get_special_skill_total_level("spec_switch")
+	if lvl <= 0:
+		return 1.0
+	return pow(2.0, float(lvl))
+
+
+func is_switch_active() -> bool:
+	return get_special_skill_total_level("spec_switch") > 0 and switch_sacrificed_type != "none"
+
+
+func is_switch_gold_disabled() -> bool:
+	return is_switch_active() and switch_sacrificed_type == "gold"
+
+
+func is_switch_token_disabled() -> bool:
+	return is_switch_active() and switch_sacrificed_type == "token"
+
+
+func set_switch_target(target_type: String) -> void:
+	if switch_sacrificed_type != target_type:
+		switch_sacrificed_type = target_type
+		_recalculate_cached_multipliers()
+		switch_changed.emit()
+		upgrades_changed.emit()
+
+
+func reset_switch() -> void:
+	if switch_sacrificed_type != "none":
+		switch_sacrificed_type = "none"
+		_recalculate_cached_multipliers()
+		switch_changed.emit()
+		upgrades_changed.emit()
+
+
+func toggle_switch(target_type: String) -> void:
+	if switch_sacrificed_type == target_type:
+		switch_sacrificed_type = "none"
+	else:
+		switch_sacrificed_type = target_type
+	_recalculate_cached_multipliers()
+	switch_changed.emit()
+	upgrades_changed.emit()
+
+
+func get_switch_gold_multiplier() -> float:
+	if not is_switch_active():
+		return 1.0
+	if switch_sacrificed_type == "gold":
+		return 0.0
+	elif switch_sacrificed_type == "token":
+		return get_switch_multiplier()
+	return 1.0
+
+
+func get_switch_token_multiplier() -> float:
+	if not is_switch_active():
+		return 1.0
+	if switch_sacrificed_type == "token":
+		return 0.0
+	elif switch_sacrificed_type == "gold":
+		return get_switch_multiplier()
+	return 1.0
+
 
 
 
@@ -784,6 +862,10 @@ func execute_reincarnation() -> void:
 	_prev_gamble_level = 0
 	gamble_should_spin_on_ui_ready = false
 	gamble_changed.emit(1.0, 0, false)
+
+	# 8. 特殊スキル「スイッチ」のリセット
+	switch_sacrificed_type = "none"
+	switch_changed.emit()
 
 	# 転生ボーナスによるスキルの自動解放を適用
 	apply_auto_unlocked_skills()
@@ -1111,10 +1193,12 @@ func _recalculate_cached_multipliers() -> void:
 	var accum_mult := get_accumulation_multiplier()
 	var reinc_mult := get_reincarnation_multiplier()
 	var gamble_mult := get_gamble_multiplier()
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult
-	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult
-	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult
+	var switch_gold_mult := get_switch_gold_multiplier()
+	var switch_token_mult := get_switch_token_multiplier()
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_gold_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_token_mult
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_gold_mult
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_token_mult
 	_cached_ascension_mult = get_ascension_multiplier()
 
 
@@ -1411,6 +1495,9 @@ func generate_random_equipment() -> Dictionary:
 			var n := spec_lvl + 1
 			var max_m := int(pow(float(n), 4.0))
 			formatted_desc = "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット" % format_num(float(max_m))
+		elif spec_id == "spec_switch":
+			var mult_val := int(pow(2.0, float(spec_lvl)))
+			formatted_desc = "ゴールド、トークンのいずれかを無効化し、他方の入手量×%s倍" % format_num(float(mult_val))
 		elif "%d" in desc_tmpl:
 			formatted_desc = desc_tmpl % spec_lvl
 

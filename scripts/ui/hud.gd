@@ -381,13 +381,15 @@ func _update_special_skill_custom_ui() -> void:
 		"spec_diversity": "res://scenes/ui/special_skills/diversity_skill_ui.tscn",
 		"spec_accumulation": "res://scenes/ui/special_skills/accumulation_skill_ui.tscn",
 		"spec_trinity": "res://scenes/ui/special_skills/trinity_skill_ui.tscn",
+		"spec_switch": "res://scenes/ui/special_skills/switch_skill_ui.tscn",
 		"spec_gamble": "res://scenes/ui/special_skills/gamble_skill_ui.tscn"
 	}
 	const SPECIAL_SKILL_POSITIONS := {
 		"spec_diversity": Vector2(20.0, 20.0),
 		"spec_accumulation": Vector2(20.0, 290.0),
 		"spec_trinity": Vector2(20.0, 390.0),
-		"spec_gamble": Vector2(20.0, 620.0)
+		"spec_switch": Vector2(20.0, 620.0),
+		"spec_gamble": Vector2(20.0, 735.0)
 	}
 
 	for sk in active_spec_skills:
