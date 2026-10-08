@@ -198,6 +198,7 @@ func _ready() -> void:
 	GameData.corner_hit_occurred.connect(_on_corner_hit)
 	GameData.upgrades_changed.connect(_on_upgrades_changed)
 	GameData.trinity_changed.connect(_on_trinity_changed)
+	GameData.infusion_changed.connect(_on_infusion_changed)
 
 	_on_stars_changed(GameData.stars)
 	_update_sidebar_star_progress()
@@ -292,7 +293,19 @@ func _on_stats_changed() -> void:
 	_stats_dirty = true
 
 
+var _star_progress_dirty: bool = false
+
+
+func _on_infusion_changed() -> void:
+	# 注入中は角ヒット毎に発火するため、実際の更新は 0.1 秒タイマーでまとめて行う
+	_star_progress_dirty = true
+
+
 func _update_debug_and_stats_info() -> void:
+	if _star_progress_dirty:
+		_star_progress_dirty = false
+		_update_sidebar_star_progress()
+
 	if _stats_dirty:
 		_stats_dirty = false
 		gold_label.text = "🪙 " + _format_number(GameData.gold)

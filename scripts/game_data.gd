@@ -708,6 +708,7 @@ func set_slot_unlocked(slot_key: String, unlocked: bool) -> void:
 signal gold_changed(new_amount: float)
 signal tokens_changed(new_amount: float)
 signal stars_changed(new_amount: int)
+signal infusion_changed()
 signal stats_changed()
 signal corner_hit_occurred()
 signal upgrades_changed()
@@ -763,7 +764,9 @@ func add_tokens(amount: float) -> void:
 			cost = get_next_star_cost()
 		if star_gained:
 			stars_changed.emit(stars)
-		upgrades_changed.emit()
+		# 注入量の変化は軽量シグナルで通知する
+		# (upgrades_changed は全ロゴ・HUD・転生ウィンドウの再計算を誘発し、角ヒット毎に発火すると非常に重いため)
+		infusion_changed.emit()
 	else:
 		tokens += amount
 		tokens_changed.emit(tokens)

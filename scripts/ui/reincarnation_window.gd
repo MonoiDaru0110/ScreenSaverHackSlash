@@ -90,9 +90,18 @@ func _ready() -> void:
 	if btn_upgrade_detail_skill:
 		btn_upgrade_detail_skill.pressed.connect(_on_upgrade_detail_skill_pressed)
 
-	GameData.tokens_changed.connect(func(_val): update_ui())
-	GameData.stars_changed.connect(func(_val): update_ui())
-	GameData.upgrades_changed.connect(update_ui)
+	# update_ui はトークン所持数を参照しないため tokens_changed には接続しない
+	# (角ヒット毎に全ウィジェット更新が走り重くなる原因だった)
+	GameData.stars_changed.connect(func(_val): _queue_full_update())
+	GameData.upgrades_changed.connect(_queue_full_update)
+	GameData.infusion_changed.connect(_on_infusion_changed)
+
+	# 注入プログレス表示の間引き更新用タイマー (0.1秒間隔)
+	_infuse_update_timer = Timer.new()
+	_infuse_update_timer.wait_time = 0.1
+	_infuse_update_timer.autostart = true
+	_infuse_update_timer.timeout.connect(_on_infuse_update_timer)
+	add_child(_infuse_update_timer)
 	visibility_changed.connect(func():
 		if not visible:
 			_hide_skill_tooltip()
@@ -107,6 +116,51 @@ func _ready() -> void:
 
 	set_process(false)
 	update_ui()
+
+
+# --- 更新の間引き/集約 ---
+var _infuse_update_timer: Timer = null
+var _infuse_dirty: bool = false
+var _full_update_queued: bool = false
+
+
+## 同一フレーム内の複数シグナルによる全体更新を 1 回にまとめる
+func _queue_full_update() -> void:
+	if _full_update_queued:
+		return
+	if not is_inside_tree() or not is_visible_in_tree():
+		return # 非表示中は不要 (開いた時に HUD から update_ui が呼ばれる)
+	_full_update_queued = true
+	call_deferred(&"_flush_full_update")
+
+
+func _flush_full_update() -> void:
+	_full_update_queued = false
+	update_ui()
+
+
+func _on_infusion_changed() -> void:
+	_infuse_dirty = true
+
+
+func _on_infuse_update_timer() -> void:
+	if not _infuse_dirty:
+		return
+	if not is_inside_tree() or not is_visible_in_tree():
+		return
+	_infuse_dirty = false
+	_update_infusion_display()
+
+
+## 注入プログレスバーとラベルのみを更新する軽量処理
+func _update_infusion_display() -> void:
+	var next_cost = GameData.get_next_star_cost()
+	progress_infuse.max_value = next_cost
+	progress_infuse.value = min(GameData.infused_tokens, next_cost)
+	lbl_infused_tokens.text = "💎 %s / %s" % [
+		_format_number(GameData.infused_tokens),
+		_format_number(next_cost)
+	]
 
 
 func update_ui() -> void:
@@ -135,13 +189,8 @@ func update_ui() -> void:
 	lbl_big_stars.text = "⚛️ %s" % _format_number(GameData.stars)
 
 	# 2倍スケーリング閾値とプログレスバー
-	var next_cost = GameData.get_next_star_cost()
-	progress_infuse.max_value = next_cost
-	progress_infuse.value = min(GameData.infused_tokens, next_cost)
-	lbl_infused_tokens.text = "💎 %s / %s" % [
-		_format_number(GameData.infused_tokens),
-		_format_number(next_cost)
-	]
+	_infuse_dirty = false
+	_update_infusion_display()
 
 	# 基礎パッシブボーナスの更新
 	var cur_equip_lvl = GameData.get_base_equip_level_bonus()
