@@ -1,72 +1,70 @@
 {
 	"skills": {
-		"reinc_skill_1": {
+		"handing_over_accessory_1": {
 			"base_cost": 1,
-			"description": "説明を入力してください",
-			"icon": "⚛️",
-			"name": "新しい転生スキル 1",
+			"description": "転生時、装備中のアクセサリー1つ目が引き継がれる。",
+			"icon": "acc1",
+			"name": "アクセサリー引継ぎ1",
 			"prerequisites": [
 				"tree_node_root"
 			],
-			"x": 0.0,
+			"x": 160.0,
 			"y": -160.0
 		},
-		"reinc_skill_2": {
+		"handing_over_accessory_2": {
 			"base_cost": 1,
-			"description": "説明を入力してください",
-			"icon": "⚛️",
-			"name": "新しい転生スキル 2",
+			"description": "転生時、装備中のアクセサリー2つ目が引き継がれる。",
+			"icon": "acc2",
+			"name": "アクセサリー引継ぎ2",
 			"prerequisites": [
-				"reinc_skill_1"
-			],
-			"x": 0.0,
-			"y": -320.0
-		},
-		"tree_node_auto_skills": {
-			"base_cost": 2,
-			"description": "転生時に通常スキルツリーの初期解禁数を +2 個追加",
-			"icon": "📜",
-			"name": "叡智の解放",
-			"prerequisites": [
-				"tree_node_equip_lvl"
+				"handing_over_main_equip"
 			],
 			"x": -160.0,
 			"y": -320.0
 		},
-		"tree_node_breakthrough": {
-			"base_cost": 10,
-			"description": "全アビリティの上限を突破し、転生パッシブ倍率を 1.5倍",
-			"icon": "🌟",
-			"name": "限界突破",
+		"handing_over_accessory_3": {
+			"base_cost": 1,
+			"description": "転生時、装備中のアクセサリー3つ目が引き継がれる。",
+			"icon": "acc3",
+			"name": "アクセサリー引継ぎ3",
 			"prerequisites": [
-				"tree_node_slot"
+				"handing_over_sub_equip"
+			],
+			"x": 0.0,
+			"y": -320.0
+		},
+		"handing_over_accessory_4": {
+			"base_cost": 1,
+			"description": "転生時、装備中のアクセサリー4つ目が引き継がれる。",
+			"icon": "acc4",
+			"name": "アクセサリー引継ぎ4",
+			"prerequisites": [
+				"handing_over_accessory_1"
 			],
 			"x": 160.0,
 			"y": -320.0
 		},
-		"tree_node_equip_lvl": {
+		"handing_over_main_equip": {
 			"base_cost": 1,
-			"description": "獲得装備の初期レベルを恒常的に +Lv. 5 底上げ",
-			"icon": "⚔️",
-			"name": "根源の装備力",
+			"description": "転生時、装備中のメイン装備が引き継がれる。",
+			"icon": "main",
+			"name": "メイン装備引継ぎ",
 			"prerequisites": [
 				"tree_node_root"
 			],
 			"x": -160.0,
 			"y": -160.0
 		},
-		"tree_node_mult": {
-			"base_cost": 3,
-			"description": "ゴールド・トークンの全獲得基礎倍率を常時 +25% 加算",
-			"icon": "🌌",
-			"name": "宇宙の超越倍率",
+		"handing_over_sub_equip": {
+			"base_cost": 1,
+			"description": "転生時、装備中のサブ装備が引き継がれる。",
+			"icon": "sub",
+			"name": "サブ装備引継ぎ",
 			"prerequisites": [
-				"tree_node_auto_skills",
-				"reinc_skill_2",
-				"tree_node_breakthrough"
+				"tree_node_root"
 			],
 			"x": 0.0,
-			"y": -480.0
+			"y": -160.0
 		},
 		"tree_node_root": {
 			"base_cost": 0,
@@ -76,17 +74,6 @@
 			"prerequisites": [],
 			"x": 0.0,
 			"y": 0.0
-		},
-		"tree_node_slot": {
-			"base_cost": 5,
-			"description": "上位スキルツリーの同時配置スロット枠を +1 解禁",
-			"icon": "💎",
-			"name": "スロット拡張",
-			"prerequisites": [
-				"tree_node_root"
-			],
-			"x": 160.0,
-			"y": -160.0
 		}
 	}
 }

@@ -442,7 +442,8 @@ func _update_detail_panel() -> void:
 		return
 
 	if not _selected_skill_node or not is_instance_valid(_selected_skill_node):
-		lbl_detail_icon.text = "⚛️"
+		if lbl_detail_icon:
+			lbl_detail_icon.visible = false
 		lbl_detail_name.text = "スキル未選択"
 		lbl_detail_desc.text = "ツリー上のスキルノードをクリックして選択してください。"
 		btn_upgrade_detail_skill.disabled = true
@@ -450,19 +451,25 @@ func _update_detail_panel() -> void:
 		return
 
 	var node = _selected_skill_node
-	lbl_detail_icon.text = node.icon_char
+	if lbl_detail_icon:
+		lbl_detail_icon.visible = false
 	lbl_detail_name.text = node.skill_name
 	lbl_detail_desc.text = node.description
 
-	var is_acquired: bool = node.is_acquired()
+	var is_active: bool = node.is_active()
+	var is_pending: bool = node.is_pending()
 	var cost: int = node.base_cost
 	var is_playable: bool = node.is_playable()
 	var can_afford: bool = (GameData.stars >= cost)
 
-	if is_acquired:
+	if is_active:
 		btn_upgrade_detail_skill.disabled = true
 		btn_upgrade_detail_skill.text = "習得済み"
-		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(0.7, 0.7, 0.8, 0.6))
+		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(1.0, 0.85, 0.3, 0.8))
+	elif is_pending:
+		btn_upgrade_detail_skill.disabled = true
+		btn_upgrade_detail_skill.text = "転生時に適用"
+		btn_upgrade_detail_skill.add_theme_color_override("font_disabled_color", Color(1.0, 0.7, 0.3, 0.85))
 	elif not is_playable:
 		btn_upgrade_detail_skill.disabled = true
 		btn_upgrade_detail_skill.text = "⚛️ %s" % _format_number(cost)

@@ -195,6 +195,8 @@ func _update_ui_actual() -> void:
 		icon = null
 		text = icon_char
 	
+	var active = is_active()
+	var pending = is_pending()
 	var acquired = is_acquired()
 	var playable = is_playable()
 	var cost = base_cost
@@ -205,8 +207,10 @@ func _update_ui_actual() -> void:
 	var border_color = Color(0.9, 0.2, 0.2)
 	if is_selected:
 		border_color = Color(0.3, 0.95, 1.0) # 選択中ハイライト (シアン)
-	elif acquired:
-		border_color = Color(1.0, 0.82, 0.0) # 習得済み (ゴールド)
+	elif active:
+		border_color = Color(1.0, 0.82, 0.0) # 有効化済み (ゴールド)
+	elif pending:
+		border_color = Color(1.0, 0.65, 0.2) # 転生待ち予約中 (オレンジ)
 	elif playable:
 		if is_affordable:
 			border_color = Color(0.2, 0.9, 0.2) # 習得可能 (緑)
@@ -234,7 +238,15 @@ func _update_ui_actual() -> void:
 
 
 func is_acquired() -> bool:
-	return GameData.is_reincarnation_skill_unlocked(skill_id)
+	return GameData.is_reincarnation_skill_purchased(skill_id)
+
+
+func is_active() -> bool:
+	return GameData.is_reincarnation_skill_active(skill_id)
+
+
+func is_pending() -> bool:
+	return GameData.is_reincarnation_skill_pending(skill_id)
 
 
 func is_playable() -> bool:
@@ -243,7 +255,7 @@ func is_playable() -> bool:
 	for prereq_id in prerequisites:
 		if prereq_id.is_empty():
 			continue
-		if not GameData.is_reincarnation_skill_unlocked(prereq_id):
+		if not GameData.is_reincarnation_skill_purchased(prereq_id):
 			return false
 	return true
 

@@ -79,7 +79,9 @@ func format_num(val: float) -> String:
 var reincarnation_level: int = 0
 var pending_reincarnation_upgrades: Dictionary = {} # 特殊スキル予約 { "upgrade_id": level_int }
 var active_reincarnation_upgrades: Dictionary = {}  # 特殊スキル適用済み { "upgrade_id": level_int }
-var unlocked_reincarnation_skills: Dictionary = {"tree_node_root": true} # 転生スキルツリー解放状況 { "skill_id": true }
+var pending_reincarnation_skills: Dictionary = {}   # 転生ツリースキル予約 { "skill_id": true }
+var active_reincarnation_skills: Dictionary = {"tree_node_root": true} # 転生ツリースキル適用済み { "skill_id": true }
+var unlocked_reincarnation_skills: Dictionary = active_reincarnation_skills # 互換用参照
 var stars_spent_in_current_cycle: int = 0 # 現サイクルで消費したスター数
 
 # --- Statistics ---
@@ -690,11 +692,11 @@ func is_slot_unlocked(slot_key: String) -> bool:
 	if slot_key == "main" or slot_key == "sub" or slot_key == "accessory_1":
 		return true
 	elif slot_key == "accessory_2":
-		return total_accessory_slot_unlock_level >= 1
+		return is_reincarnation_skill_active("handing_over_accessory_2") or total_accessory_slot_unlock_level >= 1
 	elif slot_key == "accessory_3":
-		return total_accessory_slot_unlock_level >= 2
+		return is_reincarnation_skill_active("handing_over_accessory_3") or total_accessory_slot_unlock_level >= 2
 	elif slot_key == "accessory_4":
-		return total_accessory_slot_unlock_level >= 3
+		return is_reincarnation_skill_active("handing_over_accessory_4") or total_accessory_slot_unlock_level >= 3
 	return unlocked_slots.get(slot_key, false)
 
 
@@ -777,19 +779,28 @@ func reserve_reincarnation_upgrade(upgrade_id: String, star_cost: int) -> bool:
 	return false
 
 
+func is_reincarnation_skill_active(skill_id: String) -> bool:
+	return active_reincarnation_skills.get(skill_id, false)
+
+
+func is_reincarnation_skill_pending(skill_id: String) -> bool:
+	return pending_reincarnation_skills.get(skill_id, false)
+
+
+func is_reincarnation_skill_purchased(skill_id: String) -> bool:
+	return is_reincarnation_skill_active(skill_id) or is_reincarnation_skill_pending(skill_id)
+
+
 func is_reincarnation_skill_unlocked(skill_id: String) -> bool:
-	return unlocked_reincarnation_skills.get(skill_id, false)
+	return is_reincarnation_skill_active(skill_id)
 
 
 func unlock_reincarnation_skill(skill_id: String, star_cost: int) -> bool:
-	if is_reincarnation_skill_unlocked(skill_id):
+	if is_reincarnation_skill_purchased(skill_id):
 		return false
 	if star_cost == 0 or use_stars(star_cost):
-		unlocked_reincarnation_skills[skill_id] = true
+		pending_reincarnation_skills[skill_id] = true
 		stars_spent_in_current_cycle += star_cost
-		_recalculate_cached_multipliers()
-		if skill_id == "tree_node_auto_skills":
-			apply_auto_unlocked_skills()
 		upgrades_changed.emit()
 		return true
 	return false
@@ -805,6 +816,11 @@ func execute_reincarnation() -> void:
 		var current_active = active_reincarnation_upgrades.get(id, 0)
 		active_reincarnation_upgrades[id] = current_active + pending_reincarnation_upgrades[id]
 	pending_reincarnation_upgrades.clear()
+
+	# 予約されていた転生ツリースキルを解禁（アクティベート）
+	for skill_id in pending_reincarnation_skills:
+		active_reincarnation_skills[skill_id] = true
+	pending_reincarnation_skills.clear()
 
 	stars_spent_in_current_cycle = 0
 	reincarnation_level += 1
@@ -825,22 +841,29 @@ func execute_reincarnation() -> void:
 	# logo_count = 1
 	# logo_reset_requested.emit()
 
-	# 3. 所持装備を装備欄含めてすべて未所持の状態にリセット
-	# equipped_items = {
-	# 	"main": null,
-	# 	"sub": null,
-	# 	"accessory_1": null,
-	# 	"accessory_2": null,
-	# 	"accessory_3": null,
-	# 	"accessory_4": null
-	# }
-	# for type in ["main", "sub", "accessory"]:
-	# 	inventories[type] = []
-	# 	for i in range(MAX_TYPE_INVENTORY_SIZE):
-	# 		inventories[type].append(null)
-	# _recalculate_equipped_skill_levels()
-	# equipment_changed.emit()
-	# inventory_updated.emit()
+	# 3. 装備引き継ぎ & リセット処理
+	var slot_to_skill := {
+		"main": "handing_over_main_equip",
+		"sub": "handing_over_sub_equip",
+		"accessory_1": "handing_over_accessory_1",
+		"accessory_2": "handing_over_accessory_2",
+		"accessory_3": "handing_over_accessory_3",
+		"accessory_4": "handing_over_accessory_4",
+	}
+
+	for slot_key in slot_to_skill:
+		var s_id: String = slot_to_skill[slot_key]
+		if not is_reincarnation_skill_active(s_id):
+			equipped_items[slot_key] = null
+
+	for type in ["main", "sub", "accessory"]:
+		inventories[type] = []
+		for i in range(MAX_TYPE_INVENTORY_SIZE):
+			inventories[type].append(null)
+
+	_recalculate_equipped_skill_levels()
+	equipment_changed.emit()
+	inventory_updated.emit()
 
 	# 4. トークンによるスキルをリセット
 	# skill_levels.clear()
@@ -905,7 +928,7 @@ func get_reincarnation_multiplier() -> float:
 
 func get_pending_reincarnation_multiplier() -> float:
 	var star_boost = active_reincarnation_upgrades.get("upgrade_star_boost", 0) + pending_reincarnation_upgrades.get("upgrade_star_boost", 0)
-	var tree_boost := 0.25 if is_reincarnation_skill_unlocked("tree_node_mult") else 0.0
+	var tree_boost := 0.25 if is_reincarnation_skill_purchased("tree_node_mult") else 0.0
 	return (1.0 + (star_boost * 0.5) + tree_boost) * pow(1.1, float(reincarnation_level + 1))
 
 

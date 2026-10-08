@@ -271,6 +271,7 @@ anchors_preset = 0
 
 [node name="SkillDetailPanel" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
@@ -293,6 +294,7 @@ theme_override_constants/separation = 8
 
 [node name="DetailIconLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "⚛️"
@@ -302,7 +304,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 20
 text = "宇宙の源流"
 
 [node name="HSeparator1" type="HSeparator" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
@@ -313,7 +315,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 18
 text = "最上位転生システムの基本ノード"
 autowrap_mode = 2
 
@@ -321,8 +323,9 @@ autowrap_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 66)
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 24
 text = "⚛️ 0"
+clip_text = true
 
 [node name="BonusBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
 layout_mode = 2
