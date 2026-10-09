@@ -1861,3 +1861,72 @@ func is_item_equipped(item_id: String) -> String:
 
 static func _sort_descending_int(a: int, b: int) -> bool:
 	return a > b
+
+
+# --- Unified Close Button Design ---
+var _close_btn_style_normal: StyleBoxFlat
+var _close_btn_style_hover: StyleBoxFlat
+var _close_btn_style_pressed: StyleBoxFlat
+
+
+func setup_close_button(btn: Button) -> void:
+	if not btn:
+		return
+	if btn is CloseButton:
+		return
+
+		
+	if _close_btn_style_normal == null:
+		# 角が少しラウンドした正方形、境界は黒、内部はオレンジがかった少し彩度の低い赤
+		_close_btn_style_normal = StyleBoxFlat.new()
+		_close_btn_style_normal.bg_color = Color(0.70, 0.26, 0.18, 1.0) # オレンジがかった少し彩度の低い赤
+		_close_btn_style_normal.border_width_left = 1
+		_close_btn_style_normal.border_width_top = 1
+		_close_btn_style_normal.border_width_right = 1
+		_close_btn_style_normal.border_width_bottom = 1
+		_close_btn_style_normal.border_color = Color(0.0, 0.0, 0.0, 1.0) # 境界は黒
+		_close_btn_style_normal.corner_radius_top_left = 4
+		_close_btn_style_normal.corner_radius_top_right = 6 # ウィンドウ右上角のラウンドに合わせる
+		_close_btn_style_normal.corner_radius_bottom_right = 4
+		_close_btn_style_normal.corner_radius_bottom_left = 6
+		
+		_close_btn_style_hover = StyleBoxFlat.new()
+		_close_btn_style_hover.bg_color = Color(0.82, 0.34, 0.24, 1.0)
+		_close_btn_style_hover.border_width_left = 1
+		_close_btn_style_hover.border_width_top = 1
+		_close_btn_style_hover.border_width_right = 1
+		_close_btn_style_hover.border_width_bottom = 1
+		_close_btn_style_hover.border_color = Color(0.0, 0.0, 0.0, 1.0)
+		_close_btn_style_hover.corner_radius_top_left = 4
+		_close_btn_style_hover.corner_radius_top_right = 6
+		_close_btn_style_hover.corner_radius_bottom_right = 4
+		_close_btn_style_hover.corner_radius_bottom_left = 6
+		
+		_close_btn_style_pressed = StyleBoxFlat.new()
+		_close_btn_style_pressed.bg_color = Color(0.55, 0.18, 0.12, 1.0)
+		_close_btn_style_pressed.border_width_left = 1
+		_close_btn_style_pressed.border_width_top = 1
+		_close_btn_style_pressed.border_width_right = 1
+		_close_btn_style_pressed.border_width_bottom = 1
+		_close_btn_style_pressed.border_color = Color(0.0, 0.0, 0.0, 1.0)
+		_close_btn_style_pressed.corner_radius_top_left = 4
+		_close_btn_style_pressed.corner_radius_top_right = 6
+		_close_btn_style_pressed.corner_radius_bottom_right = 4
+		_close_btn_style_pressed.corner_radius_bottom_left = 6
+
+	if btn.custom_minimum_size == Vector2.ZERO or btn.custom_minimum_size == Vector2(60, 60):
+		btn.custom_minimum_size = Vector2(64, 64)
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.add_theme_stylebox_override("normal", _close_btn_style_normal)
+	btn.add_theme_stylebox_override("hover", _close_btn_style_hover)
+	btn.add_theme_stylebox_override("pressed", _close_btn_style_pressed)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	
+	# 中央に、ボタン内部のオレンジがかった赤色に少し近い黒で太めの×マーク
+	var close_mark_color := Color(0.24, 0.08, 0.05, 1.0)
+	btn.add_theme_color_override("font_color", close_mark_color)
+	btn.add_theme_color_override("font_hover_color", Color(0.18, 0.06, 0.04, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(0.12, 0.04, 0.02, 1.0))
+	var font_sz := int(round(btn.custom_minimum_size.y * 0.85))
+	btn.add_theme_font_size_override("font_size", font_sz)
+	btn.text = "×"

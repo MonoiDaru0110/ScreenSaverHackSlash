@@ -1,8 +1,6 @@
-extends PanelContainer
+extends BaseWindow
 ## Equipment Filter Settings Window.
 ## Allows configuring auto-filtering rules for dropped equipment.
-
-signal closed
 
 @onready var btn_close: Button = %CloseBtn
 @onready var btn_reset: Button = %ResetBtn
@@ -46,20 +44,25 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(580, 430)
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	window_title = "装備入手フィルター"
+	header_color = Color(0.20, 0.16, 0.28, 1.0)
+	separator_color = Color(0.32, 0.26, 0.42, 1.0)
+	header_height = 44.0
+	super._ready()
 	
 	_init_button_styles()
 	_init_checkbox_textures()
 	
 	# Apply button styles
 	_apply_button_styles(btn_reset)
-	_apply_button_styles(btn_close)
 	_apply_button_styles(btn_rarity_all)
 	_apply_button_styles(btn_rarity_clear)
 	_apply_button_styles(btn_normal_mode)
 	_apply_button_styles(btn_normal_clear)
 	_apply_button_styles(opt_special_skill)
 	
-	btn_close.pressed.connect(_on_close_pressed)
+	if btn_close and not btn_close.pressed.is_connected(_on_close_pressed):
+		btn_close.pressed.connect(_on_close_pressed)
 	btn_reset.pressed.connect(_on_reset_pressed)
 	
 	# Lv Tier Checkboxes

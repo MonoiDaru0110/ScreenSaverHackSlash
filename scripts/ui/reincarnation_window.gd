@@ -1,9 +1,7 @@
-extends PanelContainer
+extends BaseWindow
 ## Controller for the Top-tier Reincarnation (Transcendence) Window.
 ## Features 2-column layout: Token Infusion, Passive Bonuses, Special Skills on Left;
 ## Vertical Reincarnation Skill Tree on Right.
-
-signal closed()
 
 @onready var btn_toggle_infuse: Button = %ToggleInfuseBtn
 @onready var progress_infuse: ProgressBar = %InfuseProgressBar
@@ -82,9 +80,13 @@ const SPECIAL_SKILLS_DATA = [
 
 
 func _ready() -> void:
+	window_title = "転生"
+	header_color = Color(0.24, 0.12, 0.32, 1.0)
+	separator_color = Color(0.38, 0.20, 0.50, 1.0)
+	super._ready()
 	_setup_button_styles()
-
-	btn_close.pressed.connect(_on_close_pressed)
+	if btn_close and not btn_close.pressed.is_connected(_on_close_pressed):
+		btn_close.pressed.connect(_on_close_pressed)
 	btn_toggle_infuse.pressed.connect(_on_toggle_infuse_pressed)
 	btn_reincarnate.pressed.connect(_on_reincarnate_pressed)
 	if btn_upgrade_detail_skill:

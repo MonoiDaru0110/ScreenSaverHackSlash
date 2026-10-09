@@ -210,6 +210,7 @@ func _ready() -> void:
 	btn_speed.pressed.connect(_on_speed_pressed)
 	btn_boost.pressed.connect(_on_boost_pressed)
 	btn_ascend.pressed.connect(_on_ascend_pressed)
+	GameData.setup_close_button(btn_close_window)
 	btn_close_window.pressed.connect(close_skill_tree)
 	if btn_toggle_skill_vis:
 		btn_toggle_skill_vis.pressed.connect(_on_toggle_skill_vis_pressed)
@@ -222,8 +223,7 @@ func _ready() -> void:
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	GameData.inventory_updated.connect(_on_inventory_updated)
 	GameData.reincarnation_performed.connect(_on_reincarnation_performed)
-	btn_close_inventory.focus_mode = Control.FOCUS_NONE
-	btn_close_inventory.add_theme_stylebox_override("focus", style_focus)
+	GameData.setup_close_button(btn_close_inventory)
 	btn_close_inventory.pressed.connect(close_inventory)
 	if btn_equipment_filter:
 		btn_equipment_filter.focus_mode = Control.FOCUS_NONE
@@ -964,9 +964,9 @@ func _update_inventory_ui() -> void:
 	var count_sub = GameData.get_inventory_count("sub")
 	var count_acc = GameData.get_inventory_count("accessory")
 	
-	main_title_label.text = "⚔️ メイン (%d / %d)" % [count_main, GameData.MAX_TYPE_INVENTORY_SIZE]
-	sub_title_label.text = "🛡️ サブ (%d / %d)" % [count_sub, GameData.MAX_TYPE_INVENTORY_SIZE]
-	accessory_title_label.text = "💍 アクセサリー (%d / %d)" % [count_acc, GameData.MAX_TYPE_INVENTORY_SIZE]
+	main_title_label.text = "メイン (%d / %d)" % [count_main, GameData.MAX_TYPE_INVENTORY_SIZE]
+	sub_title_label.text = "サブ (%d / %d)" % [count_sub, GameData.MAX_TYPE_INVENTORY_SIZE]
+	accessory_title_label.text = "アクセサリー (%d / %d)" % [count_acc, GameData.MAX_TYPE_INVENTORY_SIZE]
 	
 	_update_grid_slots(main_grid, "main", inv_main)
 	_update_grid_slots(sub_grid, "sub", inv_sub)

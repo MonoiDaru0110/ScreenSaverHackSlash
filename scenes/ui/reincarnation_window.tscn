@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ch2reinc1001" path="res://scripts/ui/reincarnation_window.gd" id="1_reinc"]
 [ext_resource type="Script" path="res://scripts/skills/reincarnation_skill_tree_controller.gd" id="2_reinc_controller"]
+[ext_resource type="PackedScene" path="res://scenes/ui/close_button.tscn" id="3_close_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_scroll_bg"]
 bg_color = Color(0.08, 0.05, 0.12, 1)
@@ -15,19 +16,17 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window_bg"]
-bg_color = Color(0.1, 0.08, 0.16, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.65, 0.35, 0.95, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-shadow_color = Color(0, 0, 0, 0.6)
-shadow_size = 12
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_header"]
+bg_color = Color(0.24, 0.12, 0.32, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_body"]
+bg_color = Color(0.08, 0.08, 0.14, 1)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bg"]
 bg_color = Color(0.14, 0.12, 0.22, 1)
@@ -84,77 +83,117 @@ offset_right = -272.0
 offset_bottom = -109.0
 grow_horizontal = 0
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_window_bg")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_reinc")
+window_title = "転生"
+header_color = Color(0.24, 0.12, 0.32, 1)
+separator_color = Color(0.38, 0.2, 0.5, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="WindowVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="WindowVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_reinc_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="WindowVBox/HeaderPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "転生"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="CloseBtn" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("3_close_scene")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="WindowVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.38, 0.2, 0.5, 1)
+
+[node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_reinc_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="WindowVBox/BodyPanel"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
+[node name="MainLayout" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="HeaderBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
-layout_mode = 2
-
-[node name="TitleLabel" type="Label" parent="MarginContainer/MainLayout/HeaderBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9, 0.7, 1, 1)
-theme_override_font_sizes/font_size = 24
-text = "転生"
-
-[node name="CloseBtn" type="Button" parent="MarginContainer/MainLayout/HeaderBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(36, 36)
-layout_mode = 2
-text = "❌"
-
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/MainLayout"]
-layout_mode = 2
-
-[node name="ContentBody" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+[node name="ContentBody" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 16
 
-[node name="LeftStation" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody"]
+[node name="LeftStation" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody"]
 custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
 
-[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation"]
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 14
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 14
 
-[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin"]
+[node name="VBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="InfusionHBox" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+[node name="InfusionHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="LeftCol" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
+[node name="LeftCol" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="ToggleInfuseBtn" type="Button" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+[node name="ToggleInfuseBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "トークンを注入"
 
-[node name="InfuseProgressBar" type="ProgressBar" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+[node name="InfuseProgressBar" type="ProgressBar" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 20)
 layout_mode = 2
@@ -162,11 +201,11 @@ theme_override_styles/background = SubResource("StyleBoxFlat_progress_bg")
 theme_override_styles/fill = SubResource("StyleBoxFlat_progress_fill")
 show_percentage = false
 
-[node name="TokenLabelContainer" type="Control" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
+[node name="TokenLabelContainer" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol"]
 custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 
-[node name="InfusedTokensLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol/TokenLabelContainer"]
+[node name="InfusedTokensLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/LeftCol/TokenLabelContainer"]
 unique_name_in_owner = true
 z_index = 1
 layout_mode = 0
@@ -176,30 +215,30 @@ theme_override_colors/font_color = Color(0.3, 0.8, 0.9, 1)
 theme_override_font_sizes/font_size = 13
 text = "注入済み: 💎 0"
 
-[node name="RightStarCard" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
+[node name="RightStarCard" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox"]
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
 
-[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard"]
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard"]
 layout_mode = 2
 theme_override_constants/margin_left = 8
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
-[node name="VBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin"]
+[node name="VBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin"]
 layout_mode = 2
 alignment = 1
 
-[node name="StarCardTitle" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
+[node name="StarCardTitle" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
 theme_override_font_sizes/font_size = 13
 text = "所持スター"
 horizontal_alignment = 1
 
-[node name="BigStarsLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
+[node name="BigStarsLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/InfusionHBox/RightStarCard/Margin/VBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.6, 1, 1)
@@ -209,41 +248,41 @@ horizontal_alignment = 1
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="SpecialScroll" type="ScrollContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox"]
+[node name="SpecialScroll" type="ScrollContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox"]
 custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="SpecialSkillsList" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/LeftStation/Margin/VBox/SpecialScroll"]
+[node name="SpecialSkillsList" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/LeftStation/Margin/VBox/SpecialScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="RightStation" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody"]
+[node name="RightStation" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.42
 theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
 
-[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation"]
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation"]
 layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 16
 
-[node name="TreeAndDetailSplit" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin"]
+[node name="TreeAndDetailSplit" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TreeContainer" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
+[node name="TreeContainer" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
 
-[node name="ReincTreeScroll" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer"]
+[node name="ReincTreeScroll" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -253,7 +292,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_reinc_controller")
 
-[node name="ReincTreeScrollBg" type="Panel" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
+[node name="ReincTreeScrollBg" type="Panel" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -263,13 +302,13 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_reinc_scroll_bg")
 
-[node name="ReincTreeViewport" type="Control" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
+[node name="ReincTreeViewport" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/TreeContainer/ReincTreeScroll"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(400, 300)
 layout_mode = 2
 anchors_preset = 0
 
-[node name="SkillDetailPanel" type="PanelContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
+[node name="SkillDetailPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
@@ -277,29 +316,29 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_card_bg")
 
-[node name="Margin" type="MarginContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel"]
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel"]
 layout_mode = 2
 theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="DetailVBox" type="VBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin"]
+[node name="DetailVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="HeaderHBox" type="HBoxContainer" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="DetailIconLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
+[node name="DetailIconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "⚛️"
 
-[node name="DetailNameLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
+[node name="DetailNameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox/HeaderHBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -307,10 +346,10 @@ theme_override_colors/font_color = Color(0.9, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 20
 text = "宇宙の源流"
 
-[node name="HSeparator1" type="HSeparator" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+[node name="HSeparator1" type="HSeparator" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
 layout_mode = 2
 
-[node name="DetailDescLabel" type="Label" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+[node name="DetailDescLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -319,7 +358,7 @@ theme_override_font_sizes/font_size = 18
 text = "最上位転生システムの基本ノード"
 autowrap_mode = 2
 
-[node name="BtnUpgradeDetailSkill" type="Button" parent="MarginContainer/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
+[node name="BtnUpgradeDetailSkill" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/ContentBody/RightStation/Margin/TreeAndDetailSplit/SkillDetailPanel/Margin/DetailVBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 66)
 layout_mode = 2
@@ -327,44 +366,44 @@ theme_override_font_sizes/font_size = 24
 text = "⚛️ 0"
 clip_text = true
 
-[node name="BonusBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+[node name="BonusBar" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 40
 alignment = 1
 
-[node name="CurrentBonusBox" type="VBoxContainer" parent="MarginContainer/MainLayout/BonusBar"]
+[node name="CurrentBonusBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Title" type="Label" parent="MarginContainer/MainLayout/BonusBar/CurrentBonusBox"]
+[node name="Title" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/CurrentBonusBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.75, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "現在のボーナス"
 
-[node name="LblEquipLevelBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/CurrentBonusBox"]
+[node name="LblEquipLevelBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 16
 text = "装備レベル+0"
 
-[node name="LblAutoSkillsBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/CurrentBonusBox"]
+[node name="LblAutoSkillsBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 16
 text = "スキル自動解放+0"
 
-[node name="LblMultiplierBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/CurrentBonusBox"]
+[node name="LblMultiplierBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
 theme_override_font_sizes/font_size = 16
 text = "ゴールド/トークン倍率×1.00"
 
-[node name="ArrowLabel" type="Label" parent="MarginContainer/MainLayout/BonusBar"]
+[node name="ArrowLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar"]
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_colors/font_color = Color(0.75, 0.65, 0.95, 1)
@@ -373,43 +412,43 @@ text = "→"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NextBonusBox" type="VBoxContainer" parent="MarginContainer/MainLayout/BonusBar"]
+[node name="NextBonusBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="Title" type="Label" parent="MarginContainer/MainLayout/BonusBar/NextBonusBox"]
+[node name="Title" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/NextBonusBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.9, 0.7, 1)
 theme_override_font_sizes/font_size = 17
 text = "次回のボーナス"
 
-[node name="LblNextEquipLevelBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/NextBonusBox"]
+[node name="LblNextEquipLevelBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 16
 text = "装備レベル+10"
 
-[node name="LblNextAutoSkillsBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/NextBonusBox"]
+[node name="LblNextAutoSkillsBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 16
 text = "スキル自動解放+5"
 
-[node name="LblNextMultiplierBonus" type="Label" parent="MarginContainer/MainLayout/BonusBar/NextBonusBox"]
+[node name="LblNextMultiplierBonus" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
 theme_override_font_sizes/font_size = 16
 text = "ゴールド/トークン倍率×1.10"
 
-[node name="BottomBar" type="VBoxContainer" parent="MarginContainer/MainLayout"]
+[node name="BottomBar" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout"]
 layout_mode = 2
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="ReincarnateBtn" type="Button" parent="MarginContainer/MainLayout/BottomBar"]
+[node name="ReincarnateBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainLayout/BottomBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(400, 48)
 layout_mode = 2
@@ -417,3 +456,4 @@ size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 17
 theme_override_styles/normal = SubResource("StyleBoxFlat_reinc_btn")
 text = "転生して強化をアクティベートする"
+
