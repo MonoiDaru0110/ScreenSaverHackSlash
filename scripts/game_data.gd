@@ -1380,6 +1380,15 @@ func generate_random_equipment() -> Dictionary:
 	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus
 	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
 	
+	# 乱数幅 (0.9 ~ 1.1) の3分割判定 (Low: 0.90~0.9667, Medium: 0.9667~1.0333, High: 1.0333~1.10)
+	var tier := "low"
+	if rand_factor >= 0.9 + (0.2 * 2.0 / 3.0):
+		tier = "high"
+	elif rand_factor >= 0.9 + (0.2 / 3.0):
+		tier = "medium"
+	else:
+		tier = "low"
+	
 	# Generate random rarity using Gaussian (Normal) Distribution model
 	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
 	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_luck"))
@@ -1543,9 +1552,114 @@ func generate_random_equipment() -> Dictionary:
 		"type": type,
 		"icon": icon_path,
 		"level": level,
+		"level_tier": tier,
+		"rand_factor": rand_factor,
 		"rarity": rarity,
 		"equip_skill": item_skills
 	}
+
+
+# --- Equipment Filtering Logic ---
+var equipment_filter_settings: Dictionary = {
+	"level_tiers": {
+		"low": true,
+		"medium": true,
+		"high": true
+	},
+	"rarities": {
+		"コモン": true,
+		"アンコモン": true,
+		"レア": true,
+		"エピック": true,
+		"レジェンド": true,
+		"ミシック": true
+	},
+	"normal_skills": {},
+	"normal_skill_mode": "OR",
+	"special_skill": ""
+}
+signal equipment_filter_changed
+
+
+func reset_equipment_filter_settings() -> void:
+	equipment_filter_settings = {
+		"level_tiers": {
+			"low": true,
+			"medium": true,
+			"high": true
+		},
+		"rarities": {
+			"コモン": true,
+			"アンコモン": true,
+			"レア": true,
+			"エピック": true,
+			"レジェンド": true,
+			"ミシック": true
+		},
+		"normal_skills": {},
+		"normal_skill_mode": "OR",
+		"special_skill": ""
+	}
+	equipment_filter_changed.emit()
+
+
+func is_item_matched_filter(item: Dictionary) -> bool:
+	if item.is_empty():
+		return false
+		
+	# 1. Lv乱数帯判定
+	var tier: String = item.get("level_tier", "low")
+	var tier_settings: Dictionary = equipment_filter_settings.get("level_tiers", {})
+	if not tier_settings.get(tier, true):
+		return false
+		
+	# 2. レア度判定
+	var rarity: String = item.get("rarity", "コモン")
+	var rarity_settings: Dictionary = equipment_filter_settings.get("rarities", {})
+	if not rarity_settings.get(rarity, true):
+		return false
+		
+	# 3. 通常スキル判定
+	var item_skills: Array = item.get("equip_skill", [])
+	var item_normal_ids: Array[String] = []
+	var item_special_id: String = ""
+	
+	for sk in item_skills:
+		if sk is Dictionary:
+			var sk_id: String = sk.get("id", "")
+			if sk.get("is_special", false):
+				item_special_id = sk_id
+			else:
+				item_normal_ids.append(sk_id)
+				
+	var normal_filters: Dictionary = equipment_filter_settings.get("normal_skills", {})
+	var selected_normal_skills: Array[String] = []
+	for sk_id in normal_filters:
+		if normal_filters[sk_id]:
+			selected_normal_skills.append(sk_id)
+			
+	if not selected_normal_skills.is_empty():
+		var mode: String = equipment_filter_settings.get("normal_skill_mode", "OR")
+		if mode == "AND":
+			for req_id in selected_normal_skills:
+				if req_id not in item_normal_ids:
+					return false
+		else: # "OR"
+			var matched := false
+			for req_id in selected_normal_skills:
+				if req_id in item_normal_ids:
+					matched = true
+					break
+			if not matched:
+				return false
+				
+	# 4. 特殊スキル判定
+	var target_special: String = equipment_filter_settings.get("special_skill", "")
+	if not target_special.is_empty():
+		if item_special_id != target_special:
+			return false
+			
+	return true
 
 
 func roll_equipment_drop(is_corner: bool) -> Dictionary:
@@ -1562,6 +1676,13 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 		
 	if randf() < drop_chance:
 		var item := generate_random_equipment()
+		
+		# フィルタリング判定: 条件不一致の場合はインベントリに入れず自動売却 (+100G)
+		if not is_item_matched_filter(item):
+			var sell_price: float = 100.0
+			add_gold(sell_price)
+			return {}
+
 		var type = item.get("type", "")
 		_ensure_inventory_sizes()
 		var inv: Array = inventories.get(type, [])

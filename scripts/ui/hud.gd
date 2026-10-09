@@ -30,6 +30,8 @@ extends CanvasLayer
 # Inventory UI references
 @onready var inventory_window: PanelContainer = %InventoryWindow
 @onready var btn_close_inventory: Button = %CloseInventoryBtn
+@onready var btn_equipment_filter: Button = %EquipmentFilterBtn
+@onready var equipment_filter_window: PanelContainer = %EquipmentFilterWindow
 @onready var main_title_label: Label = %MainTitleLabel
 @onready var sub_title_label: Label = %SubTitleLabel
 @onready var accessory_title_label: Label = %AccessoryTitleLabel
@@ -220,7 +222,18 @@ func _ready() -> void:
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	GameData.inventory_updated.connect(_on_inventory_updated)
 	GameData.reincarnation_performed.connect(_on_reincarnation_performed)
+	btn_close_inventory.focus_mode = Control.FOCUS_NONE
+	btn_close_inventory.add_theme_stylebox_override("focus", style_focus)
 	btn_close_inventory.pressed.connect(close_inventory)
+	if btn_equipment_filter:
+		btn_equipment_filter.focus_mode = Control.FOCUS_NONE
+		btn_equipment_filter.add_theme_stylebox_override("normal", style_normal)
+		btn_equipment_filter.add_theme_stylebox_override("hover", style_hover)
+		btn_equipment_filter.add_theme_stylebox_override("pressed", style_pressed)
+		btn_equipment_filter.add_theme_stylebox_override("focus", style_focus)
+		btn_equipment_filter.pressed.connect(_on_equipment_filter_pressed)
+	if equipment_filter_window:
+		equipment_filter_window.visible = false
 	if reincarnation_window.has_signal("closed"):
 		reincarnation_window.closed.connect(close_reincarnation)
 	reincarnation_window.visible = false
@@ -741,8 +754,18 @@ func close_inventory() -> void:
 		return
 		
 	_is_inventory_open = false
+	if equipment_filter_window:
+		equipment_filter_window.visible = false
 	inventory_window.visible = false
 	_update_tab_button_styles()
+
+
+func _on_equipment_filter_pressed() -> void:
+	if not equipment_filter_window:
+		return
+	equipment_filter_window.visible = not equipment_filter_window.visible
+	if equipment_filter_window.visible and equipment_filter_window.has_method("sync_from_data"):
+		equipment_filter_window.sync_from_data()
 
 
 func _on_skill_tree_tab_pressed() -> void:

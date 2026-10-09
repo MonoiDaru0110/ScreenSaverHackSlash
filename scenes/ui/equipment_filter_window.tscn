@@ -1,0 +1,266 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8filterwnd001"]
+
+[ext_resource type="Script" path="res://scripts/ui/equipment_filter_window.gd" id="1_filter"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window"]
+bg_color = Color(0.08, 0.08, 0.14, 0.96)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.2, 0.35, 1)
+
+
+[node name="EquipmentFilterWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(580, 430)
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_window")
+script = ExtResource("1_filter")
+
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.88, 1, 1)
+theme_override_font_sizes/font_size = 17
+text = "⚙️ 装備入手フィルター"
+
+[node name="ResetBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 12
+text = "🔄 初期化 (全許可)"
+
+[node name="CloseBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 16
+text = "×"
+
+[node name="SeparatorHeader" type="ColorRect" parent="MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.3, 0.25, 0.45, 0.6)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="LvSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LvLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/LvSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "Lv"
+
+[node name="LvCheckboxesHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/LvSection"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ChkLvLow" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/LvSection/LvCheckboxesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "Low"
+
+[node name="ChkLvMed" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/LvSection/LvCheckboxesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "Medium"
+
+[node name="ChkLvHigh" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/LvSection/LvCheckboxesHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "High"
+
+[node name="Sep1" type="ColorRect" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.25, 0.2, 0.35, 0.5)
+
+[node name="RaritySection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RarityHeader" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RarityLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "レア度"
+
+[node name="BtnRarityAll" type="Button" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+text = "すべて選択"
+
+[node name="BtnRarityClear" type="Button" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+text = "すべて解除"
+
+[node name="RarityHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ChkRarityCommon" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "コモン"
+
+[node name="ChkRarityUncommon" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "アンコモン"
+
+[node name="ChkRarityRare" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "レア"
+
+[node name="ChkRarityEpic" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "エピック"
+
+[node name="ChkRarityLegend" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "レジェンド"
+
+[node name="ChkRarityMythic" type="CheckBox" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/RaritySection/RarityHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+text = "ミシック"
+
+[node name="Sep2" type="ColorRect" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.25, 0.2, 0.35, 0.5)
+
+[node name="NormalSkillSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NormalSkillHeader" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/NormalSkillSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NormalSkillLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/NormalSkillSection/NormalSkillHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "通常スキル"
+
+[node name="BtnNormalMode" type="Button" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/NormalSkillSection/NormalSkillHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+text = "条件: OR (いずれか)"
+
+[node name="BtnNormalClear" type="Button" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/NormalSkillSection/NormalSkillHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 22)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 11
+text = "すべて解除"
+
+[node name="NormalSkillsGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/NormalSkillSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 4
+columns = 4
+
+[node name="Sep3" type="ColorRect" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.25, 0.2, 0.35, 0.5)
+
+[node name="SpecialSkillSection" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SpecialSkillLabel" type="Label" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/SpecialSkillSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.95, 1)
+theme_override_font_sizes/font_size = 14
+text = "特殊スキル"
+
+[node name="SpecialSkillOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ScrollContainer/ContentVBox/SpecialSkillSection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
