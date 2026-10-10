@@ -15,10 +15,12 @@ extends CanvasLayer
 # Tab UI references
 @onready var star_label: Label = %StarLabel
 @onready var sidebar_star_progress_bar: ProgressBar = %SidebarStarProgressBar
+@onready var btn_home_tab: Button = %HomeTabBtn
+@onready var btn_reincarnation_tab: Button = %ReincarnationTabBtn
+@onready var sub_nav_container: PanelContainer = %SubNavContainer
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
-@onready var btn_reincarnation_tab: Button = %ReincarnationTabBtn
-@onready var special_skill_ui_container: Control = %SpecialSkillUIContainer
+@onready var special_skill_ui_container: Control = get_node_or_null("../PlayArea/SpecialSkillUIContainer") if get_node_or_null("../PlayArea/SpecialSkillUIContainer") else get_node_or_null("%SpecialSkillUIContainer")
 @onready var grid_equipment: GridContainer = %GridContainer
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
@@ -38,12 +40,14 @@ extends CanvasLayer
 @onready var main_grid: GridContainer = %MainGrid
 @onready var sub_grid: GridContainer = %SubGrid
 @onready var accessory_grid: GridContainer = %AccessoryGrid
-@onready var equipment_log_container: VBoxContainer = %EquipmentLogContainer
+@onready var equipment_log_container: VBoxContainer = get_node_or_null("../PlayArea/EquipmentLogContainer") if get_node_or_null("../PlayArea/EquipmentLogContainer") else get_node_or_null("%EquipmentLogContainer")
 
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
 var _skill_tree_instance: Control
 var _tab_style_active: StyleBoxFlat
 var _tab_style_inactive: StyleBoxFlat
+var _subtab_style_active: StyleBoxFlat
+var _subtab_style_inactive: StyleBoxFlat
 var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
 var _is_reincarnation_open: bool = false
@@ -153,38 +157,68 @@ func _ready() -> void:
 			title_node.add_theme_font_size_override("font_size", 18)
 		btn.get_node("Content/CostLabel").add_theme_font_size_override("font_size", 16)
 
-	# Tab button styles setup
+	# Main Tab button styles setup (ホーム / 転生)
 	_tab_style_active = StyleBoxFlat.new()
-	_tab_style_active.bg_color = Color(0.33, 0.15, 0.85, 1)
+	_tab_style_active.bg_color = Color(0.42, 0.20, 0.95, 1)
 	_tab_style_active.border_width_left = 2
 	_tab_style_active.border_width_top = 2
 	_tab_style_active.border_width_right = 2
 	_tab_style_active.border_width_bottom = 2
-	_tab_style_active.border_color = Color(0.45, 0.25, 0.92, 1)
-	_tab_style_active.corner_radius_top_left = 3
-	_tab_style_active.corner_radius_top_right = 3
-	_tab_style_active.corner_radius_bottom_right = 3
-	_tab_style_active.corner_radius_bottom_left = 3
+	_tab_style_active.border_color = Color(0.80, 0.60, 1.0, 1)
+	_tab_style_active.corner_radius_top_left = 6
+	_tab_style_active.corner_radius_top_right = 6
+	_tab_style_active.corner_radius_bottom_right = 6
+	_tab_style_active.corner_radius_bottom_left = 6
 
 	_tab_style_inactive = StyleBoxFlat.new()
-	_tab_style_inactive.bg_color = Color(0.12, 0.12, 0.2, 1)
-	_tab_style_inactive.border_width_left = 2
-	_tab_style_inactive.border_width_top = 2
-	_tab_style_inactive.border_width_right = 2
-	_tab_style_inactive.border_width_bottom = 2
-	_tab_style_inactive.border_color = Color(0.2, 0.2, 0.35, 1)
-	_tab_style_inactive.corner_radius_top_left = 3
-	_tab_style_inactive.corner_radius_top_right = 3
-	_tab_style_inactive.corner_radius_bottom_right = 3
-	_tab_style_inactive.corner_radius_bottom_left = 3
+	_tab_style_inactive.bg_color = Color(0.12, 0.12, 0.22, 0.9)
+	_tab_style_inactive.border_width_left = 1
+	_tab_style_inactive.border_width_top = 1
+	_tab_style_inactive.border_width_right = 1
+	_tab_style_inactive.border_width_bottom = 1
+	_tab_style_inactive.border_color = Color(0.28, 0.26, 0.45, 1)
+	_tab_style_inactive.corner_radius_top_left = 6
+	_tab_style_inactive.corner_radius_top_right = 6
+	_tab_style_inactive.corner_radius_bottom_right = 6
+	_tab_style_inactive.corner_radius_bottom_left = 6
 
-	btn_equipment_tab.add_theme_stylebox_override("focus", style_focus)
-	btn_skill_tree_tab.add_theme_stylebox_override("focus", style_focus)
-	btn_reincarnation_tab.add_theme_stylebox_override("focus", style_focus)
-	
-	btn_equipment_tab.pressed.connect(_on_equipment_tab_pressed)
-	btn_skill_tree_tab.pressed.connect(_on_skill_tree_tab_pressed)
-	btn_reincarnation_tab.pressed.connect(_on_reincarnation_tab_pressed)
+	# Sub Tab button styles setup (装備 / スキル)
+	_subtab_style_active = StyleBoxFlat.new()
+	_subtab_style_active.bg_color = Color(0.28, 0.16, 0.68, 1)
+	_subtab_style_active.border_width_left = 2
+	_subtab_style_active.border_width_top = 2
+	_subtab_style_active.border_width_right = 2
+	_subtab_style_active.border_width_bottom = 2
+	_subtab_style_active.border_color = Color(0.52, 0.38, 0.92, 1)
+	_subtab_style_active.corner_radius_top_left = 3
+	_subtab_style_active.corner_radius_top_right = 3
+	_subtab_style_active.corner_radius_bottom_right = 3
+	_subtab_style_active.corner_radius_bottom_left = 3
+
+	_subtab_style_inactive = StyleBoxFlat.new()
+	_subtab_style_inactive.bg_color = Color(0.10, 0.10, 0.16, 0.85)
+	_subtab_style_inactive.border_width_left = 1
+	_subtab_style_inactive.border_width_top = 1
+	_subtab_style_inactive.border_width_right = 1
+	_subtab_style_inactive.border_width_bottom = 1
+	_subtab_style_inactive.border_color = Color(0.2, 0.2, 0.32, 1)
+	_subtab_style_inactive.corner_radius_top_left = 3
+	_subtab_style_inactive.corner_radius_top_right = 3
+	_subtab_style_inactive.corner_radius_bottom_right = 3
+	_subtab_style_inactive.corner_radius_bottom_left = 3
+
+	if btn_home_tab:
+		btn_home_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_home_tab.pressed.connect(_on_home_tab_pressed)
+	if btn_reincarnation_tab:
+		btn_reincarnation_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_reincarnation_tab.pressed.connect(_on_reincarnation_tab_pressed)
+	if btn_equipment_tab:
+		btn_equipment_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_equipment_tab.pressed.connect(_on_equipment_tab_pressed)
+	if btn_skill_tree_tab:
+		btn_skill_tree_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_skill_tree_tab.pressed.connect(_on_skill_tree_tab_pressed)
 
 	# Instantiate and add skill tree container to viewport
 	_skill_tree_instance = _skill_tree_scene.instantiate()
@@ -719,19 +753,62 @@ func _update_sidebar_star_progress() -> void:
 
 
 func _update_tab_button_styles() -> void:
-	if btn_equipment_tab and _tab_style_active and _tab_style_inactive:
-		btn_equipment_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_inventory_open else _tab_style_inactive)
-	if btn_skill_tree_tab and _tab_style_active and _tab_style_inactive:
-		btn_skill_tree_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_skill_tree_open else _tab_style_inactive)
+	# 大タブのスタイル更新
+	if btn_home_tab and _tab_style_active and _tab_style_inactive:
+		btn_home_tab.add_theme_stylebox_override("normal", _tab_style_active if not _is_reincarnation_open else _tab_style_inactive)
 	if btn_reincarnation_tab and _tab_style_active and _tab_style_inactive:
 		btn_reincarnation_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_reincarnation_open else _tab_style_inactive)
+	
+	# サブタブ（ホーム画面側ツールバー）の表示・非表示とスタイル更新
+	if sub_nav_container:
+		sub_nav_container.visible = not _is_reincarnation_open
+
+	if btn_equipment_tab and _subtab_style_active and _subtab_style_inactive:
+		btn_equipment_tab.add_theme_stylebox_override("normal", _subtab_style_active if _is_inventory_open else _subtab_style_inactive)
+	if btn_skill_tree_tab and _subtab_style_active and _subtab_style_inactive:
+		btn_skill_tree_tab.add_theme_stylebox_override("normal", _subtab_style_active if _is_skill_tree_open else _subtab_style_inactive)
+
+
+func _on_home_tab_pressed() -> void:
+	if _is_reincarnation_open:
+		close_reincarnation()
+
+
+func _on_reincarnation_tab_pressed() -> void:
+	if not _is_reincarnation_open:
+		open_reincarnation()
+
+
+func open_reincarnation() -> void:
+	if _is_reincarnation_open:
+		return
+	_is_reincarnation_open = true
+	
+	# 転生画面表示時はホーム画面用のウィンドウを閉じる
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+
+	reincarnation_window.visible = true
+	if reincarnation_window.has_method("update_ui"):
+		reincarnation_window.update_ui()
+	_update_tab_button_styles()
+
+
+func close_reincarnation() -> void:
+	if not _is_reincarnation_open:
+		return
+	_is_reincarnation_open = false
+	reincarnation_window.visible = false
+	_update_tab_button_styles()
 
 
 func _on_equipment_tab_pressed() -> void:
-	if _is_skill_tree_open:
-		close_skill_tree()
 	if _is_reincarnation_open:
 		close_reincarnation()
+	if _is_skill_tree_open:
+		close_skill_tree()
 	
 	if _is_inventory_open:
 		close_inventory()
@@ -769,10 +846,10 @@ func _on_equipment_filter_pressed() -> void:
 
 
 func _on_skill_tree_tab_pressed() -> void:
-	if _is_inventory_open:
-		close_inventory()
 	if _is_reincarnation_open:
 		close_reincarnation()
+	if _is_inventory_open:
+		close_inventory()
 		
 	if _is_skill_tree_open:
 		close_skill_tree()
@@ -806,39 +883,9 @@ func open_skill_tree() -> void:
 func close_skill_tree() -> void:
 	if not _is_skill_tree_open:
 		return
-		
+	
 	_is_skill_tree_open = false
 	skill_tree_window.visible = false
-	_update_tab_button_styles()
-
-
-func _on_reincarnation_tab_pressed() -> void:
-	if _is_inventory_open:
-		close_inventory()
-	if _is_skill_tree_open:
-		close_skill_tree()
-
-	if _is_reincarnation_open:
-		close_reincarnation()
-	else:
-		open_reincarnation()
-
-
-func open_reincarnation() -> void:
-	if _is_reincarnation_open:
-		return
-	_is_reincarnation_open = true
-	reincarnation_window.visible = true
-	if reincarnation_window.has_method("update_ui"):
-		reincarnation_window.update_ui()
-	_update_tab_button_styles()
-
-
-func close_reincarnation() -> void:
-	if not _is_reincarnation_open:
-		return
-	_is_reincarnation_open = false
-	reincarnation_window.visible = false
 	_update_tab_button_styles()
 
 

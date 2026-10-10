@@ -8,18 +8,6 @@
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="6_close_scene"]
 [ext_resource type="Script" uid="uid://cv2ftlcsc1l4n" path="res://scripts/ui/base_window.gd" id="7_base_window_script"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top_nav"]
-bg_color = Color(0.1, 0.08, 0.18, 0.85)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.4, 0.25, 0.7, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
 
@@ -111,60 +99,20 @@ bg_color = Color(0.24, 0.08, 0.1, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top_nav"]
+bg_color = Color(0.1, 0.08, 0.18, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.4, 0.25, 0.7, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
-
-[node name="TopNavigationContainer" type="PanelContainer" parent="."]
-custom_minimum_size = Vector2(420, 46)
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -340.0
-offset_top = 16.0
-offset_right = 100.0
-offset_bottom = 62.0
-grow_horizontal = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
-
-[node name="MarginContainer" type="MarginContainer" parent="TopNavigationContainer"]
-layout_mode = 2
-theme_override_constants/margin_left = 6
-theme_override_constants/margin_top = 4
-theme_override_constants/margin_right = 6
-theme_override_constants/margin_bottom = 4
-
-[node name="TabButtons" type="HBoxContainer" parent="TopNavigationContainer/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="EquipmentTabBtn" type="Button" parent="TopNavigationContainer/MarginContainer/TabButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 15
-text = "🎒 装備"
-
-[node name="SkillTreeTabBtn" type="Button" parent="TopNavigationContainer/MarginContainer/TabButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 15
-text = "🌳 スキル"
-
-[node name="ReincarnationTabBtn" type="Button" parent="TopNavigationContainer/MarginContainer/TabButtons"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 15
-text = "⚛️ 転生"
-
-[node name="SpecialSkillUIContainer" type="Control" parent="."]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
-mouse_filter = 2
 
 [node name="BounceLabel" type="Label" parent="."]
 offset_left = 1240.0
@@ -580,14 +528,6 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 20
 
-[node name="EquipmentLogContainer" type="VBoxContainer" parent="."]
-unique_name_in_owner = true
-offset_top = 200.0
-offset_right = 1662.0
-offset_bottom = 880.0
-mouse_filter = 2
-theme_override_constants/separation = 8
-
 [node name="SkillTreeWindow" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -850,3 +790,80 @@ layout_mode = 2
 [node name="ReincarnationWindow" parent="." instance=ExtResource("4_reinc_scene")]
 unique_name_in_owner = true
 visible = false
+
+[node name="TopNavigationArea" type="VBoxContainer" parent="."]
+z_index = 20
+custom_minimum_size = Vector2(260, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -259.0
+offset_top = 10.0
+offset_right = 1.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_constants/separation = 6
+
+[node name="MainModeContainer" type="PanelContainer" parent="TopNavigationArea"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(136, 68)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
+
+[node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/MainModeContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="MainTabButtons" type="HBoxContainer" parent="TopNavigationArea/MainModeContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HomeTabBtn" type="Button" parent="TopNavigationArea/MainModeContainer/MarginContainer/MainTabButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "🏠"
+
+[node name="ReincarnationTabBtn" type="Button" parent="TopNavigationArea/MainModeContainer/MarginContainer/MainTabButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(58, 58)
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "⚛️"
+
+[node name="SubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
+
+[node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/SubNavContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 3
+
+[node name="SubTabButtons" type="HBoxContainer" parent="TopNavigationArea/SubNavContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EquipmentTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "🎒 装備"
+
+[node name="SkillTreeTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "🌳 スキル"

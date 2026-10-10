@@ -1,7 +1,9 @@
-extends BaseWindow
-## Controller for the Top-tier Reincarnation (Transcendence) Window.
+extends PanelContainer
+## Controller for the Top-tier Reincarnation (Transcendence) View.
 ## Features 2-column layout: Token Infusion, Passive Bonuses, Special Skills on Left;
 ## Vertical Reincarnation Skill Tree on Right.
+
+signal closed()
 
 @onready var btn_toggle_infuse: Button = %ToggleInfuseBtn
 @onready var progress_infuse: ProgressBar = %InfuseProgressBar
@@ -26,9 +28,10 @@ extends BaseWindow
 @onready var lbl_detail_name: Label = %DetailNameLabel
 @onready var lbl_detail_desc: Label = %DetailDescLabel
 @onready var btn_upgrade_detail_skill: Button = %BtnUpgradeDetailSkill
-
-@onready var btn_close: Button = %CloseBtn
 @onready var btn_reincarnate: Button = %ReincarnateBtn
+
+@onready var mini_viewport: SubViewport = %MiniViewport
+@onready var mini_camera: Camera2D = %MiniCamera
 
 var _reinc_skill_nodes: Array[ReincarnationSkillNode] = []
 var _selected_skill_node: ReincarnationSkillNode = null
@@ -80,13 +83,7 @@ const SPECIAL_SKILLS_DATA = [
 
 
 func _ready() -> void:
-	window_title = "転生"
-	header_color = Color(0.24, 0.12, 0.32, 1.0)
-	separator_color = Color(0.38, 0.20, 0.50, 1.0)
-	super._ready()
 	_setup_button_styles()
-	if btn_close and not btn_close.pressed.is_connected(_on_close_pressed):
-		btn_close.pressed.connect(_on_close_pressed)
 	btn_toggle_infuse.pressed.connect(_on_toggle_infuse_pressed)
 	btn_reincarnate.pressed.connect(_on_reincarnate_pressed)
 	if btn_upgrade_detail_skill:
@@ -104,11 +101,21 @@ func _ready() -> void:
 	_infuse_update_timer.autostart = true
 	_infuse_update_timer.timeout.connect(_on_infuse_update_timer)
 	add_child(_infuse_update_timer)
+
+	# ミニモニターの初期化 (メインの World2D を共有)
+	if mini_viewport:
+		mini_viewport.world_2d = get_viewport().world_2d
+		mini_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
 	visibility_changed.connect(func():
 		if not visible:
 			_hide_skill_tooltip()
 			set_process(false)
+			if mini_viewport:
+				mini_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		else:
+			if mini_viewport:
+				mini_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 			if reinc_tree_scroll and not _has_centered_reinc_tree:
 				_has_centered_reinc_tree = true
 				await get_tree().process_frame
