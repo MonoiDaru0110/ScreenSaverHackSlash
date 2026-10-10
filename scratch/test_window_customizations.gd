@@ -19,12 +19,14 @@ func _init() -> void:
 	
 	print("[1] Checking Titles and Emojis...")
 	print("  SkillTreeWindow title: ", skill_wnd.get_title_label().text)
-	assert(skill_wnd.get_title_label().text == "永続スキルツリー", "SkillTree title mismatch")
+	assert(skill_wnd.get_title_label().text == "スキルツリー", "SkillTree title mismatch")
 	assert(not "🌳" in skill_wnd.get_title_label().text, "SkillTree title must not have tree emoji")
+	assert(not "永続" in skill_wnd.get_title_label().text, "SkillTree title must not have 永続")
 	
 	print("  InventoryWindow title: ", inv_wnd.get_title_label().text)
-	assert(inv_wnd.get_title_label().text == "インベントリ (0 / 50)", "Inventory title mismatch")
+	assert(inv_wnd.get_title_label().text == "インベントリ", "Inventory title mismatch")
 	assert(not "🎒" in inv_wnd.get_title_label().text, "Inventory title must not have bag emoji")
+	assert(not "(" in inv_wnd.get_title_label().text, "Inventory title must not have count suffix")
 	
 	print("  ReincarnationWindow title: ", reinc_wnd.get_title_label().text)
 	assert(reinc_wnd.get_title_label().text == "転生", "Reincarnation title mismatch")
@@ -56,10 +58,11 @@ func _init() -> void:
 	assert(is_equal_approx(skill_body_style.bg_color.a, 1.0), "SkillTree body must be fully opaque")
 	assert(is_equal_approx(inv_body_style.bg_color.a, 1.0), "Inventory body must be fully opaque")
 	
-	# Verify SkillTree is Green and Inventory is Navy Blue (Not identical!)
+	# Verify SkillTree is Green and Inventory is Reddish-Black
 	assert(skill_header_style.bg_color != inv_header_style.bg_color, "SkillTree and Inventory MUST have distinct colors!")
 	assert(skill_header_style.bg_color.g > skill_header_style.bg_color.b, "SkillTree must be green-tinted")
-	assert(inv_header_style.bg_color.b > inv_header_style.bg_color.g, "Inventory must be blue-tinted")
+	assert(inv_header_style.bg_color.r > inv_header_style.bg_color.b, "Inventory must be reddish-black (red-tinted)")
+	assert(inv_header_style.bg_color.r > inv_header_style.bg_color.g, "Inventory must be reddish-black (red > green)")
 	
 	print("[3] Checking CloseButton Sizing and Mark Font Size...")
 	for wnd in [skill_wnd, inv_wnd, reinc_wnd, filter_wnd]:

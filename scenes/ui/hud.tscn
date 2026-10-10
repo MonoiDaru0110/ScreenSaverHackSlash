@@ -107,7 +107,7 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inventory_header"]
-bg_color = Color(0.14, 0.2, 0.3, 1)
+bg_color = Color(0.24, 0.08, 0.1, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
@@ -604,7 +604,7 @@ grow_horizontal = 0
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
 script = ExtResource("7_base_window_script")
-window_title = "永続スキルツリー"
+window_title = "スキルツリー"
 header_color = Color(0.1, 0.24, 0.18, 1)
 separator_color = Color(0.18, 0.38, 0.28, 1)
 
@@ -633,7 +633,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
 theme_override_font_sizes/font_size = 20
-text = "永続スキルツリー"
+text = "スキルツリー"
 vertical_alignment = 1
 
 [node name="HeaderControls" type="HBoxContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
@@ -709,8 +709,9 @@ grow_horizontal = 0
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
 script = ExtResource("7_base_window_script")
-window_title = "インベントリ (0 / 50)"
-separator_color = Color(0.22, 0.32, 0.45, 1)
+window_title = "インベントリ"
+header_color = Color(0.24, 0.08, 0.1, 1)
+separator_color = Color(0.38, 0.15, 0.17, 1)
 
 [node name="WindowVBox" type="VBoxContainer" parent="InventoryWindow"]
 layout_mode = 2
@@ -737,7 +738,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
 theme_override_font_sizes/font_size = 20
-text = "インベントリ (0 / 50)"
+text = "インベントリ"
 vertical_alignment = 1
 
 [node name="HeaderControls" type="HBoxContainer" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
@@ -760,7 +761,7 @@ layout_mode = 2
 [node name="Separator" type="ColorRect" parent="InventoryWindow/WindowVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.22, 0.32, 0.45, 1)
+color = Color(0.38, 0.15, 0.17, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="InventoryWindow/WindowVBox"]
 layout_mode = 2
