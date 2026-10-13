@@ -55,9 +55,12 @@ func setup(item_data: Dictionary) -> void:
 		equipment_icon.set_show_icon_base(true)
 		equipment_icon.update_item(item_data)
 		
-	# テキストの更新
+	var forge_count: int = item_data.get("forge_count", 0)
 	if name_label:
-		name_label.text = item_name
+		if forge_count > 0:
+			name_label.text = "%s +%d" % [item_name, forge_count]
+		else:
+			name_label.text = item_name
 		name_label.add_theme_color_override("font_color", rarity_color)
 	if level_label:
 		level_label.text = "Lv.%d" % item_level

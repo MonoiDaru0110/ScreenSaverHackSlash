@@ -18,7 +18,7 @@ var _border_style: StyleBoxFlat
 var _base_border_color := Color(0.4, 0.6, 1.0, 0.8)
 
 # Default background color (dark navy)
-var _bg_default_color := Color(0.02, 0.02, 0.06)
+var _bg_default_color := Color(0.05, 0.05, 0.09)
 
 var _over_time_timer: Timer = null
 var _token_over_time_timer: Timer = null
@@ -36,6 +36,7 @@ const AUDIO_POOL_SIZE: int = 4
 
 
 func _ready() -> void:
+	background.color = _bg_default_color
 	# 境界線のスタイルを動的に設定
 	_border_style = StyleBoxFlat.new()
 	_border_style.bg_color = Color(0, 0, 0, 0) # 透明

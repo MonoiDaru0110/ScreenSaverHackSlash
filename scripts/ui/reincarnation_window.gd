@@ -114,6 +114,7 @@ func _ready() -> void:
 			if mini_viewport:
 				mini_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 		else:
+			set_process(true)
 			if mini_viewport:
 				mini_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 			if reinc_tree_scroll and not _has_centered_reinc_tree:
@@ -125,6 +126,34 @@ func _ready() -> void:
 
 	set_process(false)
 	update_ui()
+
+
+func _process(_delta: float) -> void:
+	if not is_inside_tree() or not is_visible_in_tree():
+		return
+
+	# ツールチップの追従
+	if _tooltip_panel and _tooltip_panel.visible:
+		_update_tooltip_position()
+
+	var t: float = float(Time.get_ticks_msec()) * 0.0022
+	var pulse: float = 0.5 + 0.5 * sin(t)
+
+	# 1. トークンを注入ボタン: 注入中でないとき (is_infusing == false) に明滅・発光
+	if btn_toggle_infuse:
+		if not GameData.is_infusing_tokens:
+			var infuse_glow: Color = Color(1.0, 1.0, 1.0, 1.0).lerp(Color(1.5, 1.3, 1.8, 1.0), pulse)
+			btn_toggle_infuse.modulate = infuse_glow
+		else:
+			btn_toggle_infuse.modulate = Color.WHITE
+
+	# 2. 転生ボタン: 押せる状態 (disabled == false) のときに明滅・発光
+	if btn_reincarnate:
+		if not btn_reincarnate.disabled:
+			var reinc_glow: Color = Color(1.0, 1.0, 1.0, 1.0).lerp(Color(1.6, 1.4, 1.85, 1.0), pulse)
+			btn_reincarnate.modulate = reinc_glow
+		else:
+			btn_reincarnate.modulate = Color.WHITE
 
 
 # --- 更新の間引き/集約 ---
@@ -178,7 +207,6 @@ func update_ui() -> void:
 
 	# トグルボタン状態
 	var is_infusing = GameData.is_infusing_tokens
-	btn_toggle_infuse.modulate = Color.WHITE
 	btn_toggle_infuse.focus_mode = Control.FOCUS_NONE
 	btn_toggle_infuse.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	btn_toggle_infuse.add_theme_stylebox_override("disabled", _style_btn_disabled)
@@ -224,11 +252,12 @@ func update_ui() -> void:
 	else:
 		lbl_next_multiplier_bonus.text = "ゴールド/トークン倍率×%.2f" % next_mult
 
-	var highlight_color := Color(0.4, 0.95, 0.6)
-	var normal_color := Color(0.75, 0.85, 0.95)
-	lbl_next_equip_lvl_bonus.add_theme_color_override("font_color", highlight_color if next_equip_lvl > cur_equip_lvl else normal_color)
-	lbl_next_auto_skills_bonus.add_theme_color_override("font_color", highlight_color if next_auto_skills > cur_auto_skills else normal_color)
-	lbl_next_multiplier_bonus.add_theme_color_override("font_color", highlight_color if next_mult > cur_mult else normal_color)
+	lbl_equip_lvl_bonus.add_theme_color_override("font_color", Color.WHITE)
+	lbl_auto_skills_bonus.add_theme_color_override("font_color", Color.WHITE)
+	lbl_multiplier_bonus.add_theme_color_override("font_color", Color.WHITE)
+	lbl_next_equip_lvl_bonus.add_theme_color_override("font_color", Color.WHITE)
+	lbl_next_auto_skills_bonus.add_theme_color_override("font_color", Color.WHITE)
+	lbl_next_multiplier_bonus.add_theme_color_override("font_color", Color.WHITE)
 
 	btn_reincarnate.disabled = not GameData.has_spent_stars_in_current_cycle()
 
@@ -612,11 +641,6 @@ var _active_tooltip_skill_id: String = ""
 var _active_tooltip_skill_name: String = ""
 
 
-func _process(_delta: float) -> void:
-	if _tooltip_panel and _tooltip_panel.visible:
-		_update_tooltip_position()
-
-
 func _create_skill_tooltip_node() -> void:
 	if _tooltip_panel != null:
 		return
@@ -740,7 +764,8 @@ func _hide_skill_tooltip() -> void:
 	_active_tooltip_skill_name = ""
 	if is_instance_valid(_tooltip_panel):
 		_tooltip_panel.visible = false
-	set_process(false)
+	if not visible:
+		set_process(false)
 
 
 func _update_tooltip_position() -> void:

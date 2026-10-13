@@ -1341,6 +1341,51 @@ func get_rarity_bg_path(rarity: String) -> String:
 
 
 
+func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool = false) -> String:
+	if is_special or special_skill_defs.has(sk_id):
+		var spec_def: Dictionary = special_skill_defs.get(sk_id, {})
+		var desc_tmpl: String = spec_def.get("desc_template", "%s")
+		if sk_id == "spec_diversity":
+			var m25 := pow(25.0, float(s_level))
+			var m50 := pow(50.0, float(s_level))
+			return desc_tmpl % [format_num(m25), format_num(m50)]
+		elif sk_id == "spec_accumulation":
+			var base_mult := int(pow(2.0, float(s_level)))
+			var s_val := format_num(float(base_mult))
+			return "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
+		elif sk_id == "spec_trinity":
+			var mult_val := 2.0 + 0.2 * float(s_level - 1)
+			return "基礎強化1つを無効化し、他2つのレベル×%.1f倍" % mult_val
+		elif sk_id == "spec_gamble":
+			var n := s_level + 1
+			var max_m := int(pow(float(n), 4.0))
+			return "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット" % format_num(float(max_m))
+		elif sk_id == "spec_switch":
+			var mult_val := int(pow(2.0, float(s_level)))
+			return "ゴールド、トークンのいずれかを無効化し、他方の入手量×%s倍" % format_num(float(mult_val))
+		elif "%d" in desc_tmpl:
+			return desc_tmpl % s_level
+		return desc_tmpl
+	else:
+		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
+		var unit_val: float = float(sk_def.get("unit_value", 1.0))
+		var desc_tmpl: String = sk_def.get("desc_template", "%s")
+		var total_val = unit_val * s_level
+		if sk_id == "saving" or sk_id == "token_saving":
+			total_val = pow(unit_val, float(s_level))
+		
+		if sk_id == "corner_trick":
+			var chance_percent := int((1.0 - pow(0.99, float(s_level))) * 100.0)
+			return desc_tmpl % chance_percent
+		elif "%" in desc_tmpl:
+			var tmpl := desc_tmpl.replace("%f", "%.1f")
+			if "%.2f" in tmpl or "%.1f" in tmpl:
+				return tmpl % float(total_val)
+			else:
+				return tmpl % int(total_val)
+		return desc_tmpl
+
+
 func generate_random_equipment() -> Dictionary:
 	var types: Array[String] = ["main", "sub", "accessory"]
 	var type: String = types[randi() % types.size()]
@@ -1478,25 +1523,8 @@ func generate_random_equipment() -> Dictionary:
 		var sk_id: String = skill_keys[i]
 		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
 		var sk_name: String = sk_def.get("name", "")
-		var unit_val: float = float(sk_def.get("unit_value", 1.0))
-		var desc_tmpl: String = sk_def.get("desc_template", "%s")
-		
 		var s_level: int = final_skill_levels[i]
-		var total_val = unit_val * s_level
-		if sk_id == "saving" or sk_id == "token_saving":
-			total_val = pow(unit_val, float(s_level))
-		
-		# 説明文フォーマットの生成
-		var formatted_desc := desc_tmpl
-		if sk_id == "corner_trick":
-			var chance_percent := int((1.0 - pow(0.99, float(s_level))) * 100.0)
-			formatted_desc = desc_tmpl % chance_percent
-		elif "%" in desc_tmpl:
-			var tmpl := desc_tmpl.replace("%f", "%.1f")
-			if "%.2f" in tmpl or "%.1f" in tmpl:
-				formatted_desc = tmpl % float(total_val)
-			else:
-				formatted_desc = tmpl % int(total_val)
+		var formatted_desc := format_equipment_skill_desc(sk_id, s_level, false)
 				
 		item_skills.append({
 			"id": sk_id,
@@ -1511,30 +1539,7 @@ func generate_random_equipment() -> Dictionary:
 		var spec_id: String = spec_keys[randi() % spec_keys.size()]
 		var spec_def: Dictionary = special_skill_defs[spec_id]
 		var spec_lvl: int = maxi(1, int(ceil(float(level) / 100.0)))
-		var desc_tmpl: String = spec_def.get("desc_template", "%s")
-		var formatted_desc: String = desc_tmpl
-		if spec_id == "spec_diversity":
-			var m25 := pow(25.0, float(spec_lvl))
-			var m50 := pow(50.0, float(spec_lvl))
-			var s25 := format_num(m25)
-			var s50 := format_num(m50)
-			formatted_desc = desc_tmpl % [s25, s50]
-		elif spec_id == "spec_accumulation":
-			var base_mult := int(pow(2.0, float(spec_lvl)))
-			var s_val := format_num(float(base_mult))
-			formatted_desc = "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
-		elif spec_id == "spec_trinity":
-			var mult_val := 2.0 + 0.2 * float(spec_lvl - 1)
-			formatted_desc = "基礎強化1つを無効化し、他2つのレベル×%.1f倍" % mult_val
-		elif spec_id == "spec_gamble":
-			var n := spec_lvl + 1
-			var max_m := int(pow(float(n), 4.0))
-			formatted_desc = "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット" % format_num(float(max_m))
-		elif spec_id == "spec_switch":
-			var mult_val := int(pow(2.0, float(spec_lvl)))
-			formatted_desc = "ゴールド、トークンのいずれかを無効化し、他方の入手量×%s倍" % format_num(float(mult_val))
-		elif "%d" in desc_tmpl:
-			formatted_desc = desc_tmpl % spec_lvl
+		var formatted_desc := format_equipment_skill_desc(spec_id, spec_lvl, true)
 
 		item_skills.append({
 			"id": spec_id,
@@ -1555,8 +1560,215 @@ func generate_random_equipment() -> Dictionary:
 		"level_tier": tier,
 		"rand_factor": rand_factor,
 		"rarity": rarity,
-		"equip_skill": item_skills
+		"equip_skill": item_skills,
+		"forge_count": 0
 	}
+
+
+## 鍛冶の事前プレビュー情報（合算スキル候補リスト、レア度抽選確率、レベル候補など）を計算する純粋関数
+func calculate_forge_preview(materials: Array) -> Dictionary:
+	if materials.is_empty():
+		return {
+			"can_forge": false,
+			"reason": "素材がありません",
+			"skills": [],
+			"rarity_probs": {},
+			"forge_count": 0,
+			"levels": []
+		}
+
+	var first_type: String = materials[0].get("type", "")
+	var first_forge_count: int = materials[0].get("forge_count", 0)
+
+	for mat in materials:
+		if mat == null or not mat is Dictionary:
+			return { "can_forge": false, "reason": "無効な素材が含まれています", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+		if mat.get("type", "") != first_type:
+			return { "can_forge": false, "reason": "装備の種類が一致していません", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+		if mat.get("forge_count", 0) != first_forge_count:
+			return { "can_forge": false, "reason": "鍛冶回数が一致していません", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+
+	# スキルの合算
+	var aggregated_map: Dictionary = {}
+	var levels: Array[int] = []
+
+	for mat in materials:
+		levels.append(int(mat.get("level", 10)))
+		var m_skills = mat.get("equip_skill", [])
+		for sk in m_skills:
+			var sk_id: String = sk.get("id", "")
+			if sk_id == "":
+				continue
+			var sk_lvl: int = int(sk.get("level", 1))
+			if aggregated_map.has(sk_id):
+				aggregated_map[sk_id]["level"] += sk_lvl
+			else:
+				var is_spec: bool = sk.get("is_special", false) or special_skill_defs.has(sk_id)
+				var sk_name: String = sk.get("name", "")
+				if sk_name == "":
+					if is_spec:
+						sk_name = special_skill_defs.get(sk_id, {}).get("name", sk_id)
+					else:
+						sk_name = equipment_skill_defs.get(sk_id, {}).get("name", sk_id)
+				aggregated_map[sk_id] = {
+					"id": sk_id,
+					"name": sk_name,
+					"level": sk_lvl,
+					"is_special": is_spec,
+					"has_custom_ui": sk.get("has_custom_ui", false),
+					"ui_title": sk.get("ui_title", "")
+				}
+
+	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
+	var normal_skills: Array[Dictionary] = []
+	var special_skills: Array[Dictionary] = []
+	for sk_id in aggregated_map:
+		var sk_entry: Dictionary = aggregated_map[sk_id]
+		sk_entry["desc"] = format_equipment_skill_desc(sk_id, sk_entry["level"], sk_entry["is_special"])
+		if sk_entry["is_special"]:
+			special_skills.append(sk_entry)
+		else:
+			normal_skills.append(sk_entry)
+
+	normal_skills.sort_custom(func(a, b): return a["level"] > b["level"])
+	special_skills.sort_custom(func(a, b): return a["level"] > b["level"])
+
+	var all_skills: Array[Dictionary] = []
+	all_skills.append_array(normal_skills)
+	all_skills.append_array(special_skills)
+
+	# レア度抽選確率の算出
+	# 1~5個: nからn-2の3種 (1のときはコモンのみ、2のときはコモンとアンコモン)
+	# 6個以上: 4~6に対応したレア度が等確率 (エピック, レジェンド, ミシック)
+	var n: int = all_skills.size()
+	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
+	var rarity_probs: Dictionary = {}
+	var min_r: int = 1
+	var max_r: int = 1
+
+	if n <= 0:
+		pass
+	elif n <= 5:
+		min_r = maxi(1, n - 2)
+		max_r = n
+		var count: float = float(max_r - min_r + 1)
+		for r_idx in range(min_r, max_r + 1):
+			var r_name: String = rarity_names[r_idx - 1]
+			rarity_probs[r_name] = 1.0 / count
+	else:
+		min_r = 4
+		max_r = 6
+		for r_idx in range(4, 7):
+			var r_name: String = rarity_names[r_idx - 1]
+			rarity_probs[r_name] = 1.0 / 3.0
+
+	return {
+		"can_forge": materials.size() >= 2 and materials.size() <= 9,
+		"reason": "" if materials.size() >= 2 else "素材が2つ以上必要です",
+		"skills": all_skills,
+		"rarity_probs": rarity_probs,
+		"possible_rarity_range": [min_r, max_r],
+		"forge_count": first_forge_count + 1,
+		"levels": levels,
+		"item_type": first_type
+	}
+
+
+## 鍛冶合成を実行する
+func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictionary:
+	_ensure_inventory_sizes()
+	if not inventories.has(type):
+		return {}
+	var inv_arr: Array = inventories[type]
+	if material_inv_indices.size() < 2 or material_inv_indices.size() > 9:
+		return {}
+
+	# 重複インデックスの除去と検証
+	var unique_indices: Array[int] = []
+	var material_items: Array[Dictionary] = []
+	for idx in material_inv_indices:
+		if idx < 0 or idx >= MAX_TYPE_INVENTORY_SIZE:
+			return {}
+		if unique_indices.has(idx):
+			continue
+		unique_indices.append(idx)
+		var it = inv_arr[idx]
+		if it == null or not it is Dictionary or it.is_empty():
+			return {}
+		material_items.append(it)
+
+	if material_items.size() < 2:
+		return {}
+
+	# プレビュー計算で妥当性検証
+	var preview := calculate_forge_preview(material_items)
+	if not preview.get("can_forge", false):
+		return {}
+
+	var forge_count: int = preview["forge_count"]
+	var levels: Array = preview["levels"]
+	var chosen_level: int = levels[randi() % levels.size()]
+	var all_candidate_skills: Array = preview["skills"].duplicate(true)
+
+	# レア度の決定
+	var r_range: Array = preview.get("possible_rarity_range", [1, 1])
+	var rolled_r_idx: int = randi_range(r_range[0], r_range[1])
+	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
+	var chosen_rarity: String = rarity_names[rolled_r_idx - 1]
+
+	# 決定されたレア度枠数に応じたスキル選出
+	var num_slots: int = rolled_r_idx
+	var select_count: int = mini(num_slots, all_candidate_skills.size())
+	all_candidate_skills.shuffle()
+	var selected_skills := all_candidate_skills.slice(0, select_count)
+
+	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
+	var normal_list: Array[Dictionary] = []
+	var special_list: Array[Dictionary] = []
+	for sk in selected_skills:
+		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], sk.get("is_special", false))
+		if sk.get("is_special", false):
+			special_list.append(sk)
+		else:
+			normal_list.append(sk)
+
+	normal_list.sort_custom(func(a, b): return a["level"] > b["level"])
+	special_list.sort_custom(func(a, b): return a["level"] > b["level"])
+
+	var final_skills: Array[Dictionary] = []
+	final_skills.append_array(normal_list)
+	final_skills.append_array(special_list)
+
+	# ベースアイテム（素材の中からランダムに選択）
+	var base_item: Dictionary = material_items[randi() % material_items.size()]
+	var new_id := "eq_" + str(Time.get_ticks_usec()) + "_" + str(randi() % 1000)
+
+	var new_item := {
+		"id": new_id,
+		"name": base_item.get("name", "装備"),
+		"type": type,
+		"icon": base_item.get("icon", ""),
+		"level": chosen_level,
+		"level_tier": base_item.get("level_tier", "medium"),
+		"rand_factor": base_item.get("rand_factor", 1.0),
+		"rarity": chosen_rarity,
+		"equip_skill": final_skills,
+		"forge_count": forge_count
+	}
+
+	# インベントリ配置: 素材の中でインデックス最小の位置に新アイテムを配置し、残りは消滅
+	var min_idx: int = unique_indices[0]
+	for idx in unique_indices:
+		if idx < min_idx:
+			min_idx = idx
+
+	for idx in unique_indices:
+		inv_arr[idx] = null
+
+	inv_arr[min_idx] = new_item
+	equipment_changed.emit()
+
+	return new_item
 
 
 # --- Equipment Filtering Logic ---

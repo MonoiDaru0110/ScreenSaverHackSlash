@@ -1,0 +1,94 @@
+[gd_scene load_steps=3 format=3 uid="uid://dj0qadkoxuleu"]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="1_hud"]
+
+[sub_resource type="GDScript" id="GDScript_test"]
+script/source = "extends Node2D
+
+func _ready() -> void:
+	print(\"--- Starting Test Window Border and Dimmer Scene ---\")
+	var hud = $HUD
+	assert(hud != null)
+	
+	# Verify dimmer initial state
+	var dimmer = hud.get_node(\"%WindowDimmer\") as ColorRect
+	assert(dimmer != null, \"WindowDimmer exists\")
+	assert(!dimmer.visible, \"WindowDimmer initially hidden\")
+	assert(dimmer.size.x == 1664, \"Dimmer width is 1664\")
+	assert(dimmer.size.y == 1080, \"Dimmer height is 1080\")
+	assert(dimmer.z_index == 5, \"Dimmer z_index is 5\")
+	
+	# Verify windows have z_index 10
+	var inv = hud.get_node(\"%InventoryWindow\")
+	var skill = hud.get_node(\"%SkillTreeWindow\")
+	var challenge = hud.get_node(\"%ChallengeWindow\")
+	var blacksmith = hud.get_node(\"%BlacksmithWindow\")
+	var reinc_tree = hud.get_node(\"%ReincTreeWindow\")
+	var reinc_ability = hud.get_node(\"%ReincAbilityWindow\")
+	
+	assert(inv.z_index == 10, \"InventoryWindow z_index is 10\")
+	assert(skill.z_index == 10, \"SkillTreeWindow z_index is 10\")
+	assert(challenge.z_index == 10, \"ChallengeWindow z_index is 10\")
+	assert(blacksmith.z_index == 10, \"BlacksmithWindow z_index is 10\")
+	assert(reinc_tree.z_index == 10, \"ReincTreeWindow z_index is 10\")
+	assert(reinc_ability.z_index == 10, \"ReincAbilityWindow z_index is 10\")
+	
+	# Verify horizontal centering (anchor_left = 0.5, anchor_right = 0.5, offset_left = -600, offset_right = 600)
+	for wnd in [inv, skill, challenge, blacksmith, reinc_tree, reinc_ability]:
+		assert(wnd.anchor_left == 0.5 and wnd.anchor_right == 0.5, \"Anchors centered on \" + wnd.name)
+		assert(wnd.offset_left == -600.0 and wnd.offset_right == 600.0, \"Offset centered (-600..600) on \" + wnd.name)
+	print(\"All 6 windows are verified to be horizontally centered on screen!\")
+	
+	# Verify BaseWindow overlay border
+	for wnd in [inv, skill, challenge, blacksmith, reinc_tree, reinc_ability]:
+		var overlay = wnd.get_node_or_null(\"WindowBorderOverlay\")
+		assert(overlay != null, \"Overlay exists on \" + wnd.name)
+		var style = overlay.get_theme_stylebox(\"panel\") as StyleBoxFlat
+		assert(style != null)
+		assert(style.border_color == Color(0, 0, 0, 1), \"Border is black on \" + wnd.name)
+		assert(style.border_width_left == 1 and style.border_width_top == 1, \"Border width is 1 on \" + wnd.name)
+		assert(style.corner_radius_top_left == 6 and style.corner_radius_bottom_right == 6, \"Radius 6 on \" + wnd.name)
+	print(\"All 6 windows have verified 1px black rounded overlay border!\")
+	
+	# Test opening and closing subbar windows
+	hud.open_blacksmith()
+	await get_tree().process_frame
+	assert(blacksmith.visible, \"Blacksmith window visible\")
+	assert(dimmer.visible, \"Dimmer visible with blacksmith window\")
+	
+	hud.close_blacksmith()
+	for i in range(15):
+		await get_tree().process_frame
+	assert(!dimmer.visible, \"Dimmer hidden after closing blacksmith window\")
+	
+	# Test reincarnation screen and subbar dummy window
+	hud.open_reincarnation()
+	await get_tree().process_frame
+	assert(hud.get_node(\"%ReincarnationWindow\").visible, \"Reincarnation window open\")
+	assert(!dimmer.visible, \"Dimmer should NOT be active on main reincarnation view\")
+	
+	hud.open_reinc_ability()
+	await get_tree().process_frame
+	assert(reinc_ability.visible, \"ReincAbilityWindow open\")
+	assert(dimmer.visible, \"Dimmer IS active on reincarnation subbar window\")
+	
+	# Click dimmer to close
+	var click_ev = InputEventMouseButton.new()
+	click_ev.button_index = MOUSE_BUTTON_LEFT
+	click_ev.pressed = true
+	hud._on_window_dimmer_gui_input(click_ev)
+	await get_tree().process_frame
+	assert(!reinc_ability.visible, \"ReincAbilityWindow closed via dimmer click\")
+	
+	for i in range(15):
+		await get_tree().process_frame
+	assert(!dimmer.visible, \"Dimmer hidden after closing reinc ability window\")
+	
+	print(\"=== TEST SCENE COMPLETED SUCCESSFULLY! ===\")
+	get_tree().quit(0)
+"
+
+[node name="TestScene" type="Node2D"]
+script = SubResource("GDScript_test")
+
+[node name="HUD" parent="." instance=ExtResource("1_hud")]

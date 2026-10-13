@@ -1,7 +1,13 @@
-[gd_scene load_steps=6 format=3 uid="uid://c8reincwnd001"]
+[gd_scene load_steps=9 format=3 uid="uid://c8reincwnd001"]
 
 [ext_resource type="Script" uid="uid://ch2reinc1001" path="res://scripts/ui/reincarnation_window.gd" id="1_reinc"]
 [ext_resource type="Script" path="res://scripts/skills/reincarnation_skill_tree_controller.gd" id="2_reinc_controller"]
+[ext_resource type="Shader" path="res://shaders/night_sky.gdshader" id="3_sky_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_sky"]
+shader = ExtResource("3_sky_shader")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_reinc_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_scroll_bg"]
 bg_color = Color(0.08, 0.05, 0.12, 1)
@@ -15,11 +21,8 @@ corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reinc_root"]
-bg_color = Color(0.02, 0.02, 0.05, 1)
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bg"]
-bg_color = Color(0.14, 0.12, 0.22, 1)
+bg_color = Color(0.12, 0.10, 0.18, 0.90)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
@@ -77,23 +80,28 @@ corner_radius_bottom_left = 6
 custom_minimum_size = Vector2(1662, 1080)
 offset_right = 1662.0
 offset_bottom = 1080.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_reinc_root")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_reinc_root")
 script = ExtResource("1_reinc")
 window_title = "転生"
 header_color = Color(0.24, 0.12, 0.32, 1)
 separator_color = Color(0.38, 0.2, 0.5, 1)
 
+[node name="SkyBackground" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_sky")
+layout_mode = 2
+mouse_filter = 2
+
 [node name="BodyMargin" type="MarginContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 84
+theme_override_constants/margin_top = 124
 theme_override_constants/margin_right = 32
 theme_override_constants/margin_bottom = 20
 
 [node name="MainLayout" type="VBoxContainer" parent="BodyMargin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="ContentBody" type="HBoxContainer" parent="BodyMargin/MainLayout"]
 layout_mode = 2
@@ -317,92 +325,92 @@ layout_mode = 2
 [node name="CenterActionBox" type="VBoxContainer" parent="BodyMargin/MainLayout/BottomArea"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="BonusBar" type="HBoxContainer" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox"]
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_constants/separation = 40
+theme_override_constants/separation = 48
 alignment = 1
 
 [node name="CurrentBonusBox" type="VBoxContainer" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/CurrentBonusBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.75, 1, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.92, 0.86, 1, 1)
+theme_override_font_sizes/font_size = 28
 text = "現在のボーナス"
 
 [node name="LblEquipLevelBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "装備レベル+0"
 
 [node name="LblAutoSkillsBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "スキル自動解放+0"
 
 [node name="LblMultiplierBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/CurrentBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.75, 0.85, 0.95, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "ゴールド/トークン倍率×1.00"
 
 [node name="ArrowLabel" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar"]
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_colors/font_color = Color(0.75, 0.65, 0.95, 1)
-theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 56
 text = "→"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="NextBonusBox" type="VBoxContainer" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar"]
 layout_mode = 2
-theme_override_constants/separation = 4
+theme_override_constants/separation = 8
 
 [node name="Title" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/NextBonusBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 0.9, 0.7, 1)
-theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(0.92, 0.86, 1, 1)
+theme_override_font_sizes/font_size = 28
 text = "次回のボーナス"
 
 [node name="LblNextEquipLevelBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "装備レベル+10"
 
 [node name="LblNextAutoSkillsBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "スキル自動解放+5"
 
 [node name="LblNextMultiplierBonus" type="Label" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox/BonusBar/NextBonusBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
-theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 23
 text = "ゴールド/トークン倍率×1.10"
 
 [node name="ReincarnateBtn" type="Button" parent="BodyMargin/MainLayout/BottomArea/CenterActionBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(440, 48)
+custom_minimum_size = Vector2(520, 58)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 21
 theme_override_styles/normal = SubResource("StyleBoxFlat_reinc_btn")
 text = "転生して強化をアクティベートする"
 

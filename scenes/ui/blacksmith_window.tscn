@@ -1,0 +1,273 @@
+[gd_scene load_steps=9 format=3 uid="uid://c8blacksmithwnd001"]
+
+[ext_resource type="Script" path="res://scripts/ui/blacksmith_window.gd" id="1_blacksmith_script"]
+[ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+bg_color = Color(0.28, 0.12, 0.08, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
+bg_color = Color(0.08, 0.08, 0.14, 1)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_frame"]
+bg_color = Color(0.04, 0.04, 0.08, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.15, 0.15, 0.22, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 6.0
+content_margin_top = 8.0
+content_margin_right = 6.0
+content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preview_frame"]
+bg_color = Color(0.04, 0.04, 0.07, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.65, 0.38, 0.18, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right_frame"]
+bg_color = Color(0.06, 0.05, 0.09, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.25, 0.2, 0.28, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+
+[node name="BlacksmithWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -600.0
+offset_top = 124.0
+offset_right = 600.0
+offset_bottom = -95.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
+script = ExtResource("1_blacksmith_script")
+window_title = "鍛冶"
+header_color = Color(0.28, 0.12, 0.08, 1)
+separator_color = Color(0.48, 0.22, 0.14, 1)
+
+[node name="WindowVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="WindowVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="WindowVBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "鍛冶"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="CloseBtn" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("2_close_scene")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="WindowVBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.48, 0.22, 0.14, 1)
+
+[node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="WindowVBox/BodyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ContentHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="LeftSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox"]
+custom_minimum_size = Vector2(373, 0)
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TypeHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="TypeLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.85, 0.9, 1)
+theme_override_font_sizes/font_size = 14
+text = "装備種類:"
+vertical_alignment = 1
+
+[node name="TypeOptionButton" type="OptionButton" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 26)
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+
+[node name="InventoryFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_frame")
+
+[node name="InventoryGrid" type="GridContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/InventoryFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+columns = 5
+
+[node name="ColumnSeparator" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox"]
+custom_minimum_size = Vector2(2, 0)
+layout_mode = 2
+color = Color(0.2, 0.18, 0.28, 0.8)
+
+[node name="RightFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_right_frame")
+
+[node name="RightVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="WorkbenchHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 28
+
+[node name="MaterialSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="MaterialFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/MaterialSection"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_preview_frame")
+
+[node name="MaterialGrid" type="GridContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/MaterialSection/MaterialFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+columns = 3
+
+[node name="ArrowLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_colors/font_color = Color(0.85, 0.5, 0.2, 1)
+theme_override_font_sizes/font_size = 36
+text = "➡️"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResultSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="PreviewFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/ResultSection"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_preview_frame")
+
+[node name="PreviewIconContainer" type="CenterContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/ResultSection/PreviewFrame"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+
+[node name="ForgeButton" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/ResultSection"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 42)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 16
+text = "🔨 合成する"
+
+[node name="CandidateTitleLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 20
+text = "候補スキル一覧"
+horizontal_alignment = 1
+
+[node name="SkillScroll" type="ScrollContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="SkillListContainer" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/SkillScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10

@@ -20,10 +20,20 @@ extends CanvasLayer
 @onready var sub_nav_container: PanelContainer = %SubNavContainer
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
+@onready var btn_challenge_tab: Button = %ChallengeTabBtn
+@onready var btn_blacksmith_tab: Button = %BlacksmithTabBtn
+@onready var reinc_sub_nav_container: PanelContainer = %ReincarnationSubNavContainer
+@onready var btn_reinc_tab_1: Button = %ReincDummyTabBtn1
+@onready var btn_reinc_tab_2: Button = %ReincDummyTabBtn2
+@onready var window_dimmer: ColorRect = %WindowDimmer
 @onready var special_skill_ui_container: Control = get_node_or_null("../PlayArea/SpecialSkillUIContainer") if get_node_or_null("../PlayArea/SpecialSkillUIContainer") else get_node_or_null("%SpecialSkillUIContainer")
 @onready var grid_equipment: GridContainer = %GridContainer
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
+@onready var challenge_window: PanelContainer = %ChallengeWindow
+@onready var blacksmith_window: PanelContainer = %BlacksmithWindow
+@onready var reinc_tree_window: PanelContainer = %ReincTreeWindow
+@onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
 @onready var reincarnation_window: PanelContainer = %ReincarnationWindow
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
@@ -44,12 +54,29 @@ extends CanvasLayer
 
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
 var _skill_tree_instance: Control
+
+# Tab UI styling
 var _tab_style_active: StyleBoxFlat
+var _tab_style_active_hover: StyleBoxFlat
+var _tab_style_active_pressed: StyleBoxFlat
 var _tab_style_inactive: StyleBoxFlat
+var _tab_style_inactive_hover: StyleBoxFlat
+var _tab_style_inactive_pressed: StyleBoxFlat
+
 var _subtab_style_active: StyleBoxFlat
+var _subtab_style_active_hover: StyleBoxFlat
+var _subtab_style_active_pressed: StyleBoxFlat
 var _subtab_style_inactive: StyleBoxFlat
+var _subtab_style_inactive_hover: StyleBoxFlat
+var _subtab_style_inactive_pressed: StyleBoxFlat
+
+var _reinc_subtab_index: int = 0
 var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
+var _is_challenge_open: bool = false
+var _is_blacksmith_open: bool = false
+var _is_reinc_tree_open: bool = false
+var _is_reinc_ability_open: bool = false
 var _is_reincarnation_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
@@ -158,54 +185,152 @@ func _ready() -> void:
 		btn.get_node("Content/CostLabel").add_theme_font_size_override("font_size", 16)
 
 	# Main Tab button styles setup (ホーム / 転生)
-	_tab_style_active = StyleBoxFlat.new()
-	_tab_style_active.bg_color = Color(0.42, 0.20, 0.95, 1)
-	_tab_style_active.border_width_left = 2
-	_tab_style_active.border_width_top = 2
-	_tab_style_active.border_width_right = 2
-	_tab_style_active.border_width_bottom = 2
-	_tab_style_active.border_color = Color(0.80, 0.60, 1.0, 1)
-	_tab_style_active.corner_radius_top_left = 6
-	_tab_style_active.corner_radius_top_right = 6
-	_tab_style_active.corner_radius_bottom_right = 6
-	_tab_style_active.corner_radius_bottom_left = 6
-
+	# Inactive: base dark charcoal/navy
 	_tab_style_inactive = StyleBoxFlat.new()
-	_tab_style_inactive.bg_color = Color(0.12, 0.12, 0.22, 0.9)
+	_tab_style_inactive.bg_color = Color(0.12, 0.12, 0.20, 0.9)
 	_tab_style_inactive.border_width_left = 1
 	_tab_style_inactive.border_width_top = 1
 	_tab_style_inactive.border_width_right = 1
 	_tab_style_inactive.border_width_bottom = 1
-	_tab_style_inactive.border_color = Color(0.28, 0.26, 0.45, 1)
+	_tab_style_inactive.border_color = Color(0.24, 0.22, 0.38, 1)
 	_tab_style_inactive.corner_radius_top_left = 6
 	_tab_style_inactive.corner_radius_top_right = 6
 	_tab_style_inactive.corner_radius_bottom_right = 6
 	_tab_style_inactive.corner_radius_bottom_left = 6
 
-	# Sub Tab button styles setup (装備 / スキル)
-	_subtab_style_active = StyleBoxFlat.new()
-	_subtab_style_active.bg_color = Color(0.28, 0.16, 0.68, 1)
-	_subtab_style_active.border_width_left = 2
-	_subtab_style_active.border_width_top = 2
-	_subtab_style_active.border_width_right = 2
-	_subtab_style_active.border_width_bottom = 2
-	_subtab_style_active.border_color = Color(0.52, 0.38, 0.92, 1)
-	_subtab_style_active.corner_radius_top_left = 3
-	_subtab_style_active.corner_radius_top_right = 3
-	_subtab_style_active.corner_radius_bottom_right = 3
-	_subtab_style_active.corner_radius_bottom_left = 3
+	_tab_style_inactive_hover = StyleBoxFlat.new()
+	_tab_style_inactive_hover.bg_color = Color(0.18, 0.18, 0.28, 0.95)
+	_tab_style_inactive_hover.border_width_left = 1
+	_tab_style_inactive_hover.border_width_top = 1
+	_tab_style_inactive_hover.border_width_right = 1
+	_tab_style_inactive_hover.border_width_bottom = 1
+	_tab_style_inactive_hover.border_color = Color(0.36, 0.34, 0.52, 1)
+	_tab_style_inactive_hover.corner_radius_top_left = 6
+	_tab_style_inactive_hover.corner_radius_top_right = 6
+	_tab_style_inactive_hover.corner_radius_bottom_right = 6
+	_tab_style_inactive_hover.corner_radius_bottom_left = 6
 
+	_tab_style_inactive_pressed = StyleBoxFlat.new()
+	_tab_style_inactive_pressed.bg_color = Color(0.09, 0.09, 0.15, 1.0)
+	_tab_style_inactive_pressed.border_width_left = 1
+	_tab_style_inactive_pressed.border_width_top = 1
+	_tab_style_inactive_pressed.border_width_right = 1
+	_tab_style_inactive_pressed.border_width_bottom = 1
+	_tab_style_inactive_pressed.border_color = Color(0.20, 0.18, 0.32, 1)
+	_tab_style_inactive_pressed.corner_radius_top_left = 6
+	_tab_style_inactive_pressed.corner_radius_top_right = 6
+	_tab_style_inactive_pressed.corner_radius_bottom_right = 6
+	_tab_style_inactive_pressed.corner_radius_bottom_left = 6
+
+	# Active (Selected): Slightly lighter than base color (not vivid purple)
+	_tab_style_active = StyleBoxFlat.new()
+	_tab_style_active.bg_color = Color(0.24, 0.24, 0.36, 1.0)
+	_tab_style_active.border_width_left = 2
+	_tab_style_active.border_width_top = 2
+	_tab_style_active.border_width_right = 2
+	_tab_style_active.border_width_bottom = 2
+	_tab_style_active.border_color = Color(0.50, 0.48, 0.70, 1)
+	_tab_style_active.corner_radius_top_left = 6
+	_tab_style_active.corner_radius_top_right = 6
+	_tab_style_active.corner_radius_bottom_right = 6
+	_tab_style_active.corner_radius_bottom_left = 6
+
+	_tab_style_active_hover = StyleBoxFlat.new()
+	_tab_style_active_hover.bg_color = Color(0.30, 0.30, 0.44, 1.0)
+	_tab_style_active_hover.border_width_left = 2
+	_tab_style_active_hover.border_width_top = 2
+	_tab_style_active_hover.border_width_right = 2
+	_tab_style_active_hover.border_width_bottom = 2
+	_tab_style_active_hover.border_color = Color(0.60, 0.58, 0.82, 1)
+	_tab_style_active_hover.corner_radius_top_left = 6
+	_tab_style_active_hover.corner_radius_top_right = 6
+	_tab_style_active_hover.corner_radius_bottom_right = 6
+	_tab_style_active_hover.corner_radius_bottom_left = 6
+
+	_tab_style_active_pressed = StyleBoxFlat.new()
+	_tab_style_active_pressed.bg_color = Color(0.20, 0.20, 0.30, 1.0)
+	_tab_style_active_pressed.border_width_left = 2
+	_tab_style_active_pressed.border_width_top = 2
+	_tab_style_active_pressed.border_width_right = 2
+	_tab_style_active_pressed.border_width_bottom = 2
+	_tab_style_active_pressed.border_color = Color(0.44, 0.42, 0.62, 1)
+	_tab_style_active_pressed.corner_radius_top_left = 6
+	_tab_style_active_pressed.corner_radius_top_right = 6
+	_tab_style_active_pressed.corner_radius_bottom_right = 6
+	_tab_style_active_pressed.corner_radius_bottom_left = 6
+
+	# Sub Tab button styles setup (装備 / スキル / 転生サブバー)
 	_subtab_style_inactive = StyleBoxFlat.new()
 	_subtab_style_inactive.bg_color = Color(0.10, 0.10, 0.16, 0.85)
 	_subtab_style_inactive.border_width_left = 1
 	_subtab_style_inactive.border_width_top = 1
 	_subtab_style_inactive.border_width_right = 1
 	_subtab_style_inactive.border_width_bottom = 1
-	_subtab_style_inactive.border_color = Color(0.2, 0.2, 0.32, 1)
+	_subtab_style_inactive.border_color = Color(0.20, 0.20, 0.32, 1)
 	_subtab_style_inactive.corner_radius_top_left = 3
 	_subtab_style_inactive.corner_radius_top_right = 3
 	_subtab_style_inactive.corner_radius_bottom_right = 3
 	_subtab_style_inactive.corner_radius_bottom_left = 3
+
+	_subtab_style_inactive_hover = StyleBoxFlat.new()
+	_subtab_style_inactive_hover.bg_color = Color(0.16, 0.16, 0.24, 0.95)
+	_subtab_style_inactive_hover.border_width_left = 1
+	_subtab_style_inactive_hover.border_width_top = 1
+	_subtab_style_inactive_hover.border_width_right = 1
+	_subtab_style_inactive_hover.border_width_bottom = 1
+	_subtab_style_inactive_hover.border_color = Color(0.30, 0.30, 0.44, 1)
+	_subtab_style_inactive_hover.corner_radius_top_left = 3
+	_subtab_style_inactive_hover.corner_radius_top_right = 3
+	_subtab_style_inactive_hover.corner_radius_bottom_right = 3
+	_subtab_style_inactive_hover.corner_radius_bottom_left = 3
+
+	_subtab_style_inactive_pressed = StyleBoxFlat.new()
+	_subtab_style_inactive_pressed.bg_color = Color(0.08, 0.08, 0.12, 1.0)
+	_subtab_style_inactive_pressed.border_width_left = 1
+	_subtab_style_inactive_pressed.border_width_top = 1
+	_subtab_style_inactive_pressed.border_width_right = 1
+	_subtab_style_inactive_pressed.border_width_bottom = 1
+	_subtab_style_inactive_pressed.border_color = Color(0.16, 0.16, 0.24, 1)
+	_subtab_style_inactive_pressed.corner_radius_top_left = 3
+	_subtab_style_inactive_pressed.corner_radius_top_right = 3
+	_subtab_style_inactive_pressed.corner_radius_bottom_right = 3
+	_subtab_style_inactive_pressed.corner_radius_bottom_left = 3
+
+	_subtab_style_active = StyleBoxFlat.new()
+	_subtab_style_active.bg_color = Color(0.22, 0.22, 0.32, 1.0)
+	_subtab_style_active.border_width_left = 2
+	_subtab_style_active.border_width_top = 2
+	_subtab_style_active.border_width_right = 2
+	_subtab_style_active.border_width_bottom = 2
+	_subtab_style_active.border_color = Color(0.44, 0.44, 0.64, 1)
+	_subtab_style_active.corner_radius_top_left = 3
+	_subtab_style_active.corner_radius_top_right = 3
+	_subtab_style_active.corner_radius_bottom_right = 3
+	_subtab_style_active.corner_radius_bottom_left = 3
+
+	_subtab_style_active_hover = StyleBoxFlat.new()
+	_subtab_style_active_hover.bg_color = Color(0.27, 0.27, 0.38, 1.0)
+	_subtab_style_active_hover.border_width_left = 2
+	_subtab_style_active_hover.border_width_top = 2
+	_subtab_style_active_hover.border_width_right = 2
+	_subtab_style_active_hover.border_width_bottom = 2
+	_subtab_style_active_hover.border_color = Color(0.54, 0.54, 0.76, 1)
+	_subtab_style_active_hover.corner_radius_top_left = 3
+	_subtab_style_active_hover.corner_radius_top_right = 3
+	_subtab_style_active_hover.corner_radius_bottom_right = 3
+	_subtab_style_active_hover.corner_radius_bottom_left = 3
+
+	_subtab_style_active_pressed = StyleBoxFlat.new()
+	_subtab_style_active_pressed.bg_color = Color(0.18, 0.18, 0.26, 1.0)
+	_subtab_style_active_pressed.border_width_left = 2
+	_subtab_style_active_pressed.border_width_top = 2
+	_subtab_style_active_pressed.border_width_right = 2
+	_subtab_style_active_pressed.border_width_bottom = 2
+	_subtab_style_active_pressed.border_color = Color(0.38, 0.38, 0.56, 1)
+	_subtab_style_active_pressed.corner_radius_top_left = 3
+	_subtab_style_active_pressed.corner_radius_top_right = 3
+	_subtab_style_active_pressed.corner_radius_bottom_right = 3
+	_subtab_style_active_pressed.corner_radius_bottom_left = 3
 
 	if btn_home_tab:
 		btn_home_tab.add_theme_stylebox_override("focus", style_focus)
@@ -219,6 +344,20 @@ func _ready() -> void:
 	if btn_skill_tree_tab:
 		btn_skill_tree_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_skill_tree_tab.pressed.connect(_on_skill_tree_tab_pressed)
+	if btn_challenge_tab:
+		btn_challenge_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_challenge_tab.pressed.connect(_on_challenge_tab_pressed)
+	if btn_blacksmith_tab:
+		btn_blacksmith_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_blacksmith_tab.pressed.connect(_on_blacksmith_tab_pressed)
+	if btn_reinc_tab_1:
+		btn_reinc_tab_1.add_theme_stylebox_override("focus", style_focus)
+		btn_reinc_tab_1.pressed.connect(_on_reinc_tab_1_pressed)
+	if btn_reinc_tab_2:
+		btn_reinc_tab_2.add_theme_stylebox_override("focus", style_focus)
+		btn_reinc_tab_2.pressed.connect(_on_reinc_tab_2_pressed)
+
+	_update_tab_button_styles()
 
 	# Instantiate and add skill tree container to viewport
 	_skill_tree_instance = _skill_tree_scene.instantiate()
@@ -268,9 +407,29 @@ func _ready() -> void:
 		btn_equipment_filter.pressed.connect(_on_equipment_filter_pressed)
 	if equipment_filter_window:
 		equipment_filter_window.visible = false
+	if challenge_window:
+		if challenge_window.has_signal("closed"):
+			challenge_window.closed.connect(close_challenge)
+		challenge_window.visible = false
+	if blacksmith_window:
+		if blacksmith_window.has_signal("closed"):
+			blacksmith_window.closed.connect(close_blacksmith)
+		blacksmith_window.visible = false
 	if reincarnation_window.has_signal("closed"):
 		reincarnation_window.closed.connect(close_reincarnation)
 	reincarnation_window.visible = false
+	if reinc_tree_window:
+		if reinc_tree_window.has_signal("closed"):
+			reinc_tree_window.closed.connect(close_reinc_tree)
+		reinc_tree_window.visible = false
+	if reinc_ability_window:
+		if reinc_ability_window.has_signal("closed"):
+			reinc_ability_window.closed.connect(close_reinc_ability)
+		reinc_ability_window.visible = false
+	if window_dimmer:
+		window_dimmer.visible = false
+		window_dimmer.modulate.a = 0.0
+		window_dimmer.gui_input.connect(_on_window_dimmer_gui_input)
 	
 	# アップグレードボタン更新スロットリングタイマーの初期化 (0.2秒間隔 = 5回/秒)
 	_upgrade_update_timer = Timer.new()
@@ -752,21 +911,47 @@ func _update_sidebar_star_progress() -> void:
 		sidebar_star_progress_bar.value = min(GameData.infused_tokens, next_cost)
 
 
+func _apply_tab_style(btn: Button, is_active: bool, is_subtab: bool = false) -> void:
+	if not btn:
+		return
+	if not is_subtab:
+		if is_active:
+			btn.add_theme_stylebox_override("normal", _tab_style_active)
+			btn.add_theme_stylebox_override("hover", _tab_style_active_hover)
+			btn.add_theme_stylebox_override("pressed", _tab_style_active_pressed)
+		else:
+			btn.add_theme_stylebox_override("normal", _tab_style_inactive)
+			btn.add_theme_stylebox_override("hover", _tab_style_inactive_hover)
+			btn.add_theme_stylebox_override("pressed", _tab_style_inactive_pressed)
+	else:
+		if is_active:
+			btn.add_theme_stylebox_override("normal", _subtab_style_active)
+			btn.add_theme_stylebox_override("hover", _subtab_style_active_hover)
+			btn.add_theme_stylebox_override("pressed", _subtab_style_active_pressed)
+		else:
+			btn.add_theme_stylebox_override("normal", _subtab_style_inactive)
+			btn.add_theme_stylebox_override("hover", _subtab_style_inactive_hover)
+			btn.add_theme_stylebox_override("pressed", _subtab_style_inactive_pressed)
+
+
 func _update_tab_button_styles() -> void:
-	# 大タブのスタイル更新
-	if btn_home_tab and _tab_style_active and _tab_style_inactive:
-		btn_home_tab.add_theme_stylebox_override("normal", _tab_style_active if not _is_reincarnation_open else _tab_style_inactive)
-	if btn_reincarnation_tab and _tab_style_active and _tab_style_inactive:
-		btn_reincarnation_tab.add_theme_stylebox_override("normal", _tab_style_active if _is_reincarnation_open else _tab_style_inactive)
+	# 大タブ（ホーム / 転生）のスタイル更新
+	_apply_tab_style(btn_home_tab, not _is_reincarnation_open, false)
+	_apply_tab_style(btn_reincarnation_tab, _is_reincarnation_open, false)
 	
-	# サブタブ（ホーム画面側ツールバー）の表示・非表示とスタイル更新
+	# サブタブ（ホーム画面側ツールバー / 転生画面側ツールバー）の表示・非表示とスタイル更新
 	if sub_nav_container:
 		sub_nav_container.visible = not _is_reincarnation_open
+	if reinc_sub_nav_container:
+		reinc_sub_nav_container.visible = _is_reincarnation_open
 
-	if btn_equipment_tab and _subtab_style_active and _subtab_style_inactive:
-		btn_equipment_tab.add_theme_stylebox_override("normal", _subtab_style_active if _is_inventory_open else _subtab_style_inactive)
-	if btn_skill_tree_tab and _subtab_style_active and _subtab_style_inactive:
-		btn_skill_tree_tab.add_theme_stylebox_override("normal", _subtab_style_active if _is_skill_tree_open else _subtab_style_inactive)
+	_apply_tab_style(btn_equipment_tab, _is_inventory_open, true)
+	_apply_tab_style(btn_skill_tree_tab, _is_skill_tree_open, true)
+	_apply_tab_style(btn_challenge_tab, _is_challenge_open, true)
+	_apply_tab_style(btn_blacksmith_tab, _is_blacksmith_open, true)
+
+	_apply_tab_style(btn_reinc_tab_1, _is_reinc_tree_open, true)
+	_apply_tab_style(btn_reinc_tab_2, _is_reinc_ability_open, true)
 
 
 func _on_home_tab_pressed() -> void:
@@ -789,6 +974,14 @@ func open_reincarnation() -> void:
 		close_inventory()
 	if _is_skill_tree_open:
 		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
 
 	reincarnation_window.visible = true
 	if reincarnation_window.has_method("update_ui"):
@@ -800,6 +993,10 @@ func close_reincarnation() -> void:
 	if not _is_reincarnation_open:
 		return
 	_is_reincarnation_open = false
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
 	reincarnation_window.visible = false
 	_update_tab_button_styles()
 
@@ -809,6 +1006,14 @@ func _on_equipment_tab_pressed() -> void:
 		close_reincarnation()
 	if _is_skill_tree_open:
 		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
 	
 	if _is_inventory_open:
 		close_inventory()
@@ -824,6 +1029,7 @@ func open_inventory() -> void:
 	inventory_window.visible = true
 	_update_inventory_ui()
 	_update_tab_button_styles()
+	_update_window_dimmer()
 
 
 func close_inventory() -> void:
@@ -835,6 +1041,7 @@ func close_inventory() -> void:
 		equipment_filter_window.visible = false
 	inventory_window.visible = false
 	_update_tab_button_styles()
+	_update_window_dimmer()
 
 
 func _on_equipment_filter_pressed() -> void:
@@ -850,6 +1057,14 @@ func _on_skill_tree_tab_pressed() -> void:
 		close_reincarnation()
 	if _is_inventory_open:
 		close_inventory()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
 		
 	if _is_skill_tree_open:
 		close_skill_tree()
@@ -865,6 +1080,7 @@ func open_skill_tree() -> void:
 	skill_tree_window.visible = true
 	_update_skill_nodes()
 	_update_tab_button_styles()
+	_update_window_dimmer()
 	
 	# ゲーム起動時（初回オープン時）のみ中央位置合わせを行う
 	if not _has_centered_on_startup:
@@ -887,6 +1103,225 @@ func close_skill_tree() -> void:
 	_is_skill_tree_open = false
 	skill_tree_window.visible = false
 	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func _on_challenge_tab_pressed() -> void:
+	if _is_reincarnation_open:
+		close_reincarnation()
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
+		
+	if _is_challenge_open:
+		close_challenge()
+	else:
+		open_challenge()
+
+
+func open_challenge() -> void:
+	if _is_challenge_open:
+		return
+	
+	_is_challenge_open = true
+	if challenge_window:
+		challenge_window.visible = true
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_challenge() -> void:
+	if not _is_challenge_open:
+		return
+	
+	_is_challenge_open = false
+	if challenge_window:
+		challenge_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func _on_blacksmith_tab_pressed() -> void:
+	if _is_reincarnation_open:
+		close_reincarnation()
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
+		
+	if _is_blacksmith_open:
+		close_blacksmith()
+	else:
+		open_blacksmith()
+
+
+func open_blacksmith() -> void:
+	if _is_blacksmith_open:
+		return
+	
+	_is_blacksmith_open = true
+	if blacksmith_window:
+		blacksmith_window.visible = true
+		if blacksmith_window.has_method("update_all"):
+			blacksmith_window.update_all()
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_blacksmith() -> void:
+	if not _is_blacksmith_open:
+		return
+	
+	_is_blacksmith_open = false
+	if blacksmith_window:
+		blacksmith_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func _on_reinc_tab_1_pressed() -> void:
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
+	
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	else:
+		open_reinc_tree()
+
+
+func open_reinc_tree() -> void:
+	if _is_reinc_tree_open:
+		return
+	
+	_is_reinc_tree_open = true
+	_reinc_subtab_index = 0
+	if reinc_tree_window:
+		reinc_tree_window.visible = true
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_reinc_tree() -> void:
+	if not _is_reinc_tree_open:
+		return
+	
+	_is_reinc_tree_open = false
+	if reinc_tree_window:
+		reinc_tree_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func _on_reinc_tab_2_pressed() -> void:
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	
+	if _is_reinc_ability_open:
+		close_reinc_ability()
+	else:
+		open_reinc_ability()
+
+
+func open_reinc_ability() -> void:
+	if _is_reinc_ability_open:
+		return
+	
+	_is_reinc_ability_open = true
+	_reinc_subtab_index = 1
+	if reinc_ability_window:
+		reinc_ability_window.visible = true
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_reinc_ability() -> void:
+	if not _is_reinc_ability_open:
+		return
+	
+	_is_reinc_ability_open = false
+	if reinc_ability_window:
+		reinc_ability_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func _is_any_subbar_window_open() -> bool:
+	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_reinc_tree_open or _is_reinc_ability_open
+
+
+var _dimmer_tween: Tween = null
+
+
+func _update_window_dimmer() -> void:
+	if not is_instance_valid(window_dimmer):
+		return
+	if is_instance_valid(_dimmer_tween) and _dimmer_tween.is_running():
+		_dimmer_tween.kill()
+		
+	var should_be_open := _is_any_subbar_window_open()
+	if should_be_open:
+		window_dimmer.visible = true
+		_dimmer_tween = create_tween()
+		_dimmer_tween.tween_property(window_dimmer, "modulate:a", 1.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	else:
+		if window_dimmer.visible:
+			_dimmer_tween = create_tween()
+			_dimmer_tween.tween_property(window_dimmer, "modulate:a", 0.0, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			_dimmer_tween.tween_callback(func():
+				if not _is_any_subbar_window_open():
+					window_dimmer.visible = false
+			)
+		else:
+			window_dimmer.modulate.a = 0.0
+
+
+func _on_window_dimmer_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_close_all_subbar_windows()
+
+
+func _close_all_subbar_windows() -> void:
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
 
 
 func _on_skill_node_pressed(node: SkillNode) -> void:

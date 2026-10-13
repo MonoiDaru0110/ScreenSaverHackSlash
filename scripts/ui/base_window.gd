@@ -97,6 +97,7 @@ func _ready() -> void:
 	_apply_header_style()
 	_apply_body_style()
 	_apply_header_height()
+	_setup_border_overlay()
 	
 	if _separator:
 		_separator.color = separator_color
@@ -105,6 +106,30 @@ func _ready() -> void:
 		_close_btn.visible = show_close_button
 		if not _close_btn.pressed.is_connected(_on_close_btn_pressed):
 			_close_btn.pressed.connect(_on_close_btn_pressed)
+
+
+func _setup_border_overlay() -> void:
+	var overlay = get_node_or_null("WindowBorderOverlay") as Panel
+	if not overlay:
+		overlay = Panel.new()
+		overlay.name = "WindowBorderOverlay"
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(overlay)
+	overlay.move_to_front()
+	
+	var style := StyleBoxFlat.new()
+	style.draw_center = false
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0, 0, 0, 1)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	overlay.add_theme_stylebox_override("panel", style)
 
 
 func _apply_header_style() -> void:
@@ -117,6 +142,11 @@ func _apply_header_style() -> void:
 	style.corner_radius_top_right = 6
 	style.corner_radius_bottom_left = 0
 	style.corner_radius_bottom_right = 0
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 0
+	style.border_color = Color(0, 0, 0, 1)
 	style.content_margin_left = 0
 	style.content_margin_top = 0
 	style.content_margin_right = 0
@@ -134,6 +164,11 @@ func _apply_body_style() -> void:
 	style.corner_radius_top_right = 0
 	style.corner_radius_bottom_left = 6
 	style.corner_radius_bottom_right = 6
+	style.border_width_left = 1
+	style.border_width_top = 0
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0, 0, 0, 1)
 	_body_panel.add_theme_stylebox_override("panel", style)
 
 

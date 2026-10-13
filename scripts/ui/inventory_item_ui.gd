@@ -8,6 +8,7 @@ var item_icon: String = ""
 var item_level: int = 1
 var item_rarity: String = "コモン"
 var item_equip_skill: Array = []
+var item_forge_count: int = 0
 
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
 var _custom_tooltip: EquipmentTooltip = null
@@ -20,6 +21,7 @@ func setup(item_data: Dictionary) -> void:
 	item_level = item_data.get("level", 1)
 	item_rarity = item_data.get("rarity", "コモン")
 	item_equip_skill = item_data.get("equip_skill", [])
+	item_forge_count = item_data.get("forge_count", 0)
 	
 	if is_node_ready():
 		update_ui_display()
@@ -48,7 +50,8 @@ func update_ui_display() -> void:
 	var item_data := {
 		"icon": item_icon,
 		"level": item_level,
-		"rarity": item_rarity
+		"rarity": item_rarity,
+		"forge_count": item_forge_count
 	}
 	equipment_icon.update_item(item_data)
 	
@@ -160,7 +163,8 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 		"level": item_level,
 		"rarity": item_rarity,
 		"icon": item_icon,
-		"item_index": get_slot_index()
+		"item_index": get_slot_index(),
+		"forge_count": item_forge_count
 	}
 
 
@@ -177,7 +181,8 @@ func _create_drag_preview() -> Control:
 	var item_data := {
 		"icon": item_icon,
 		"level": item_level,
-		"rarity": item_rarity
+		"rarity": item_rarity,
+		"forge_count": item_forge_count
 	}
 	preview_icon.update_item(item_data)
 	

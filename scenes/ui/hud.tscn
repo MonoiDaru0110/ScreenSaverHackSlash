@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=27 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
@@ -7,6 +7,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/equipment_filter_window.tscn" id="5_filter_scene"]
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="6_close_scene"]
 [ext_resource type="Script" uid="uid://cv2ftlcsc1l4n" path="res://scripts/ui/base_window.gd" id="7_base_window_script"]
+[ext_resource type="PackedScene" uid="uid://ypt4uxh84fvc" path="res://scenes/ui/challenge_window.tscn" id="8_challenge_scene"]
+[ext_resource type="PackedScene" uid="uid://c5qpm4utfsvo" path="res://scenes/ui/blacksmith_window.tscn" id="9_blacksmith_scene"]
+[ext_resource type="PackedScene" uid="uid://bn614xlh8t5m7" path="res://scenes/ui/reinc_tree_window.tscn" id="10_reinc_tree_scene"]
+[ext_resource type="PackedScene" uid="uid://bn6hn2r3gg5m7" path="res://scenes/ui/reinc_ability_window.tscn" id="11_reinc_ability_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
@@ -528,19 +532,29 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 20
 
+[node name="WindowDimmer" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 5
+custom_minimum_size = Vector2(1664, 1080)
+offset_right = 1664.0
+offset_bottom = 1080.0
+color = Color(0, 0, 0, 0.38)
+
 [node name="SkillTreeWindow" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
+z_index = 10
 custom_minimum_size = Vector2(1200, 861)
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -1472.0
-offset_top = 110.0
-offset_right = -272.0
-offset_bottom = -109.0
-grow_horizontal = 0
+offset_left = -600.0
+offset_top = 124.0
+offset_right = 600.0
+offset_bottom = -95.0
+grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
 script = ExtResource("7_base_window_script")
@@ -636,16 +650,17 @@ anchors_preset = 0
 [node name="InventoryWindow" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 visible = false
+z_index = 10
 custom_minimum_size = Vector2(1200, 861)
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -1472.0
-offset_top = 110.0
-offset_right = -272.0
-offset_bottom = -109.0
-grow_horizontal = 0
+offset_left = -600.0
+offset_top = 124.0
+offset_right = 600.0
+offset_bottom = -95.0
+grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
 script = ExtResource("7_base_window_script")
@@ -787,22 +802,42 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 
+[node name="ChallengeWindow" parent="." instance=ExtResource("8_challenge_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="ReincTreeWindow" parent="." instance=ExtResource("10_reinc_tree_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="ReincAbilityWindow" parent="." instance=ExtResource("11_reinc_ability_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
 [node name="ReincarnationWindow" parent="." instance=ExtResource("4_reinc_scene")]
 unique_name_in_owner = true
 visible = false
 
 [node name="TopNavigationArea" type="VBoxContainer" parent="."]
 z_index = 20
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(460, 0)
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -259.0
+offset_left = -359.0
 offset_top = 10.0
-offset_right = 1.0
-offset_bottom = 120.0
+offset_right = 101.0
+offset_bottom = 116.0
 grow_horizontal = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 2
 
 [node name="MainModeContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
@@ -838,7 +873,7 @@ text = "⚛️"
 
 [node name="SubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 36)
+custom_minimum_size = Vector2(440, 36)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
@@ -867,3 +902,50 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
 text = "🌳 スキル"
+
+[node name="ChallengeTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "🏆 チャレンジ"
+
+[node name="BlacksmithTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "🔨 鍛冶"
+
+[node name="ReincarnationSubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(240, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
+
+[node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/ReincarnationSubNavContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 3
+
+[node name="ReincSubTabButtons" type="HBoxContainer" parent="TopNavigationArea/ReincarnationSubNavContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ReincDummyTabBtn1" type="Button" parent="TopNavigationArea/ReincarnationSubNavContainer/MarginContainer/ReincSubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "🌌 転生ツリー"
+
+[node name="ReincDummyTabBtn2" type="Button" parent="TopNavigationArea/ReincarnationSubNavContainer/MarginContainer/ReincSubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "✨ 特殊能力"
