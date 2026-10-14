@@ -69,7 +69,7 @@ func _ready() -> void:
 
 
 func _spawn_initial_logos() -> void:
-	for i in GameData.logo_count:
+	for i in GameData.get_effective_logo_count():
 		_spawn_one_logo()
 
 
@@ -91,7 +91,7 @@ func _on_logo_reset_requested() -> void:
 	for child in logo_container.get_children():
 		child.queue_free()
 	# Spawn logos based on current logo_count
-	for i in GameData.logo_count:
+	for i in GameData.get_effective_logo_count():
 		_spawn_one_logo()
 
 
@@ -108,6 +108,10 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		_play_sound(_sound_corner)
 		var base_gold := (50.0 + GameData.get_effective_boost_level() * 10.0) * mult * gold_skill_mult
 		var gold_amount := base_gold * gold_mult
+		if GameData.is_challenge_active("c3"):
+			gold_amount = 0.0
+		else:
+			gold_amount *= GameData.get_challenge_corner_gold_multiplier()
 		
 		var token_crit := GameData.roll_token_critical()
 		var token_direct := GameData.roll_token_direct()

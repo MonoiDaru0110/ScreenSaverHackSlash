@@ -87,6 +87,13 @@ var _last_corner_announce_ticks: int = 0
 var _upgrade_buttons_dirty: bool = false
 var _upgrade_update_timer: Timer = null
 
+# チャレンジ進行中ミニウィンドウ（右下・通貨欄の左）
+var _challenge_mini_panel: PanelContainer = null
+var _challenge_mini_title: Label = null
+var _challenge_mini_time: Label = null
+var _challenge_mini_bar: ProgressBar = null
+var _challenge_mini_progress: Label = null
+
 # パフォーマンス最適化: デバッグ表示 & ステータス更新スロットリング
 var _debug_label: Label = null
 var _debug_timer: Timer = null
@@ -430,6 +437,15 @@ func _ready() -> void:
 		window_dimmer.visible = false
 		window_dimmer.modulate.a = 0.0
 		window_dimmer.gui_input.connect(_on_window_dimmer_gui_input)
+
+	# チャレンジ進行中ミニウィンドウのセットアップ (メイン画面右下・通貨欄の左)
+	_setup_challenge_mini_window()
+	GameData.challenge_started.connect(_on_challenge_started_mini)
+	GameData.challenge_progress_updated.connect(_on_challenge_progress_updated_mini)
+	GameData.challenge_completed.connect(_on_challenge_ended_mini)
+	GameData.challenge_failed.connect(_on_challenge_ended_mini)
+	GameData.challenge_state_changed.connect(_update_challenge_mini_window)
+	_update_challenge_mini_window()
 	
 	# アップグレードボタン更新スロットリングタイマーの初期化 (0.2秒間隔 = 5回/秒)
 	_upgrade_update_timer = Timer.new()
@@ -1699,3 +1715,128 @@ func _update_toggle_skill_vis_button_text(filter_on: bool) -> void:
 	else:
 		btn_toggle_skill_vis.text = "👁️ 表示: 全スキル"
 		btn_toggle_skill_vis.tooltip_text = "現在は全てのスキルを表示中\nクリックで前提開放スキルのみを表示"
+
+
+# --- チャレンジ進捗確認用ミニウィンドウ (メイン画面右下・通貨欄の左) ---
+
+func _setup_challenge_mini_window() -> void:
+	# Sidebar の左側、画面下部に配置 (1662pxのプレイエリア右下)
+	_challenge_mini_panel = PanelContainer.new()
+	_challenge_mini_panel.name = "ChallengeMiniWindow"
+	_challenge_mini_panel.z_index = 12
+	_challenge_mini_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_challenge_mini_panel.visible = false
+
+	# 位置とサイズ: 幅 290px、高さ 80px、右端はサイドバー(1662px)の左手前 1360px、Yは 990px (通貨欄と水平)
+	_challenge_mini_panel.position = Vector2(1356, 986)
+	_challenge_mini_panel.size = Vector2(296, 84)
+
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.10, 0.05, 0.92) # 落ち着いたダークアンバー背景
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.border_color = Color(0.88, 0.68, 0.14, 0.9) # 上部バーと同調するゴールド枠
+	panel_style.set_corner_radius_all(6)
+	_challenge_mini_panel.add_theme_stylebox_override("panel", panel_style)
+	add_child(_challenge_mini_panel)
+
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	_challenge_mini_panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_theme_constant_override("separation", 4)
+	margin.add_child(vbox)
+
+	var top_row := HBoxContainer.new()
+	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_row.add_theme_constant_override("separation", 8)
+	vbox.add_child(top_row)
+
+	_challenge_mini_title = Label.new()
+	_challenge_mini_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_challenge_mini_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_challenge_mini_title.add_theme_color_override("font_color", Color(1.0, 0.88, 0.36, 1.0))
+	_challenge_mini_title.add_theme_font_size_override("font_size", 14)
+	_challenge_mini_title.text = "挑戦中: #1"
+	top_row.add_child(_challenge_mini_title)
+
+	_challenge_mini_time = Label.new()
+	_challenge_mini_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_challenge_mini_time.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55, 1.0))
+	_challenge_mini_time.add_theme_font_size_override("font_size", 13)
+	_challenge_mini_time.text = "⏳ --.-s"
+	top_row.add_child(_challenge_mini_time)
+
+	_challenge_mini_bar = ProgressBar.new()
+	_challenge_mini_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_challenge_mini_bar.custom_minimum_size = Vector2(0, 12)
+	_challenge_mini_bar.show_percentage = false
+	var bar_bg := StyleBoxFlat.new()
+	bar_bg.bg_color = Color(0.08, 0.06, 0.03, 0.9)
+	bar_bg.set_corner_radius_all(3)
+	var bar_fill := StyleBoxFlat.new()
+	bar_fill.bg_color = Color(0.88, 0.68, 0.14, 1.0)
+	bar_fill.set_corner_radius_all(3)
+	_challenge_mini_bar.add_theme_stylebox_override("background", bar_bg)
+	_challenge_mini_bar.add_theme_stylebox_override("fill", bar_fill)
+	vbox.add_child(_challenge_mini_bar)
+
+	_challenge_mini_progress = Label.new()
+	_challenge_mini_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_challenge_mini_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_challenge_mini_progress.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1.0))
+	_challenge_mini_progress.add_theme_font_size_override("font_size", 12)
+	_challenge_mini_progress.text = "🪙 0 / 0 (0%)"
+	vbox.add_child(_challenge_mini_progress)
+
+
+func _update_challenge_mini_window() -> void:
+	if not _challenge_mini_panel:
+		return
+	var is_active := GameData.is_challenge_active()
+	_challenge_mini_panel.visible = is_active
+	if is_active:
+		var def: Dictionary = GameData.CHALLENGE_DEFS.get(GameData.active_challenge_id, {})
+		var num_str := GameData.active_challenge_id.replace("c", "")
+		_challenge_mini_title.text = "挑戦中: #%s %s" % [num_str, def.get("name", "")]
+		_update_challenge_mini_progress(GameData.challenge_current_val, GameData.challenge_target_val, GameData.challenge_time_left)
+
+
+func _update_challenge_mini_progress(cur: float, target: float, time_left: float) -> void:
+	if not _challenge_mini_panel or not _challenge_mini_panel.visible:
+		return
+	var def: Dictionary = GameData.CHALLENGE_DEFS.get(GameData.active_challenge_id, {})
+	var cur_sym := "🪙" if def.get("target_type", "gold") == "gold" else "💎"
+	var pct := 0.0 if target <= 0.0 else (cur / target) * 100.0
+
+	_challenge_mini_time.text = "⏳ %.1fs" % maxf(0.0, time_left)
+	if _challenge_mini_bar:
+		_challenge_mini_bar.max_value = target
+		_challenge_mini_bar.value = minf(cur, target)
+	if _challenge_mini_progress:
+		_challenge_mini_progress.text = "%s %s / %s (%.0f%%)" % [
+			cur_sym,
+			GameData.format_num(cur),
+			GameData.format_num(target),
+			pct
+		]
+
+
+func _on_challenge_started_mini(_challenge_id: String) -> void:
+	_update_challenge_mini_window()
+
+
+func _on_challenge_progress_updated_mini(cur: float, target: float, time_left: float) -> void:
+	_update_challenge_mini_progress(cur, target, time_left)
+
+
+func _on_challenge_ended_mini(_challenge_id: String) -> void:
+	_update_challenge_mini_window()

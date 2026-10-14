@@ -11,7 +11,7 @@ signal closed()
 		if _title_label:
 			_title_label.text = val
 
-@export var header_color: Color = Color(0.14, 0.20, 0.30, 1.0):
+@export var header_color: Color = Color(0.18, 0.25, 0.38, 1.0):
 	set(val):
 		header_color = val
 		_apply_header_style()
@@ -21,7 +21,7 @@ signal closed()
 		body_color = val
 		_apply_body_style()
 
-@export var separator_color: Color = Color(0.2, 0.2, 0.35, 1.0):
+@export var separator_color: Color = Color(0.26, 0.34, 0.50, 1.0):
 	set(val):
 		separator_color = val
 		_ensure_nodes()

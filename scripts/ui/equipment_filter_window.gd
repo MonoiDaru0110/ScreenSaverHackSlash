@@ -45,8 +45,8 @@ func _ready() -> void:
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	window_title = "装備入手フィルター"
-	header_color = Color(0.20, 0.16, 0.28, 1.0)
-	separator_color = Color(0.32, 0.26, 0.42, 1.0)
+	header_color = Color(0.26, 0.21, 0.36, 1.0)
+	separator_color = Color(0.40, 0.33, 0.52, 1.0)
 	header_height = 44.0
 	super._ready()
 	

@@ -6,7 +6,7 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_filter_header"]
-bg_color = Color(0.2, 0.16, 0.28, 1)
+bg_color = Color(0.26, 0.21, 0.36, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
@@ -22,8 +22,8 @@ size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_filter")
 window_title = "装備入手フィルター"
-header_color = Color(0.2, 0.16, 0.28, 1)
-separator_color = Color(0.32, 0.26, 0.42, 1)
+header_color = Color(0.26, 0.21, 0.36, 1)
+separator_color = Color(0.40, 0.33, 0.52, 1)
 header_height = 44.0
 
 [node name="WindowVBox" type="VBoxContainer" parent="."]
@@ -81,7 +81,7 @@ layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 1)
 layout_mode = 2
-color = Color(0.32, 0.26, 0.42, 1)
+color = Color(0.40, 0.33, 0.52, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 unique_name_in_owner = true

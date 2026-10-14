@@ -669,6 +669,8 @@ func _recalculate_equipped_skill_levels() -> void:
 
 
 func get_equipped_skill_total_val(skill_id: String) -> float:
+	if is_challenge_active("c4"):
+		return 0.0
 	return _cached_equipped_skill_totals.get(skill_id, 0.0)
 
 
@@ -721,8 +723,13 @@ signal reincarnation_performed()
 
 
 func add_gold(amount: float) -> void:
-	gold += amount
+	if is_challenge_active("c6"):
+		return
+	var final_amount := amount * get_challenge_gold_multiplier()
+	gold += final_amount
 	gold_changed.emit(gold)
+	if is_challenge_active():
+		record_challenge_progress("gold", final_amount)
 
 
 func add_stars(amount: int) -> void:
@@ -752,8 +759,11 @@ func toggle_token_infusion() -> bool:
 func add_tokens(amount: float) -> void:
 	if amount <= 0.0:
 		return
+	var final_amount := amount * get_challenge_token_multiplier()
+	if is_challenge_active():
+		record_challenge_progress("token", final_amount)
 	if is_infusing_tokens:
-		infused_tokens += amount
+		infused_tokens += final_amount
 		var cost = get_next_star_cost()
 		var star_gained := false
 		while infused_tokens >= cost and cost > 0.0:
@@ -768,7 +778,7 @@ func add_tokens(amount: float) -> void:
 		# (upgrades_changed は全ロゴ・HUD・転生ウィンドウの再計算を誘発し、角ヒット毎に発火すると非常に重いため)
 		infusion_changed.emit()
 	else:
-		tokens += amount
+		tokens += final_amount
 		tokens_changed.emit(tokens)
 
 
@@ -1166,6 +1176,14 @@ func _process(delta: float) -> void:
 			roll_gamble(true)
 		else:
 			gamble_timer_updated.emit(gamble_timer)
+
+	if not active_challenge_id.is_empty():
+		challenge_time_left -= delta
+		if challenge_time_left <= 0.0:
+			challenge_time_left = 0.0
+			fail_challenge()
+		else:
+			challenge_progress_updated.emit(challenge_current_val, challenge_target_val, challenge_time_left)
 
 
 func _on_equipment_changed_internal() -> void:
@@ -2091,7 +2109,7 @@ func setup_close_button(btn: Button) -> void:
 	if _close_btn_style_normal == null:
 		# 角が少しラウンドした正方形、境界は黒、内部はオレンジがかった少し彩度の低い赤
 		_close_btn_style_normal = StyleBoxFlat.new()
-		_close_btn_style_normal.bg_color = Color(0.70, 0.26, 0.18, 1.0) # オレンジがかった少し彩度の低い赤
+		_close_btn_style_normal.bg_color = Color(0.78, 0.24, 0.18, 1.0)
 		_close_btn_style_normal.border_width_left = 1
 		_close_btn_style_normal.border_width_top = 1
 		_close_btn_style_normal.border_width_right = 1
@@ -2103,7 +2121,7 @@ func setup_close_button(btn: Button) -> void:
 		_close_btn_style_normal.corner_radius_bottom_left = 6
 		
 		_close_btn_style_hover = StyleBoxFlat.new()
-		_close_btn_style_hover.bg_color = Color(0.82, 0.34, 0.24, 1.0)
+		_close_btn_style_hover.bg_color = Color(0.88, 0.32, 0.24, 1.0)
 		_close_btn_style_hover.border_width_left = 1
 		_close_btn_style_hover.border_width_top = 1
 		_close_btn_style_hover.border_width_right = 1
@@ -2115,7 +2133,7 @@ func setup_close_button(btn: Button) -> void:
 		_close_btn_style_hover.corner_radius_bottom_left = 6
 		
 		_close_btn_style_pressed = StyleBoxFlat.new()
-		_close_btn_style_pressed.bg_color = Color(0.55, 0.18, 0.12, 1.0)
+		_close_btn_style_pressed.bg_color = Color(0.62, 0.18, 0.14, 1.0)
 		_close_btn_style_pressed.border_width_left = 1
 		_close_btn_style_pressed.border_width_top = 1
 		_close_btn_style_pressed.border_width_right = 1
@@ -2135,10 +2153,222 @@ func setup_close_button(btn: Button) -> void:
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	# 中央に、ボタン内部のオレンジがかった赤色に少し近い黒で太めの×マーク
-	var close_mark_color := Color(0.24, 0.08, 0.05, 1.0)
+	var close_mark_color := Color(0.20, 0.05, 0.04, 1.0)
 	btn.add_theme_color_override("font_color", close_mark_color)
-	btn.add_theme_color_override("font_hover_color", Color(0.18, 0.06, 0.04, 1.0))
-	btn.add_theme_color_override("font_pressed_color", Color(0.12, 0.04, 0.02, 1.0))
+	btn.add_theme_color_override("font_hover_color", Color(0.14, 0.03, 0.02, 1.0))
+	btn.add_theme_color_override("font_pressed_color", Color(0.08, 0.01, 0.01, 1.0))
 	var font_sz := int(round(btn.custom_minimum_size.y * 0.85))
 	btn.add_theme_font_size_override("font_size", font_sz)
 	btn.text = "×"
+
+
+# ==============================================================================
+# チャレンジシステム (Challenge System)
+# ==============================================================================
+
+signal challenge_started(challenge_id: String)
+signal challenge_progress_updated(current: float, target: float, time_left: float)
+signal challenge_completed(challenge_id: String)
+signal challenge_failed(challenge_id: String)
+signal challenge_state_changed()
+
+var active_challenge_id: String = ""
+var challenge_time_left: float = 0.0
+var challenge_duration: float = 60.0
+var challenge_current_val: float = 0.0
+var challenge_target_val: float = 0.0
+var challenge_cleared: Dictionary = {} # { "c1": true, ... }
+
+const CHALLENGE_DEFS: Dictionary = {
+	"c1": {
+		"id": "c1",
+		"name": "孤独のロゴ",
+		"icon": "👤",
+		"desc": "ロゴが1個に固定される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 100000000.0, # テスト用に1億に変更
+		"reward_desc": "恒久効果: 基本ゴールド獲得量 +15%"
+	},
+	"c2": {
+		"id": "c2",
+		"name": "低速の試練",
+		"icon": "🐢",
+		"desc": "ロゴの移動速度が50%に低下",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 2500.0,
+		"reward_desc": "恒久効果: ロゴ基本速度 +10%"
+	},
+	"c3": {
+		"id": "c3",
+		"name": "角ヒット封印",
+		"icon": "🚫",
+		"desc": "角ヒット時のゴールド獲得量が0になる",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 5000.0,
+		"reward_desc": "恒久効果: 角ヒットゴールド倍率 +25%"
+	},
+	"c4": {
+		"id": "c4",
+		"name": "無装備の道",
+		"icon": "🥋",
+		"desc": "すべての装備効果・スキルが無効化される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 10000.0,
+		"reward_desc": "恒久効果: 装備ドロップ率 +10%"
+	},
+	"c5": {
+		"id": "c5",
+		"name": "タイムアタック",
+		"icon": "⚡",
+		"desc": "ペナルティなし・30秒の短期決戦",
+		"duration": 30.0,
+		"target_type": "gold",
+		"target_val": 25000.0,
+		"reward_desc": "恒久効果: アセンション獲得トークン +15%"
+	},
+	"c6": {
+		"id": "c6",
+		"name": "トークンスプリント",
+		"icon": "💎",
+		"desc": "ゴールド獲得が0になり、トークンのみで競う",
+		"duration": 60.0,
+		"target_type": "token",
+		"target_val": 500.0,
+		"reward_desc": "恒久効果: 全トークン獲得量 +15%"
+	}
+}
+
+
+func is_challenge_active(challenge_id: String = "") -> bool:
+	if challenge_id.is_empty():
+		return not active_challenge_id.is_empty()
+	return active_challenge_id == challenge_id
+
+
+func is_challenge_cleared(challenge_id: String) -> bool:
+	return challenge_cleared.get(challenge_id, false)
+
+
+func get_effective_logo_count() -> int:
+	if is_challenge_active("c1"):
+		return 1
+	return logo_count
+
+
+func start_challenge(challenge_id: String) -> bool:
+	if not CHALLENGE_DEFS.has(challenge_id):
+		return false
+	if not active_challenge_id.is_empty():
+		cancel_challenge()
+
+	var def: Dictionary = CHALLENGE_DEFS[challenge_id]
+	active_challenge_id = challenge_id
+	challenge_duration = def.get("duration", 60.0)
+	challenge_time_left = challenge_duration
+	challenge_current_val = 0.0
+	challenge_target_val = def.get("target_val", 1000.0)
+
+	_recalculate_cached_multipliers()
+	upgrades_changed.emit()
+	if challenge_id == "c1":
+		logo_reset_requested.emit()
+
+	challenge_started.emit(challenge_id)
+	challenge_state_changed.emit()
+	challenge_progress_updated.emit(challenge_current_val, challenge_target_val, challenge_time_left)
+	return true
+
+
+func cancel_challenge() -> void:
+	if active_challenge_id.is_empty():
+		return
+	var old_id := active_challenge_id
+	active_challenge_id = ""
+	challenge_time_left = 0.0
+	challenge_current_val = 0.0
+
+	_recalculate_cached_multipliers()
+	upgrades_changed.emit()
+	if old_id == "c1":
+		logo_reset_requested.emit()
+
+	challenge_state_changed.emit()
+
+
+func fail_challenge() -> void:
+	if active_challenge_id.is_empty():
+		return
+	var old_id := active_challenge_id
+	cancel_challenge()
+	challenge_failed.emit(old_id)
+
+
+func complete_challenge() -> void:
+	if active_challenge_id.is_empty():
+		return
+	var old_id := active_challenge_id
+	challenge_cleared[old_id] = true
+	cancel_challenge()
+	challenge_completed.emit(old_id)
+
+
+func record_challenge_progress(currency_type: String, amount: float) -> void:
+	if active_challenge_id.is_empty():
+		return
+	var def: Dictionary = CHALLENGE_DEFS.get(active_challenge_id, {})
+	var expected_type: String = def.get("target_type", "gold")
+	if currency_type != expected_type:
+		return
+
+	challenge_current_val += amount
+	challenge_progress_updated.emit(challenge_current_val, challenge_target_val, challenge_time_left)
+
+	if challenge_current_val >= challenge_target_val:
+		complete_challenge()
+
+
+# --- チャレンジクリア恒久パッシブ効果 ---
+
+func get_challenge_gold_multiplier() -> float:
+	var mult: float = 1.0
+	if is_challenge_cleared("c1"):
+		mult *= 1.15 # C1: 基本ゴールド +15%
+	return mult
+
+
+func get_challenge_speed_multiplier() -> float:
+	var mult: float = 1.0
+	if is_challenge_active("c2"):
+		mult *= 0.5 # C2挑戦中: 速度半減
+	if is_challenge_cleared("c2"):
+		mult *= 1.10 # C2クリア後: 速度 +10%
+	return mult
+
+
+func get_challenge_corner_gold_multiplier() -> float:
+	var mult: float = 1.0
+	if is_challenge_cleared("c3"):
+		mult *= 1.25 # C3クリア後: 角ヒットゴールド +25%
+	return mult
+
+
+func get_challenge_drop_rate_bonus() -> float:
+	if is_challenge_cleared("c4"):
+		return 0.10 # C4クリア後: ドロップ率 +10%
+	return 0.0
+
+
+func get_challenge_ascension_token_multiplier() -> float:
+	if is_challenge_cleared("c5"):
+		return 1.15 # C5クリア後: アセンショントークン +15%
+	return 1.0
+
+
+func get_challenge_token_multiplier() -> float:
+	if is_challenge_cleared("c6"):
+		return 1.15 # C6クリア後: トークン獲得量 +15%
+	return 1.0

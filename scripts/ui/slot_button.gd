@@ -292,6 +292,8 @@ func _on_mouse_entered() -> void:
 		_custom_tooltip.top_level = true
 		add_child(_custom_tooltip)
 	
+	_custom_tooltip.z_index = 50
+	_custom_tooltip.z_as_relative = false
 	_custom_tooltip.setup(eq)
 	_update_tooltip_position()
 	set_process(true)

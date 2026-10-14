@@ -6,7 +6,7 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
-bg_color = Color(0.24, 0.12, 0.32, 1)
+bg_color = Color(0.30, 0.15, 0.40, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
@@ -30,9 +30,9 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_base_script")
 window_title = "転生ツリー"
-header_color = Color(0.24, 0.12, 0.32, 1)
+header_color = Color(0.30, 0.15, 0.40, 1)
 body_color = Color(0.08, 0.06, 0.12, 1)
-separator_color = Color(0.38, 0.2, 0.5, 1)
+separator_color = Color(0.48, 0.26, 0.62, 1)
 
 [node name="WindowVBox" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -80,7 +80,7 @@ layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.38, 0.2, 0.5, 1)
+color = Color(0.48, 0.26, 0.62, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 unique_name_in_owner = true

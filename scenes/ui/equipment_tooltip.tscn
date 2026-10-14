@@ -23,6 +23,7 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [node name="EquipmentTooltip" type="PanelContainer"]
+z_index = 50
 custom_minimum_size = Vector2(288, 0)
 offset_right = 288.0
 offset_bottom = 48.0

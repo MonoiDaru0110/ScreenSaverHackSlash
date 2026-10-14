@@ -31,6 +31,7 @@ window/stretch/mode="viewport"
 
 [gui]
 
+theme/custom="res://resources/app_theme.tres"
 timers/tooltip_delay_sec=0.0
 
 [rendering]

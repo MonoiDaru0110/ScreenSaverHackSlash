@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://dm00eev31cxye"]
-
-[ext_resource type="Script" path="res://scratch/test_blacksmith_refinements.gd" id="1_test_script"]
-
-[node name="TestBlacksmithRefinements" type="Node"]
-script = ExtResource("1_test_script")

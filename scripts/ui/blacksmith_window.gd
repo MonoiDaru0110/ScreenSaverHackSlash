@@ -40,15 +40,32 @@ func _notification(what: int) -> void:
 		else:
 			if _preview_timer and _preview_timer.is_inside_tree():
 				_preview_timer.stop()
+			if btn_forge:
+				btn_forge.modulate = Color.WHITE
+
+
+func _process(_delta: float) -> void:
+	if not is_inside_tree() or not is_visible_in_tree():
+		return
+
+	# 合成ボタン: 押下可能な状態 (disabled == false) のときに転生トークン注入のように明滅
+	if btn_forge:
+		if not btn_forge.disabled:
+			var t: float = float(Time.get_ticks_msec()) * 0.0022
+			var pulse: float = 0.5 + 0.5 * sin(t)
+			var glow: Color = Color(1.0, 1.0, 1.0, 1.0).lerp(Color(1.5, 1.3, 1.8, 1.0), pulse)
+			btn_forge.modulate = glow
+		else:
+			btn_forge.modulate = Color.WHITE
 
 
 func _setup_ui() -> void:
 	# 種類選択プルダウンの設定
 	if type_option_button:
 		type_option_button.clear()
-		type_option_button.add_item("🗡️ メイン装備", 0)
-		type_option_button.add_item("🛡️ サブ装備", 1)
-		type_option_button.add_item("💍 アクセサリー", 2)
+		type_option_button.add_item("メイン", 0)
+		type_option_button.add_item("サブ", 1)
+		type_option_button.add_item("アクセサリー", 2)
 		type_option_button.item_selected.connect(_on_type_selected)
 
 	# プレビューアイコンの初期化（初期状態はダミーアイコン: ??? / ? / コモン / +0なし）
@@ -299,6 +316,8 @@ func _update_preview_and_candidates() -> void:
 
 	if btn_forge:
 		btn_forge.disabled = not can_forge
+		if btn_forge.disabled:
+			btn_forge.modulate = Color.WHITE
 
 	# 結果プレビューアイコン
 	if materials.is_empty():
@@ -386,7 +405,10 @@ func _update_preview_and_candidates() -> void:
 			empty_lbl.text = "素材が投入されると、合算された候補スキルが表示されます。"
 			empty_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			empty_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			empty_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+			empty_lbl.add_theme_color_override("font_color", Color(0.95, 0.88, 0.80, 0.9))
+			empty_lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+			empty_lbl.add_theme_constant_override("shadow_offset_x", 1)
+			empty_lbl.add_theme_constant_override("shadow_offset_y", 1)
 			empty_lbl.add_theme_font_size_override("font_size", 18)
 			skill_list_container.add_child(empty_lbl)
 		else:
@@ -458,7 +480,10 @@ func _create_skill_candidate_row(sk: Dictionary) -> Control:
 	if is_spec:
 		lbl.add_theme_color_override("font_color", GameData.special_skill_color)
 	else:
-		lbl.add_theme_color_override("font_color", Color(0.85, 0.95, 0.85))
+		lbl.add_theme_color_override("font_color", Color(0.95, 0.98, 0.95))
+	lbl.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	lbl.add_theme_constant_override("shadow_offset_x", 1)
+	lbl.add_theme_constant_override("shadow_offset_y", 1)
 	lbl.add_theme_font_size_override("font_size", 20)
 
 	return lbl
@@ -690,6 +715,8 @@ class ForgeMaterialSlot extends Control:
 			_custom_tooltip.top_level = true
 			add_child(_custom_tooltip)
 
+		_custom_tooltip.z_index = 50
+		_custom_tooltip.z_as_relative = false
 		_custom_tooltip.setup(it)
 		_update_tooltip_position()
 		set_process(true)

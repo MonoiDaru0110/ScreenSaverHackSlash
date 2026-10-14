@@ -1,0 +1,21 @@
+[gd_resource type="Theme" format=3]
+
+[resource]
+Label/colors/font_shadow_color = Color(0, 0, 0, 0.4)
+Label/constants/shadow_offset_x = 0
+Label/constants/shadow_offset_y = 2
+Label/constants/shadow_outline_size = 0
+RichTextLabel/colors/font_shadow_color = Color(0, 0, 0, 0.4)
+RichTextLabel/constants/shadow_offset_x = 0
+RichTextLabel/constants/shadow_offset_y = 2
+RichTextLabel/constants/shadow_outline_size = 0
+Button/colors/font_outline_color = Color(0, 0, 0, 0.4)
+Button/constants/outline_size = 1
+OptionButton/colors/font_outline_color = Color(0, 0, 0, 0.4)
+OptionButton/constants/outline_size = 1
+PopupMenu/colors/font_shadow_color = Color(0, 0, 0, 0.4)
+PopupMenu/constants/shadow_offset_x = 0
+PopupMenu/constants/shadow_offset_y = 2
+TooltipLabel/colors/font_shadow_color = Color(0, 0, 0, 0.4)
+TooltipLabel/constants/shadow_offset_x = 0
+TooltipLabel/constants/shadow_offset_y = 2

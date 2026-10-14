@@ -6,7 +6,7 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
-bg_color = Color(0.28, 0.12, 0.08, 1)
+bg_color = Color(0.90, 0.47, 0.14, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
@@ -47,17 +47,7 @@ content_margin_top = 4.0
 content_margin_right = 4.0
 content_margin_bottom = 4.0
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right_frame"]
-bg_color = Color(0.06, 0.05, 0.09, 0.95)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.25, 0.2, 0.28, 0.8)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_right_frame"]
 content_margin_left = 16.0
 content_margin_top = 16.0
 content_margin_right = 16.0
@@ -78,8 +68,9 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_blacksmith_script")
 window_title = "鍛冶"
-header_color = Color(0.28, 0.12, 0.08, 1)
-separator_color = Color(0.48, 0.22, 0.14, 1)
+header_color = Color(0.90, 0.47, 0.14, 1)
+body_color = Color(0.08, 0.08, 0.14, 1)
+separator_color = Color(0.98, 0.65, 0.26, 1)
 
 [node name="WindowVBox" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -121,7 +112,7 @@ layout_mode = 2
 [node name="Separator" type="ColorRect" parent="WindowVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.48, 0.22, 0.14, 1)
+color = Color(0.98, 0.65, 0.26, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 layout_mode = 2
@@ -189,7 +180,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_right_frame")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_right_frame")
 
 [node name="RightVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame"]
 layout_mode = 2
@@ -229,8 +220,11 @@ vertical_alignment = 1
 [node name="ResultSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
-alignment = 1
 theme_override_constants/separation = 12
+
+[node name="TopSpacer" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/ResultSection"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
 
 [node name="PreviewFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/ResultSection"]
 custom_minimum_size = Vector2(88, 88)
@@ -254,7 +248,10 @@ text = "🔨 合成する"
 [node name="CandidateTitleLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 20
 text = "候補スキル一覧"
 horizontal_alignment = 1

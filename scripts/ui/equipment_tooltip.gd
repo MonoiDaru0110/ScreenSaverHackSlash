@@ -9,6 +9,8 @@ class_name EquipmentTooltip
 
 
 func _ready() -> void:
+	z_index = 50
+	z_as_relative = false
 	_ensure_nodes()
 	# ツールチップ内の全ノードがマウスイベントを消費しないようにする
 	# （EquipmentIcon 内部 of LevelLabel 等も含めて再帰的に設定）

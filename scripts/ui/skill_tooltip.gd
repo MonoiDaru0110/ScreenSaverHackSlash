@@ -22,6 +22,8 @@ const SKILL_COLORS := {
 
 
 func _ready() -> void:
+	z_index = 50
+	z_as_relative = false
 	_ensure_nodes()
 	_set_all_mouse_ignore(self)
 

@@ -649,6 +649,7 @@ func _create_skill_tooltip_node() -> void:
 	_tooltip_panel = PanelContainer.new()
 	_tooltip_panel.top_level = true
 	_tooltip_panel.z_index = 100
+	_tooltip_panel.z_as_relative = false
 	_tooltip_panel.visible = false
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.custom_minimum_size = Vector2(300, 0)

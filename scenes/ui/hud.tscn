@@ -4,13 +4,37 @@
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
 [ext_resource type="PackedScene" uid="uid://b8slotbtn001" path="res://scenes/ui/slot_button.tscn" id="3_slot_scene"]
 [ext_resource type="PackedScene" uid="uid://c8reincwnd001" path="res://scenes/ui/reincarnation_window.tscn" id="4_reinc_scene"]
-[ext_resource type="PackedScene" path="res://scenes/ui/equipment_filter_window.tscn" id="5_filter_scene"]
+[ext_resource type="PackedScene" uid="uid://wvyhwvdx4ab5" path="res://scenes/ui/equipment_filter_window.tscn" id="5_filter_scene"]
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="6_close_scene"]
 [ext_resource type="Script" uid="uid://cv2ftlcsc1l4n" path="res://scripts/ui/base_window.gd" id="7_base_window_script"]
 [ext_resource type="PackedScene" uid="uid://ypt4uxh84fvc" path="res://scenes/ui/challenge_window.tscn" id="8_challenge_scene"]
 [ext_resource type="PackedScene" uid="uid://c5qpm4utfsvo" path="res://scenes/ui/blacksmith_window.tscn" id="9_blacksmith_scene"]
 [ext_resource type="PackedScene" uid="uid://bn614xlh8t5m7" path="res://scenes/ui/reinc_tree_window.tscn" id="10_reinc_tree_scene"]
 [ext_resource type="PackedScene" uid="uid://bn6hn2r3gg5m7" path="res://scenes/ui/reinc_ability_window.tscn" id="11_reinc_ability_scene"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_window_root"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skill_tree_header"]
+bg_color = Color(0.18, 0.65, 0.38, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window_body"]
+bg_color = Color(0.08, 0.08, 0.14, 1)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skill_tree_scroll_bg"]
+bg_color = Color(0.15, 0.15, 0.24, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inventory_header"]
+bg_color = Color(0.84, 0.22, 0.26, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
@@ -79,30 +103,6 @@ bg_color = Color(0.08, 0.12, 0.18, 1)
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_progress_fill"]
 bg_color = Color(0.3, 0.8, 0.9, 1)
 
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_window_root"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skill_tree_header"]
-bg_color = Color(0.1, 0.24, 0.18, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window_body"]
-bg_color = Color(0.08, 0.08, 0.14, 1)
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_skill_tree_scroll_bg"]
-bg_color = Color(0.15, 0.15, 0.24, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inventory_header"]
-bg_color = Color(0.24, 0.08, 0.1, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top_nav"]
 bg_color = Color(0.1, 0.08, 0.18, 0.85)
 border_width_left = 1
@@ -159,7 +159,304 @@ theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="WindowDimmer" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 5
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.38)
+
+[node name="SkillTreeWindow" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -600.0
+offset_top = 124.0
+offset_right = 600.0
+offset_bottom = -95.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
+script = ExtResource("7_base_window_script")
+window_title = "スキルツリー"
+header_color = Color(0.18, 0.65, 0.38, 1)
+separator_color = Color(0.4, 0.92, 0.62, 1)
+
+[node name="WindowVBox" type="VBoxContainer" parent="SkillTreeWindow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="SkillTreeWindow/WindowVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_skill_tree_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "スキルツリー"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="ToggleSkillVisibilityBtn" type="Button" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox/HeaderControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
+tooltip_text = "表示モードを切り替えます"
+theme_override_font_sizes/font_size = 13
+text = "表示: 開放可能のみ"
+
+[node name="CloseWindowBtn" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("6_close_scene")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="SkillTreeWindow/WindowVBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.4, 0.92, 0.62, 1)
+
+[node name="BodyPanel" type="PanelContainer" parent="SkillTreeWindow/WindowVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_window_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="SkillTreeWindow/WindowVBox/BodyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="SkillTreeScroll" type="Control" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("2_controller")
+
+[node name="SkillTreeScrollBg" type="Panel" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin/SkillTreeScroll"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_skill_tree_scroll_bg")
+
+[node name="SkillTreeViewport" type="Control" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin/SkillTreeScroll"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 300)
+layout_mode = 2
+anchors_preset = 0
+
+[node name="InventoryWindow" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -600.0
+offset_top = 124.0
+offset_right = 600.0
+offset_bottom = -95.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
+script = ExtResource("7_base_window_script")
+window_title = "インベントリ"
+header_color = Color(0.84, 0.22, 0.26, 1)
+separator_color = Color(0.98, 0.46, 0.5, 1)
+
+[node name="WindowVBox" type="VBoxContainer" parent="InventoryWindow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="InventoryWindow/WindowVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_inventory_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="InventoryWindow/WindowVBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "インベントリ"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="EquipmentFilterBtn" type="Button" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox/HeaderControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+tooltip_text = "装備入手時の自動フィルター設定を開きます"
+theme_override_font_sizes/font_size = 14
+text = "フィルター"
+
+[node name="CloseInventoryBtn" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("6_close_scene")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="InventoryWindow/WindowVBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.98, 0.46, 0.5, 1)
+
+[node name="BodyPanel" type="PanelContainer" parent="InventoryWindow/WindowVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_window_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="InventoryWindow/WindowVBox/BodyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="ScrollContainer" type="ScrollContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoriesLayout" type="HBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 24
+
+[node name="MainInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MainTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/MainInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "メイン (0/50)"
+horizontal_alignment = 1
+
+[node name="MainGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/MainInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="SubInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SubTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/SubInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "サブ (0/50)"
+horizontal_alignment = 1
+
+[node name="SubGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/SubInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="AccessoryInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AccessoryTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "アクセサリー (0/50)"
+horizontal_alignment = 1
+
+[node name="AccessoryGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="EquipmentFilterWindow" parent="InventoryWindow" instance=ExtResource("5_filter_scene")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="ChallengeWindow" parent="." instance=ExtResource("8_challenge_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="ReincTreeWindow" parent="." instance=ExtResource("10_reinc_tree_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="ReincAbilityWindow" parent="." instance=ExtResource("11_reinc_ability_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="ReincarnationWindow" parent="." instance=ExtResource("4_reinc_scene")]
+unique_name_in_owner = true
+visible = false
+
 [node name="Sidebar" type="Control" parent="."]
+z_index = 10
 layout_mode = 3
 anchors_preset = 11
 anchor_left = 1.0
@@ -531,300 +828,6 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 20
-
-[node name="WindowDimmer" type="ColorRect" parent="."]
-unique_name_in_owner = true
-visible = false
-z_index = 5
-custom_minimum_size = Vector2(1664, 1080)
-offset_right = 1664.0
-offset_bottom = 1080.0
-color = Color(0, 0, 0, 0.38)
-
-[node name="SkillTreeWindow" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-custom_minimum_size = Vector2(1200, 861)
-anchors_preset = 13
-anchor_left = 0.5
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -600.0
-offset_top = 124.0
-offset_right = 600.0
-offset_bottom = -95.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
-script = ExtResource("7_base_window_script")
-window_title = "スキルツリー"
-header_color = Color(0.1, 0.24, 0.18, 1)
-separator_color = Color(0.18, 0.38, 0.28, 1)
-
-[node name="WindowVBox" type="VBoxContainer" parent="SkillTreeWindow"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="SkillTreeWindow/WindowVBox"]
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_skill_tree_header")
-
-[node name="HeaderMargin" type="MarginContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_bottom = 0
-
-[node name="HeaderHBox" type="HBoxContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="TitleLabel" type="Label" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
-theme_override_font_sizes/font_size = 20
-text = "スキルツリー"
-vertical_alignment = 1
-
-[node name="HeaderControls" type="HBoxContainer" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 8
-
-[node name="ToggleSkillVisibilityBtn" type="Button" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox/HeaderControls"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 32)
-layout_mode = 2
-tooltip_text = "表示モードを切り替えます"
-theme_override_font_sizes/font_size = 13
-text = "表示: 開放可能のみ"
-
-[node name="CloseWindowBtn" parent="SkillTreeWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("6_close_scene")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Separator" type="ColorRect" parent="SkillTreeWindow/WindowVBox"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 2
-color = Color(0.18, 0.38, 0.28, 1)
-
-[node name="BodyPanel" type="PanelContainer" parent="SkillTreeWindow/WindowVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_window_body")
-
-[node name="BodyMargin" type="MarginContainer" parent="SkillTreeWindow/WindowVBox/BodyPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="SkillTreeScroll" type="Control" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-script = ExtResource("2_controller")
-
-[node name="SkillTreeScrollBg" type="Panel" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin/SkillTreeScroll"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_skill_tree_scroll_bg")
-
-[node name="SkillTreeViewport" type="Control" parent="SkillTreeWindow/WindowVBox/BodyPanel/BodyMargin/SkillTreeScroll"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(400, 300)
-layout_mode = 2
-anchors_preset = 0
-
-[node name="InventoryWindow" type="PanelContainer" parent="."]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-custom_minimum_size = Vector2(1200, 861)
-anchors_preset = 13
-anchor_left = 0.5
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -600.0
-offset_top = 124.0
-offset_right = 600.0
-offset_bottom = -95.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxEmpty_window_root")
-script = ExtResource("7_base_window_script")
-window_title = "インベントリ"
-header_color = Color(0.24, 0.08, 0.1, 1)
-separator_color = Color(0.38, 0.15, 0.17, 1)
-
-[node name="WindowVBox" type="VBoxContainer" parent="InventoryWindow"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="HeaderPanel" type="PanelContainer" parent="InventoryWindow/WindowVBox"]
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_inventory_header")
-
-[node name="HeaderMargin" type="MarginContainer" parent="InventoryWindow/WindowVBox/HeaderPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 0
-theme_override_constants/margin_bottom = 0
-
-[node name="HeaderHBox" type="HBoxContainer" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="TitleLabel" type="Label" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
-theme_override_font_sizes/font_size = 20
-text = "インベントリ"
-vertical_alignment = 1
-
-[node name="HeaderControls" type="HBoxContainer" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 8
-
-[node name="EquipmentFilterBtn" type="Button" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox/HeaderControls"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(100, 32)
-layout_mode = 2
-tooltip_text = "装備入手時の自動フィルター設定を開きます"
-theme_override_font_sizes/font_size = 14
-text = "フィルター"
-
-[node name="CloseInventoryBtn" parent="InventoryWindow/WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("6_close_scene")]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Separator" type="ColorRect" parent="InventoryWindow/WindowVBox"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 2
-color = Color(0.38, 0.15, 0.17, 1)
-
-[node name="BodyPanel" type="PanelContainer" parent="InventoryWindow/WindowVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_window_body")
-
-[node name="BodyMargin" type="MarginContainer" parent="InventoryWindow/WindowVBox/BodyPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="ScrollContainer" type="ScrollContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="InventoriesLayout" type="HBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 24
-
-[node name="MainInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="MainTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/MainInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "メイン (0/50)"
-horizontal_alignment = 1
-
-[node name="MainGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/MainInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 5
-
-[node name="SubInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="SubTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/SubInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "サブ (0/50)"
-horizontal_alignment = 1
-
-[node name="SubGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/SubInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 5
-
-[node name="AccessoryInventorySection" type="VBoxContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="AccessoryTitleLabel" type="Label" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "アクセサリー (0/50)"
-horizontal_alignment = 1
-
-[node name="AccessoryGrid" type="GridContainer" parent="InventoryWindow/WindowVBox/BodyPanel/BodyMargin/ScrollContainer/InventoriesLayout/AccessoryInventorySection"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 5
-
-[node name="EquipmentFilterWindow" parent="InventoryWindow" instance=ExtResource("5_filter_scene")]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-
-[node name="ChallengeWindow" parent="." instance=ExtResource("8_challenge_scene")]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-
-[node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-
-[node name="ReincTreeWindow" parent="." instance=ExtResource("10_reinc_tree_scene")]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-
-[node name="ReincAbilityWindow" parent="." instance=ExtResource("11_reinc_ability_scene")]
-unique_name_in_owner = true
-visible = false
-z_index = 10
-
-[node name="ReincarnationWindow" parent="." instance=ExtResource("4_reinc_scene")]
-unique_name_in_owner = true
-visible = false
 
 [node name="TopNavigationArea" type="VBoxContainer" parent="."]
 z_index = 20

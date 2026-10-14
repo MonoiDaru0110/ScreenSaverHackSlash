@@ -1,17 +1,17 @@
 [gd_scene load_steps=6 format=3 uid="uid://ypt4uxh84fvc"]
 
-[ext_resource type="Script" path="res://scripts/ui/challenge_window.gd" id="1_challenge_script"]
+[ext_resource type="Script" uid="uid://bgq5twia6bjbx" path="res://scripts/ui/challenge_window.gd" id="1_challenge_script"]
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
-bg_color = Color(0.25, 0.18, 0.08, 1)
+bg_color = Color(0.88, 0.68, 0.14, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
-bg_color = Color(0.08, 0.08, 0.14, 1)
+bg_color = Color(0.12, 0.1, 0.05, 1)
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
@@ -30,8 +30,8 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_challenge_script")
 window_title = "チャレンジ"
-header_color = Color(0.25, 0.18, 0.08, 1)
-separator_color = Color(0.42, 0.3, 0.14, 1)
+header_color = Color(0.88, 0.68, 0.14, 1)
+separator_color = Color(1, 0.88, 0.36, 1)
 
 [node name="WindowVBox" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -73,7 +73,7 @@ layout_mode = 2
 [node name="Separator" type="ColorRect" parent="WindowVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.42, 0.3, 0.14, 1)
+color = Color(1, 0.88, 0.36, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 layout_mode = 2

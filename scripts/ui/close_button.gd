@@ -3,12 +3,12 @@ extends Button
 ## Reusable Close (×) Button component for windows.
 ## Provides unified visual styling, strict square aspect ratio, and large crisp centered × mark.
 
-@export var mark_color: Color = Color(0.24, 0.08, 0.05, 1.0)
-@export var mark_hover_color: Color = Color(0.18, 0.06, 0.04, 1.0)
-@export var mark_pressed_color: Color = Color(0.12, 0.04, 0.02, 1.0)
-@export var bg_normal_color: Color = Color(0.70, 0.26, 0.18, 1.0)
-@export var bg_hover_color: Color = Color(0.82, 0.34, 0.24, 1.0)
-@export var bg_pressed_color: Color = Color(0.55, 0.18, 0.12, 1.0)
+@export var mark_color: Color = Color(0.20, 0.05, 0.04, 1.0)
+@export var mark_hover_color: Color = Color(0.14, 0.03, 0.02, 1.0)
+@export var mark_pressed_color: Color = Color(0.08, 0.01, 0.01, 1.0)
+@export var bg_normal_color: Color = Color(0.78, 0.24, 0.18, 1.0)
+@export var bg_hover_color: Color = Color(0.88, 0.32, 0.24, 1.0)
+@export var bg_pressed_color: Color = Color(0.62, 0.18, 0.14, 1.0)
 @export var border_color: Color = Color(0.0, 0.0, 0.0, 1.0)
 
 @onready var _mark_label: Label = get_node_or_null("%MarkLabel")
