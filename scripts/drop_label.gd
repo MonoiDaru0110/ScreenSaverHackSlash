@@ -2,12 +2,17 @@ extends Node2D
 ## Floating text that appears when gold is earned.
 ## Animates with slam-downs, high-speed shakes, and slides.
 
+@export var base_font_size: int = 14
+@export var outline_size: int = 2
+
 
 func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, is_crit: bool = false, is_direct: bool = false, crit_weight: int = 0) -> void:
 	# Position with random offset based on logo size (X: ±100, Y: ±50)
 	position = start_pos + Vector2(randf_range(-100.0, 100.0), randf_range(-50.0, 50.0))
 
 	var label := $Label
+	label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	
 	# Build label text based on Direct Hit and Crit Weight
 	var label_text := content
@@ -25,24 +30,31 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 		
 	label.text = label_text
 	
-	# Determine text style based on Critical and Direct Hit
-	var font_size := 28
+	# 方法①：小さめのフォントサイズ（base_font_size: 14px）でレンダリングし、
+	# Nearestフィルタで拡大（scale）することでガビガビ・チープなドット感を表現
+	var target_scale := 2.0
 	if is_corner:
-		font_size = 40
+		target_scale = 2.8
 
 	if is_crit and is_direct:
-		font_size = 68 if is_corner else 56
+		target_scale = 4.8 if is_corner else 4.0
 	elif is_crit:
-		font_size = 68 if is_corner else 56
+		target_scale = 4.8 if is_corner else 4.0
 	elif is_direct:
-		font_size = 48 if is_corner else 36
+		target_scale = 3.4 if is_corner else 2.6
 
-	# Scale font size with crit weight
+	# Scale up further with crit weight
 	if is_crit:
-		font_size += mini(weight - 1, 10) * 4
+		target_scale += float(mini(weight - 1, 10)) * 0.3
 
-	label.add_theme_font_size_override("font_size", font_size)
-	label.modulate = color
+	label.add_theme_font_size_override("font_size", base_font_size)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 1.0))
+	label.add_theme_constant_override("outline_size", outline_size)
+	label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 1.0))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.modulate = Color.WHITE
 
 	# Center label around parent Node2D position without costly get_minimum_size layout recalculation
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -57,18 +69,19 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 		# --- Special Hits (Crit, Direct, or Crit-Direct): Dynamic Slam-down & Shake Animation ---
 		modulate.a = 0.0
 		var capped_w := mini(weight, 10)
-		var start_scale := 1.4
+		var start_mult := 1.4
 		if is_crit and is_direct:
-			start_scale = 2.2 + float(capped_w) * 0.3
+			start_mult = 1.8 + float(capped_w) * 0.15
 		elif is_crit:
-			start_scale = 1.8 + float(capped_w) * 0.2
+			start_mult = 1.6 + float(capped_w) * 0.1
 		
-		label.scale = Vector2(start_scale, start_scale)
+		var initial_scale := target_scale * start_mult
+		label.scale = Vector2(initial_scale, initial_scale)
 		
-		# Slam-down animation (fade in and scale down quickly)
+		# Slam-down animation (fade in and scale down quickly to target_scale)
 		tween.set_parallel(true)
 		tween.tween_property(self, "modulate:a", 1.0, 0.06).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "scale", Vector2.ONE, 0.06).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(label, "scale", Vector2(target_scale, target_scale), 0.06).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 		
 		# High-speed shake upon landing for Critical Hits, scaling intensity with weight
 		if is_crit:
@@ -94,7 +107,7 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 	else:
 		# --- Standard: Float up and fade out ---
 		scale = Vector2.ONE
-		label.scale = Vector2.ONE
+		label.scale = Vector2(target_scale, target_scale)
 		modulate.a = 1.0
 		
 		tween.set_parallel(true)

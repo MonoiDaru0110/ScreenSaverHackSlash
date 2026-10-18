@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cfhojkdlop3c"]
+[gd_scene load_steps=17 format=3 uid="uid://cfhojkdlop3c"]
 
 [ext_resource type="Script" uid="uid://d31j5mm8jnpui" path="res://scripts/ui/amplifier_window.gd" id="1_amp_script"]
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
@@ -181,6 +181,62 @@ void fragment() {
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_chain_seal"]
 shader = SubResource("Shader_chain_seal")
 shader_parameter/rect_size = Vector2(245, 92)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mode_btn"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.18, 0.42, 0.78, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.05, 0.06, 0.09, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 2
+shadow_offset = Vector2(0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mode_btn_hover"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.24, 0.5, 0.88, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.05, 0.06, 0.09, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 3
+shadow_offset = Vector2(0, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mode_btn_pressed"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.14, 0.35, 0.68, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.05, 0.06, 0.09, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.2)
+shadow_size = 1
 
 [node name="AmplifierWindow" type="PanelContainer"]
 custom_minimum_size = Vector2(1200, 861)
@@ -647,6 +703,28 @@ theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.5"
 horizontal_alignment = 1
 
+[node name="GoldMultModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox/GoldMultBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
+
 [node name="MultSym" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -759,6 +837,28 @@ theme_override_colors/font_color = Color(0.92, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.5"
 horizontal_alignment = 1
+
+[node name="GoldMultBModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox/GoldMultBBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
 
 [node name="ParenRight" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox"]
 layout_mode = 2
@@ -882,6 +982,28 @@ theme_override_colors/font_color = Color(0.92, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.05"
 horizontal_alignment = 1
+
+[node name="GoldPowModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox/GoldPowBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
 
 [node name="EqualSym" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/GoldSection/GoldFormulaHBox"]
 visible = false
@@ -1281,6 +1403,28 @@ theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.5"
 horizontal_alignment = 1
 
+[node name="TokenMultModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox/TokenMultBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
+
 [node name="MultSym" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -1393,6 +1537,28 @@ theme_override_colors/font_color = Color(0.92, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.5"
 horizontal_alignment = 1
+
+[node name="TokenMultBModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox/TokenMultBBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
 
 [node name="ParenRight" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox"]
 layout_mode = 2
@@ -1516,6 +1682,28 @@ theme_override_colors/font_color = Color(0.92, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 17
 text = "1レベルごとに +0.05"
 horizontal_alignment = 1
+
+[node name="TokenPowModeBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox/TokenPowBtn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 18
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_mode_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_mode_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_mode_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mode_btn")
+text = "1"
 
 [node name="EqualSym" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/TokenSection/TokenFormulaHBox"]
 visible = false

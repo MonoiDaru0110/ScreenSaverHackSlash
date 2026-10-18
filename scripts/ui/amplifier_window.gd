@@ -14,6 +14,17 @@ var _shake_timer: float = 0.0
 @export var cost_text_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 @export var cost_color_unaffordable: Color = Color.RED
 
+const BUY_MODES: Array[int] = [1, 5, 10, 100, -1] # -1 represents MAX
+
+var _buy_mode_indices: Dictionary = {
+	"gold_mult": 0,
+	"gold_mult_b": 0,
+	"gold_pow": 0,
+	"token_mult": 0,
+	"token_mult_b": 0,
+	"token_pow": 0,
+}
+
 # --- ゴールドセクション参照 (%UniqueName) ---
 @onready var _gold_total_label: Label = get_node_or_null("%GoldTotalLabel")
 @onready var _gold_base_btn: Button = get_node_or_null("%GoldBaseBtn")
@@ -24,14 +35,17 @@ var _shake_timer: float = 0.0
 @onready var _gold_mult_btn: Button = get_node_or_null("%GoldMultBtn")
 @onready var _gold_mult_val_lbl: Label = get_node_or_null("%GoldMultValLabel")
 @onready var _gold_mult_cost_lbl: Label = get_node_or_null("%GoldMultCostLabel")
+@onready var _gold_mult_mode_btn: Button = get_node_or_null("%GoldMultModeBtn")
 
 @onready var _gold_mult_b_btn: Button = get_node_or_null("%GoldMultBBtn")
 @onready var _gold_mult_b_val_lbl: Label = get_node_or_null("%GoldMultBValLabel")
 @onready var _gold_mult_b_cost_lbl: Label = get_node_or_null("%GoldMultBCostLabel")
+@onready var _gold_mult_b_mode_btn: Button = get_node_or_null("%GoldMultBModeBtn")
 
 @onready var _gold_pow_btn: Button = get_node_or_null("%GoldPowBtn")
 @onready var _gold_pow_val_lbl: Label = get_node_or_null("%GoldPowValLabel")
 @onready var _gold_pow_cost_lbl: Label = get_node_or_null("%GoldPowCostLabel")
+@onready var _gold_pow_mode_btn: Button = get_node_or_null("%GoldPowModeBtn")
 
 # --- トークンセクション参照 (%UniqueName) ---
 @onready var _token_total_label: Label = get_node_or_null("%TokenTotalLabel")
@@ -43,14 +57,17 @@ var _shake_timer: float = 0.0
 @onready var _token_mult_btn: Button = get_node_or_null("%TokenMultBtn")
 @onready var _token_mult_val_lbl: Label = get_node_or_null("%TokenMultValLabel")
 @onready var _token_mult_cost_lbl: Label = get_node_or_null("%TokenMultCostLabel")
+@onready var _token_mult_mode_btn: Button = get_node_or_null("%TokenMultModeBtn")
 
 @onready var _token_mult_b_btn: Button = get_node_or_null("%TokenMultBBtn")
 @onready var _token_mult_b_val_lbl: Label = get_node_or_null("%TokenMultBValLabel")
 @onready var _token_mult_b_cost_lbl: Label = get_node_or_null("%TokenMultBCostLabel")
+@onready var _token_mult_b_mode_btn: Button = get_node_or_null("%TokenMultBModeBtn")
 
 @onready var _token_pow_btn: Button = get_node_or_null("%TokenPowBtn")
 @onready var _token_pow_val_lbl: Label = get_node_or_null("%TokenPowValLabel")
 @onready var _token_pow_cost_lbl: Label = get_node_or_null("%TokenPowCostLabel")
+@onready var _token_pow_mode_btn: Button = get_node_or_null("%TokenPowModeBtn")
 
 
 func _ready() -> void:
@@ -58,24 +75,41 @@ func _ready() -> void:
 	separator_color = Color(0.0, 0.0, 0.0, 1.0)
 	super._ready()
 
-	# ボタン押下シグナル接続
+	# ボーナスボタン押下シグナル接続
 	if _gold_base_btn:
 		_gold_base_btn.pressed.connect(func(): GameData.buy_amp_gold_base_unlock())
-	if _gold_mult_btn:
-		_gold_mult_btn.pressed.connect(func(): GameData.buy_amp_gold_mult())
-	if _gold_mult_b_btn:
-		_gold_mult_b_btn.pressed.connect(func(): GameData.buy_amp_gold_mult_b())
-	if _gold_pow_btn:
-		_gold_pow_btn.pressed.connect(func(): GameData.buy_amp_gold_pow())
-
 	if _token_base_btn:
 		_token_base_btn.pressed.connect(func(): GameData.buy_amp_token_base_unlock())
+
+	# アップグレード購入ボタン押下シグナル接続
+	if _gold_mult_btn:
+		_gold_mult_btn.pressed.connect(func(): _buy_upgrade("gold_mult"))
+	if _gold_mult_b_btn:
+		_gold_mult_b_btn.pressed.connect(func(): _buy_upgrade("gold_mult_b"))
+	if _gold_pow_btn:
+		_gold_pow_btn.pressed.connect(func(): _buy_upgrade("gold_pow"))
+
 	if _token_mult_btn:
-		_token_mult_btn.pressed.connect(func(): GameData.buy_amp_token_mult())
+		_token_mult_btn.pressed.connect(func(): _buy_upgrade("token_mult"))
 	if _token_mult_b_btn:
-		_token_mult_b_btn.pressed.connect(func(): GameData.buy_amp_token_mult_b())
+		_token_mult_b_btn.pressed.connect(func(): _buy_upgrade("token_mult_b"))
 	if _token_pow_btn:
-		_token_pow_btn.pressed.connect(func(): GameData.buy_amp_token_pow())
+		_token_pow_btn.pressed.connect(func(): _buy_upgrade("token_pow"))
+
+	# モード切替ボタン押下シグナル接続
+	if _gold_mult_mode_btn:
+		_gold_mult_mode_btn.pressed.connect(func(): _cycle_buy_mode("gold_mult"))
+	if _gold_mult_b_mode_btn:
+		_gold_mult_b_mode_btn.pressed.connect(func(): _cycle_buy_mode("gold_mult_b"))
+	if _gold_pow_mode_btn:
+		_gold_pow_mode_btn.pressed.connect(func(): _cycle_buy_mode("gold_pow"))
+
+	if _token_mult_mode_btn:
+		_token_mult_mode_btn.pressed.connect(func(): _cycle_buy_mode("token_mult"))
+	if _token_mult_b_mode_btn:
+		_token_mult_b_mode_btn.pressed.connect(func(): _cycle_buy_mode("token_mult_b"))
+	if _token_pow_mode_btn:
+		_token_pow_mode_btn.pressed.connect(func(): _cycle_buy_mode("token_pow"))
 
 	GameData.amplifier_changed.connect(update_all)
 	GameData.reincarnation_performed.connect(update_all)
@@ -196,6 +230,140 @@ func _apply_box_style(btn: Button, can_afford: bool, is_unlocked_max: bool = fal
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
+func _apply_mode_btn_style(btn: Button) -> void:
+	if not btn:
+		return
+	var bg_col := card_bg_affordable
+	var border_col := card_border_color
+
+	var st_normal := StyleBoxFlat.new()
+	st_normal.content_margin_left = 0.0
+	st_normal.content_margin_top = 0.0
+	st_normal.content_margin_right = 0.0
+	st_normal.content_margin_bottom = 0.0
+	st_normal.bg_color = bg_col
+	st_normal.border_width_left = 2
+	st_normal.border_width_top = 2
+	st_normal.border_width_right = 2
+	st_normal.border_width_bottom = 2
+	st_normal.border_color = border_col
+	st_normal.set_corner_radius_all(8)
+	st_normal.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
+	st_normal.shadow_size = 2
+	st_normal.shadow_offset = Vector2(0, 1)
+
+	var st_hover := st_normal.duplicate() as StyleBoxFlat
+	st_hover.bg_color = bg_col.lightened(0.12)
+	st_hover.shadow_size = 3
+
+	var st_pressed := st_normal.duplicate() as StyleBoxFlat
+	st_pressed.bg_color = bg_col.darkened(0.12)
+	st_pressed.shadow_size = 1
+
+	var st_disabled := st_normal.duplicate() as StyleBoxFlat
+
+	btn.add_theme_stylebox_override("normal", st_normal)
+	btn.add_theme_stylebox_override("hover", st_hover)
+	btn.add_theme_stylebox_override("pressed", st_pressed)
+	btn.add_theme_stylebox_override("disabled", st_disabled)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+	# 親ボタンの disabled によるフォント色の減衰（グレーアウト）を防ぎ、常に明るい白を維持
+	btn.add_theme_color_override("font_color", Color(1, 1, 1, 1))
+	btn.add_theme_color_override("font_hover_color", Color(1, 1, 1, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(0.92, 0.95, 1, 1))
+	btn.add_theme_color_override("font_focus_color", Color(1, 1, 1, 1))
+	btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 1))
+
+
+func _format_mode_text(mode: int) -> String:
+	if mode == -1:
+		return "最大"
+	return str(mode)
+
+
+func _cycle_buy_mode(key: String) -> void:
+	if not _buy_mode_indices.has(key):
+		return
+	_buy_mode_indices[key] = (_buy_mode_indices[key] + 1) % BUY_MODES.size()
+	update_all()
+
+
+func _buy_upgrade(key: String) -> void:
+	var mode: int = BUY_MODES[_buy_mode_indices.get(key, 0)]
+	match key:
+		"gold_mult":
+			var count := GameData.get_amp_gold_mult_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_gold_mult(count)
+		"gold_mult_b":
+			var count := GameData.get_amp_gold_mult_b_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_gold_mult_b(count)
+		"gold_pow":
+			var count := GameData.get_amp_gold_pow_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_gold_pow(count)
+		"token_mult":
+			var count := GameData.get_amp_token_mult_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_token_mult(count)
+		"token_mult_b":
+			var count := GameData.get_amp_token_mult_b_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_token_mult_b(count)
+		"token_pow":
+			var count := GameData.get_amp_token_pow_max_count() if mode == -1 else mode
+			if count > 0:
+				GameData.buy_amp_token_pow(count)
+
+
+func _update_upgrade_card(
+	btn: Button,
+	val_lbl: Label,
+	cost_lbl: Label,
+	mode_btn: Button,
+	key: String,
+	current_val: float,
+	user_currency: float,
+	currency_sym: String,
+	cost_func: Callable,
+	max_count_func: Callable,
+	is_token_section: bool
+) -> void:
+	if not btn or not val_lbl or not cost_lbl:
+		return
+
+	var mode: int = BUY_MODES[_buy_mode_indices.get(key, 0)]
+	if mode_btn:
+		mode_btn.text = _format_mode_text(mode)
+
+	var cost: float = 0.0
+	var can_afford: bool = false
+
+	if mode == -1: # MAX
+		var max_cnt: int = max_count_func.call()
+		if max_cnt > 0:
+			cost = cost_func.call(max_cnt)
+			can_afford = true
+			cost_lbl.text = "コスト: %s %s (+%d)" % [currency_sym, GameData.format_num(cost), max_cnt]
+		else:
+			cost = cost_func.call(1)
+			can_afford = false
+			cost_lbl.text = "コスト: %s %s (+0)" % [currency_sym, GameData.format_num(cost)]
+	else:
+		cost = cost_func.call(mode)
+		can_afford = user_currency >= cost
+		cost_lbl.text = "コスト: %s %s" % [currency_sym, GameData.format_num(cost)]
+
+	val_lbl.text = _format_decimal_val(current_val)
+	cost_lbl.add_theme_color_override("font_color", cost_text_color if can_afford else cost_color_unaffordable)
+	btn.disabled = not can_afford
+	_apply_box_style(btn, can_afford, false, is_token_section)
+	if mode_btn:
+		_apply_mode_btn_style(mode_btn)
+
+
 func update_all() -> void:
 	if not _gold_total_label:
 		return
@@ -239,33 +407,32 @@ func update_all() -> void:
 		_gold_base_btn.disabled = not can_unlock
 		_apply_box_style(_gold_base_btn, can_unlock, false, false)
 
-	# ゴールド 倍率α - トークン消費
-	var g_mult_cost := GameData.get_amp_gold_mult_cost()
-	var can_g_mult := tokens >= g_mult_cost
-	_gold_mult_val_lbl.text = _format_decimal_val(g_mult)
-	_gold_mult_cost_lbl.text = "コスト: 💎 %s" % GameData.format_num(g_mult_cost)
-	_gold_mult_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_g_mult else cost_color_unaffordable)
-	_gold_mult_btn.disabled = not can_g_mult
-	_apply_box_style(_gold_mult_btn, can_g_mult, false, false)
+	# ゴールド 倍率α
+	_update_upgrade_card(
+		_gold_mult_btn, _gold_mult_val_lbl, _gold_mult_cost_lbl, _gold_mult_mode_btn,
+		"gold_mult", g_mult, tokens, "💎",
+		Callable(GameData, "get_amp_gold_mult_cost"),
+		Callable(GameData, "get_amp_gold_mult_max_count"),
+		false
+	)
 
-	# ゴールド 倍率β - トークン消費
-	if _gold_mult_b_btn and _gold_mult_b_val_lbl and _gold_mult_b_cost_lbl:
-		var g_mult_b_cost := GameData.get_amp_gold_mult_b_cost()
-		var can_g_mult_b := tokens >= g_mult_b_cost
-		_gold_mult_b_val_lbl.text = _format_decimal_val(g_mult_b)
-		_gold_mult_b_cost_lbl.text = "コスト: 💎 %s" % GameData.format_num(g_mult_b_cost)
-		_gold_mult_b_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_g_mult_b else cost_color_unaffordable)
-		_gold_mult_b_btn.disabled = not can_g_mult_b
-		_apply_box_style(_gold_mult_b_btn, can_g_mult_b, false, false)
+	# ゴールド 倍率β
+	_update_upgrade_card(
+		_gold_mult_b_btn, _gold_mult_b_val_lbl, _gold_mult_b_cost_lbl, _gold_mult_b_mode_btn,
+		"gold_mult_b", g_mult_b, tokens, "💎",
+		Callable(GameData, "get_amp_gold_mult_b_cost"),
+		Callable(GameData, "get_amp_gold_mult_b_max_count"),
+		false
+	)
 
-	# ゴールド パワー - トークン消費
-	var g_pow_cost := GameData.get_amp_gold_pow_cost()
-	var can_g_pow := tokens >= g_pow_cost
-	_gold_pow_val_lbl.text = _format_decimal_val(g_pow)
-	_gold_pow_cost_lbl.text = "コスト: 💎 %s" % GameData.format_num(g_pow_cost)
-	_gold_pow_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_g_pow else cost_color_unaffordable)
-	_gold_pow_btn.disabled = not can_g_pow
-	_apply_box_style(_gold_pow_btn, can_g_pow, false, false)
+	# ゴールド パワー
+	_update_upgrade_card(
+		_gold_pow_btn, _gold_pow_val_lbl, _gold_pow_cost_lbl, _gold_pow_mode_btn,
+		"gold_pow", g_pow, tokens, "💎",
+		Callable(GameData, "get_amp_gold_pow_cost"),
+		Callable(GameData, "get_amp_gold_pow_max_count"),
+		false
+	)
 
 	# --- 2. トークン倍率セクションの更新 (コストはすべてゴールド🪙) ---
 	var t_base := GameData.get_amp_token_base_val()
@@ -303,30 +470,29 @@ func update_all() -> void:
 		_token_base_btn.disabled = not can_unlock
 		_apply_box_style(_token_base_btn, can_unlock, false, true)
 
-	# トークン 倍率α - ゴールド消費
-	var t_mult_cost := GameData.get_amp_token_mult_cost()
-	var can_t_mult := gold >= t_mult_cost
-	_token_mult_val_lbl.text = _format_decimal_val(t_mult)
-	_token_mult_cost_lbl.text = "コスト: 🪙 %s" % GameData.format_num(t_mult_cost)
-	_token_mult_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_t_mult else cost_color_unaffordable)
-	_token_mult_btn.disabled = not can_t_mult
-	_apply_box_style(_token_mult_btn, can_t_mult, false, true)
+	# トークン 倍率α
+	_update_upgrade_card(
+		_token_mult_btn, _token_mult_val_lbl, _token_mult_cost_lbl, _token_mult_mode_btn,
+		"token_mult", t_mult, gold, "🪙",
+		Callable(GameData, "get_amp_token_mult_cost"),
+		Callable(GameData, "get_amp_token_mult_max_count"),
+		true
+	)
 
-	# トークン 倍率β - ゴールド消費
-	if _token_mult_b_btn and _token_mult_b_val_lbl and _token_mult_b_cost_lbl:
-		var t_mult_b_cost := GameData.get_amp_token_mult_b_cost()
-		var can_t_mult_b := gold >= t_mult_b_cost
-		_token_mult_b_val_lbl.text = _format_decimal_val(t_mult_b)
-		_token_mult_b_cost_lbl.text = "コスト: 🪙 %s" % GameData.format_num(t_mult_b_cost)
-		_token_mult_b_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_t_mult_b else cost_color_unaffordable)
-		_token_mult_b_btn.disabled = not can_t_mult_b
-		_apply_box_style(_token_mult_b_btn, can_t_mult_b, false, true)
+	# トークン 倍率β
+	_update_upgrade_card(
+		_token_mult_b_btn, _token_mult_b_val_lbl, _token_mult_b_cost_lbl, _token_mult_b_mode_btn,
+		"token_mult_b", t_mult_b, gold, "🪙",
+		Callable(GameData, "get_amp_token_mult_b_cost"),
+		Callable(GameData, "get_amp_token_mult_b_max_count"),
+		true
+	)
 
-	# トークン パワー - ゴールド消費
-	var t_pow_cost := GameData.get_amp_token_pow_cost()
-	var can_t_pow := gold >= t_pow_cost
-	_token_pow_val_lbl.text = _format_decimal_val(t_pow)
-	_token_pow_cost_lbl.text = "コスト: 🪙 %s" % GameData.format_num(t_pow_cost)
-	_token_pow_cost_lbl.add_theme_color_override("font_color", cost_text_color if can_t_pow else cost_color_unaffordable)
-	_token_pow_btn.disabled = not can_t_pow
-	_apply_box_style(_token_pow_btn, can_t_pow, false, true)
+	# トークン パワー
+	_update_upgrade_card(
+		_token_pow_btn, _token_pow_val_lbl, _token_pow_cost_lbl, _token_pow_mode_btn,
+		"token_pow", t_pow, gold, "🪙",
+		Callable(GameData, "get_amp_token_pow_cost"),
+		Callable(GameData, "get_amp_token_pow_max_count"),
+		true
+	)

@@ -2467,34 +2467,83 @@ func update_amplifier_cache() -> void:
 	_cached_token_amp_mult = get_amp_token_total_mult()
 
 
-func get_amp_gold_mult_cost() -> float:
-	var base := 20.0 * pow(1.6, float(amp_gold_mult_level))
-	return base * get_equipped_token_saving_cost_multiplier()
+func _calc_geometric_cost(base: float, growth: float, current_level: int, count: int, saving_mult: float) -> float:
+	if count <= 0:
+		return 0.0
+	var first_cost := base * pow(growth, float(current_level)) * saving_mult
+	if count == 1:
+		return first_cost
+	if is_equal_approx(growth, 1.0):
+		return first_cost * float(count)
+	return first_cost * (pow(growth, float(count)) - 1.0) / (growth - 1.0)
 
 
-func get_amp_gold_mult_b_cost() -> float:
-	var base := 100.0 * pow(1.8, float(amp_gold_mult_b_level))
-	return base * get_equipped_token_saving_cost_multiplier()
+func _calc_geometric_max_count(base: float, growth: float, current_level: int, currency: float, saving_mult: float) -> int:
+	var first_cost := base * pow(growth, float(current_level)) * saving_mult
+	if currency < first_cost:
+		return 0
+	if is_equal_approx(growth, 1.0):
+		return int(currency / first_cost)
+	var term := 1.0 + currency * (growth - 1.0) / first_cost
+	if term <= 1.0:
+		return 0
+	var n := int(floor(log(term) / log(growth)))
+	var actual_cost := _calc_geometric_cost(base, growth, current_level, n, saving_mult)
+	if actual_cost > currency and n > 0:
+		n -= 1
+	elif n >= 0:
+		var next_cost := _calc_geometric_cost(base, growth, current_level, n + 1, saving_mult)
+		if next_cost <= currency:
+			n += 1
+	return maxi(0, n)
 
 
-func get_amp_gold_pow_cost() -> float:
-	var base := 500.0 * pow(4.0, float(amp_gold_pow_level))
-	return base * get_equipped_token_saving_cost_multiplier()
+func get_amp_gold_mult_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(20.0, 1.6, amp_gold_mult_level, count, get_equipped_token_saving_cost_multiplier())
 
 
-func get_amp_token_mult_cost() -> float:
-	var base := 100.0 * pow(1.6, float(amp_token_mult_level))
-	return base * get_equipped_saving_cost_multiplier()
+func get_amp_gold_mult_max_count() -> int:
+	return _calc_geometric_max_count(20.0, 1.6, amp_gold_mult_level, tokens, get_equipped_token_saving_cost_multiplier())
 
 
-func get_amp_token_mult_b_cost() -> float:
-	var base := 500.0 * pow(1.8, float(amp_token_mult_b_level))
-	return base * get_equipped_saving_cost_multiplier()
+func get_amp_gold_mult_b_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(100.0, 1.8, amp_gold_mult_b_level, count, get_equipped_token_saving_cost_multiplier())
 
 
-func get_amp_token_pow_cost() -> float:
-	var base := 5000.0 * pow(4.0, float(amp_token_pow_level))
-	return base * get_equipped_saving_cost_multiplier()
+func get_amp_gold_mult_b_max_count() -> int:
+	return _calc_geometric_max_count(100.0, 1.8, amp_gold_mult_b_level, tokens, get_equipped_token_saving_cost_multiplier())
+
+
+func get_amp_gold_pow_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(500.0, 4.0, amp_gold_pow_level, count, get_equipped_token_saving_cost_multiplier())
+
+
+func get_amp_gold_pow_max_count() -> int:
+	return _calc_geometric_max_count(500.0, 4.0, amp_gold_pow_level, tokens, get_equipped_token_saving_cost_multiplier())
+
+
+func get_amp_token_mult_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(100.0, 1.6, amp_token_mult_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_amp_token_mult_max_count() -> int:
+	return _calc_geometric_max_count(100.0, 1.6, amp_token_mult_level, gold, get_equipped_saving_cost_multiplier())
+
+
+func get_amp_token_mult_b_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(500.0, 1.8, amp_token_mult_b_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_amp_token_mult_b_max_count() -> int:
+	return _calc_geometric_max_count(500.0, 1.8, amp_token_mult_b_level, gold, get_equipped_saving_cost_multiplier())
+
+
+func get_amp_token_pow_cost(count: int = 1) -> float:
+	return _calc_geometric_cost(5000.0, 4.0, amp_token_pow_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_amp_token_pow_max_count() -> int:
+	return _calc_geometric_max_count(5000.0, 4.0, amp_token_pow_level, gold, get_equipped_saving_cost_multiplier())
 
 
 func buy_amp_gold_base_unlock() -> bool:
@@ -2508,30 +2557,36 @@ func buy_amp_gold_base_unlock() -> bool:
 	return false
 
 
-func buy_amp_gold_mult() -> bool:
-	var cost := get_amp_gold_mult_cost()
+func buy_amp_gold_mult(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_gold_mult_cost(count)
 	if use_tokens(cost):
-		amp_gold_mult_level += 1
+		amp_gold_mult_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
 	return false
 
 
-func buy_amp_gold_mult_b() -> bool:
-	var cost := get_amp_gold_mult_b_cost()
+func buy_amp_gold_mult_b(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_gold_mult_b_cost(count)
 	if use_tokens(cost):
-		amp_gold_mult_b_level += 1
+		amp_gold_mult_b_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
 	return false
 
 
-func buy_amp_gold_pow() -> bool:
-	var cost := get_amp_gold_pow_cost()
+func buy_amp_gold_pow(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_gold_pow_cost(count)
 	if use_tokens(cost):
-		amp_gold_pow_level += 1
+		amp_gold_pow_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
@@ -2549,30 +2604,36 @@ func buy_amp_token_base_unlock() -> bool:
 	return false
 
 
-func buy_amp_token_mult() -> bool:
-	var cost := get_amp_token_mult_cost()
+func buy_amp_token_mult(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_token_mult_cost(count)
 	if use_gold(cost):
-		amp_token_mult_level += 1
+		amp_token_mult_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
 	return false
 
 
-func buy_amp_token_mult_b() -> bool:
-	var cost := get_amp_token_mult_b_cost()
+func buy_amp_token_mult_b(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_token_mult_b_cost(count)
 	if use_gold(cost):
-		amp_token_mult_b_level += 1
+		amp_token_mult_b_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
 	return false
 
 
-func buy_amp_token_pow() -> bool:
-	var cost := get_amp_token_pow_cost()
+func buy_amp_token_pow(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_amp_token_pow_cost(count)
 	if use_gold(cost):
-		amp_token_pow_level += 1
+		amp_token_pow_level += count
 		update_amplifier_cache()
 		amplifier_changed.emit()
 		return true
