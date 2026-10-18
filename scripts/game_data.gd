@@ -127,6 +127,8 @@ var _cached_token_skill_mult: float = 1.0
 var _cached_gold_over_time_boost_mult: float = 1.0
 var _cached_token_over_time_boost_mult: float = 1.0
 var _cached_ascension_mult: float = 1.0
+var _cached_gold_amp_mult: float = 1.0
+var _cached_token_amp_mult: float = 1.0
 
 # --- Equipment ---
 var inventories: Dictionary = {
@@ -1170,6 +1172,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_amp_cache_timer += delta
+	if _amp_cache_timer >= 0.1:
+		_amp_cache_timer = 0.0
+		update_amplifier_cache()
+
 	if get_special_skill_total_level("spec_gamble") > 0:
 		gamble_timer -= delta
 		if gamble_timer <= 0.0:
@@ -1244,6 +1251,7 @@ func _recalculate_cached_multipliers() -> void:
 	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_gold_mult
 	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_token_mult
 	_cached_ascension_mult = get_ascension_multiplier()
+	update_amplifier_cache()
 
 
 func _recalculate_total_level(prefix: String) -> int:
@@ -2372,3 +2380,200 @@ func get_challenge_token_multiplier() -> float:
 	if is_challenge_cleared("c6"):
 		return 1.15 # C6クリア後: トークン獲得量 +15%
 	return 1.0
+
+
+# ==============================================================================
+# 増幅装置システム (Amplifier System)
+# ==============================================================================
+
+signal amplifier_changed()
+
+var _amp_cache_timer: float = 0.0
+
+# ゴールド倍率: ボーナス * ( 倍率α * 倍率β ) ^ パワー
+var amp_gold_base_unlocked: bool = false
+var amp_gold_mult_level: int = 0 # 倍率α
+var amp_gold_mult_b_level: int = 0 # 倍率β
+var amp_gold_pow_level: int = 0
+
+# トークン倍率: ボーナス * ( 倍率α * 倍率β ) ^ パワー
+var amp_token_base_unlocked: bool = false
+var amp_token_mult_level: int = 0 # 倍率α
+var amp_token_mult_b_level: int = 0 # 倍率β
+var amp_token_pow_level: int = 0
+
+const AMP_GOLD_BASE_UNLOCK_COST: float = 100.0 # トークン消費
+const AMP_TOKEN_BASE_UNLOCK_COST: float = 1000.0 # ゴールド消費
+
+
+func get_amp_gold_base_val() -> float:
+	if not amp_gold_base_unlocked:
+		return 1.0
+	if tokens <= 1.0:
+		return 1.0
+	return maxf(1.0, log(tokens) / log(10.0))
+
+
+func get_amp_gold_mult_val() -> float:
+	return 1.0 + float(amp_gold_mult_level) * 0.5
+
+
+func get_amp_gold_mult_b_val() -> float:
+	return 1.0 + float(amp_gold_mult_b_level) * 0.5
+
+
+func get_amp_gold_pow_val() -> float:
+	return 1.0 + float(amp_gold_pow_level) * 0.05
+
+
+func get_amp_gold_total_mult() -> float:
+	var base_v := get_amp_gold_base_val()
+	var mult_a_v := get_amp_gold_mult_val()
+	var mult_b_v := get_amp_gold_mult_b_val()
+	var pow_v := get_amp_gold_pow_val()
+	return base_v * pow(mult_a_v * mult_b_v, pow_v)
+
+
+func get_amp_token_base_val() -> float:
+	if not amp_token_base_unlocked:
+		return 1.0
+	if gold <= 1.0:
+		return 1.0
+	return maxf(1.0, log(gold) / log(10.0))
+
+
+func get_amp_token_mult_val() -> float:
+	return 1.0 + float(amp_token_mult_level) * 0.5
+
+
+func get_amp_token_mult_b_val() -> float:
+	return 1.0 + float(amp_token_mult_b_level) * 0.5
+
+
+func get_amp_token_pow_val() -> float:
+	return 1.0 + float(amp_token_pow_level) * 0.05
+
+
+func get_amp_token_total_mult() -> float:
+	var base_v := get_amp_token_base_val()
+	var mult_a_v := get_amp_token_mult_val()
+	var mult_b_v := get_amp_token_mult_b_val()
+	var pow_v := get_amp_token_pow_val()
+	return base_v * pow(mult_a_v * mult_b_v, pow_v)
+
+
+func update_amplifier_cache() -> void:
+	_cached_gold_amp_mult = get_amp_gold_total_mult()
+	_cached_token_amp_mult = get_amp_token_total_mult()
+
+
+func get_amp_gold_mult_cost() -> float:
+	var base := 20.0 * pow(1.6, float(amp_gold_mult_level))
+	return base * get_equipped_token_saving_cost_multiplier()
+
+
+func get_amp_gold_mult_b_cost() -> float:
+	var base := 100.0 * pow(1.8, float(amp_gold_mult_b_level))
+	return base * get_equipped_token_saving_cost_multiplier()
+
+
+func get_amp_gold_pow_cost() -> float:
+	var base := 500.0 * pow(4.0, float(amp_gold_pow_level))
+	return base * get_equipped_token_saving_cost_multiplier()
+
+
+func get_amp_token_mult_cost() -> float:
+	var base := 100.0 * pow(1.6, float(amp_token_mult_level))
+	return base * get_equipped_saving_cost_multiplier()
+
+
+func get_amp_token_mult_b_cost() -> float:
+	var base := 500.0 * pow(1.8, float(amp_token_mult_b_level))
+	return base * get_equipped_saving_cost_multiplier()
+
+
+func get_amp_token_pow_cost() -> float:
+	var base := 5000.0 * pow(4.0, float(amp_token_pow_level))
+	return base * get_equipped_saving_cost_multiplier()
+
+
+func buy_amp_gold_base_unlock() -> bool:
+	if amp_gold_base_unlocked:
+		return false
+	if use_tokens(AMP_GOLD_BASE_UNLOCK_COST):
+		amp_gold_base_unlocked = true
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_gold_mult() -> bool:
+	var cost := get_amp_gold_mult_cost()
+	if use_tokens(cost):
+		amp_gold_mult_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_gold_mult_b() -> bool:
+	var cost := get_amp_gold_mult_b_cost()
+	if use_tokens(cost):
+		amp_gold_mult_b_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_gold_pow() -> bool:
+	var cost := get_amp_gold_pow_cost()
+	if use_tokens(cost):
+		amp_gold_pow_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_token_base_unlock() -> bool:
+	if amp_token_base_unlocked:
+		return false
+	if use_gold(AMP_TOKEN_BASE_UNLOCK_COST):
+		amp_token_base_unlocked = true
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_token_mult() -> bool:
+	var cost := get_amp_token_mult_cost()
+	if use_gold(cost):
+		amp_token_mult_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_token_mult_b() -> bool:
+	var cost := get_amp_token_mult_b_cost()
+	if use_gold(cost):
+		amp_token_mult_b_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false
+
+
+func buy_amp_token_pow() -> bool:
+	var cost := get_amp_token_pow_cost()
+	if use_gold(cost):
+		amp_token_pow_level += 1
+		update_amplifier_cache()
+		amplifier_changed.emit()
+		return true
+	return false

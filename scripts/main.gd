@@ -97,8 +97,8 @@ func _on_logo_reset_requested() -> void:
 
 func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	var mult := GameData._cached_ascension_mult
-	# キャッシュ済みスキル倍率を使用
-	var gold_skill_mult := GameData._cached_gold_skill_mult
+	# キャッシュ済みスキル倍率＋増幅装置倍率を使用
+	var gold_skill_mult := GameData._cached_gold_skill_mult * GameData._cached_gold_amp_mult
 
 	var gold_crit := GameData.roll_gold_critical()
 	var gold_direct := GameData.roll_gold_direct()
@@ -118,7 +118,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		var token_mult: float = token_crit.multiplier * token_direct.multiplier
 
 		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
-		var token_skill_mult := GameData._cached_token_skill_mult
+		var token_skill_mult := GameData._cached_token_skill_mult * GameData._cached_token_amp_mult
 		var base_tokens := (1.0 + GameData.get_effective_boost_level()) * mult * token_skill_mult
 		# Apply token_luck skill (30% chance for +1 token per level)
 		var token_luck_level := GameData.get_skill_level("token_luck")
@@ -320,7 +320,7 @@ func _on_over_time_timeout() -> void:
 		return
 		
 	var mult := GameData._cached_ascension_mult
-	var gold_skill_mult := GameData._cached_gold_skill_mult
+	var gold_skill_mult := GameData._cached_gold_skill_mult * GameData._cached_gold_amp_mult
 	
 	# Base amount is 10% of normal wall bounce gold
 	var base_hit_gold := (1.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
@@ -365,7 +365,7 @@ func _on_token_over_time_timeout() -> void:
 	var mult := GameData._cached_ascension_mult
 	
 	# Base amount is 10% of normal corner bounce tokens
-	var base_corner_tokens := (1.0 + GameData.get_effective_boost_level()) * mult * GameData._cached_token_skill_mult
+	var base_corner_tokens := (1.0 + GameData.get_effective_boost_level()) * mult * GameData._cached_token_skill_mult * GameData._cached_token_amp_mult
 	var base_over_time_token := base_corner_tokens * 0.1
 	
 	var boost_mult := GameData._cached_token_over_time_boost_mult

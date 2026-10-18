@@ -22,6 +22,7 @@ extends CanvasLayer
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
 @onready var btn_challenge_tab: Button = %ChallengeTabBtn
 @onready var btn_blacksmith_tab: Button = %BlacksmithTabBtn
+@onready var btn_amplifier_tab: Button = %AmplifierTabBtn
 @onready var reinc_sub_nav_container: PanelContainer = %ReincarnationSubNavContainer
 @onready var btn_reinc_tab_1: Button = %ReincDummyTabBtn1
 @onready var btn_reinc_tab_2: Button = %ReincDummyTabBtn2
@@ -32,6 +33,7 @@ extends CanvasLayer
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
 @onready var challenge_window: PanelContainer = %ChallengeWindow
 @onready var blacksmith_window: PanelContainer = %BlacksmithWindow
+@onready var amplifier_window: PanelContainer = %AmplifierWindow
 @onready var reinc_tree_window: PanelContainer = %ReincTreeWindow
 @onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
 @onready var reincarnation_window: PanelContainer = %ReincarnationWindow
@@ -75,6 +77,7 @@ var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
 var _is_challenge_open: bool = false
 var _is_blacksmith_open: bool = false
+var _is_amplifier_open: bool = false
 var _is_reinc_tree_open: bool = false
 var _is_reinc_ability_open: bool = false
 var _is_reincarnation_open: bool = false
@@ -88,14 +91,14 @@ var _upgrade_buttons_dirty: bool = false
 var _upgrade_update_timer: Timer = null
 
 # チャレンジ進行中ミニウィンドウ（右下・通貨欄の左）
-var _challenge_mini_panel: PanelContainer = null
-var _challenge_mini_title: Label = null
-var _challenge_mini_time: Label = null
-var _challenge_mini_bar: ProgressBar = null
-var _challenge_mini_progress: Label = null
+@onready var _challenge_mini_panel: PanelContainer = %ChallengeMiniWindow
+@onready var _challenge_mini_title: Label = %ChallengeMiniTitle
+@onready var _challenge_mini_time: Label = %ChallengeMiniTime
+@onready var _challenge_mini_bar: ProgressBar = %ChallengeMiniBar
+@onready var _challenge_mini_progress: Label = %ChallengeMiniProgress
 
 # パフォーマンス最適化: デバッグ表示 & ステータス更新スロットリング
-var _debug_label: Label = null
+@onready var _debug_label: Label = %DebugLabel
 var _debug_timer: Timer = null
 var _stats_dirty: bool = false
 var _default_upgrade_btn_styles: Dictionary = {}
@@ -357,6 +360,9 @@ func _ready() -> void:
 	if btn_blacksmith_tab:
 		btn_blacksmith_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_blacksmith_tab.pressed.connect(_on_blacksmith_tab_pressed)
+	if btn_amplifier_tab:
+		btn_amplifier_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_amplifier_tab.pressed.connect(_on_amplifier_tab_pressed)
 	if btn_reinc_tab_1:
 		btn_reinc_tab_1.add_theme_stylebox_override("focus", style_focus)
 		btn_reinc_tab_1.pressed.connect(_on_reinc_tab_1_pressed)
@@ -422,6 +428,10 @@ func _ready() -> void:
 		if blacksmith_window.has_signal("closed"):
 			blacksmith_window.closed.connect(close_blacksmith)
 		blacksmith_window.visible = false
+	if amplifier_window:
+		if amplifier_window.has_signal("closed"):
+			amplifier_window.closed.connect(close_amplifier)
+		amplifier_window.visible = false
 	if reincarnation_window.has_signal("closed"):
 		reincarnation_window.closed.connect(close_reincarnation)
 	reincarnation_window.visible = false
@@ -454,19 +464,7 @@ func _ready() -> void:
 	_upgrade_update_timer.timeout.connect(_on_upgrade_update_timer)
 	add_child(_upgrade_update_timer)
 	
-	# デバッグ表示ラベルと更新タイマーのセットアップ
-	_debug_label = Label.new()
-	_debug_label.name = "DebugLabel"
-	_debug_label.position = Vector2(1240, 70)
-	_debug_label.size = Vector2(280, 150)
-	_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_debug_label.add_theme_font_size_override("font_size", 14)
-	_debug_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0, 0.9))
-	_debug_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	_debug_label.add_theme_constant_override("shadow_offset_x", 1)
-	_debug_label.add_theme_constant_override("shadow_offset_y", 1)
-	add_child(_debug_label)
-
+	# デバッグ更新タイマーのセットアップ
 	_debug_timer = Timer.new()
 	_debug_timer.wait_time = 0.1
 	_debug_timer.autostart = true
@@ -965,6 +963,7 @@ func _update_tab_button_styles() -> void:
 	_apply_tab_style(btn_skill_tree_tab, _is_skill_tree_open, true)
 	_apply_tab_style(btn_challenge_tab, _is_challenge_open, true)
 	_apply_tab_style(btn_blacksmith_tab, _is_blacksmith_open, true)
+	_apply_tab_style(btn_amplifier_tab, _is_amplifier_open, true)
 
 	_apply_tab_style(btn_reinc_tab_1, _is_reinc_tree_open, true)
 	_apply_tab_style(btn_reinc_tab_2, _is_reinc_ability_open, true)
@@ -994,6 +993,8 @@ func open_reincarnation() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1026,6 +1027,8 @@ func _on_equipment_tab_pressed() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1077,6 +1080,8 @@ func _on_skill_tree_tab_pressed() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1131,6 +1136,8 @@ func _on_challenge_tab_pressed() -> void:
 		close_skill_tree()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1173,6 +1180,8 @@ func _on_blacksmith_tab_pressed() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1208,6 +1217,52 @@ func close_blacksmith() -> void:
 	_update_window_dimmer()
 
 
+func _on_amplifier_tab_pressed() -> void:
+	if _is_reincarnation_open:
+		close_reincarnation()
+	if _is_inventory_open:
+		close_inventory()
+	if _is_skill_tree_open:
+		close_skill_tree()
+	if _is_challenge_open:
+		close_challenge()
+	if _is_blacksmith_open:
+		close_blacksmith()
+	if _is_reinc_tree_open:
+		close_reinc_tree()
+	if _is_reinc_ability_open:
+		close_reinc_ability()
+		
+	if _is_amplifier_open:
+		close_amplifier()
+	else:
+		open_amplifier()
+
+
+func open_amplifier() -> void:
+	if _is_amplifier_open:
+		return
+	
+	_is_amplifier_open = true
+	if amplifier_window:
+		amplifier_window.visible = true
+		if amplifier_window.has_method("update_all"):
+			amplifier_window.update_all()
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_amplifier() -> void:
+	if not _is_amplifier_open:
+		return
+	
+	_is_amplifier_open = false
+	if amplifier_window:
+		amplifier_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
 func _on_reinc_tab_1_pressed() -> void:
 	if _is_inventory_open:
 		close_inventory()
@@ -1217,6 +1272,8 @@ func _on_reinc_tab_1_pressed() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
 	
@@ -1258,6 +1315,8 @@ func _on_reinc_tab_2_pressed() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	
@@ -1291,7 +1350,7 @@ func close_reinc_ability() -> void:
 
 
 func _is_any_subbar_window_open() -> bool:
-	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_reinc_tree_open or _is_reinc_ability_open
+	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open
 
 
 var _dimmer_tween: Tween = null
@@ -1334,6 +1393,8 @@ func _close_all_subbar_windows() -> void:
 		close_challenge()
 	if _is_blacksmith_open:
 		close_blacksmith()
+	if _is_amplifier_open:
+		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1720,16 +1781,8 @@ func _update_toggle_skill_vis_button_text(filter_on: bool) -> void:
 # --- チャレンジ進捗確認用ミニウィンドウ (メイン画面右下・通貨欄の左) ---
 
 func _setup_challenge_mini_window() -> void:
-	# Sidebar の左側、画面下部に配置 (1662pxのプレイエリア右下)
-	_challenge_mini_panel = PanelContainer.new()
-	_challenge_mini_panel.name = "ChallengeMiniWindow"
-	_challenge_mini_panel.z_index = 12
-	_challenge_mini_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_challenge_mini_panel.visible = false
-
-	# 位置とサイズ: 幅 290px、高さ 80px、右端はサイドバー(1662px)の左手前 1360px、Yは 990px (通貨欄と水平)
-	_challenge_mini_panel.position = Vector2(1356, 986)
-	_challenge_mini_panel.size = Vector2(296, 84)
+	if not _challenge_mini_panel:
+		return
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.12, 0.10, 0.05, 0.92) # 落ち着いたダークアンバー背景
@@ -1740,62 +1793,16 @@ func _setup_challenge_mini_window() -> void:
 	panel_style.border_color = Color(0.88, 0.68, 0.14, 0.9) # 上部バーと同調するゴールド枠
 	panel_style.set_corner_radius_all(6)
 	_challenge_mini_panel.add_theme_stylebox_override("panel", panel_style)
-	add_child(_challenge_mini_panel)
 
-	var margin := MarginContainer.new()
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 10)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	_challenge_mini_panel.add_child(margin)
-
-	var vbox := VBoxContainer.new()
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 4)
-	margin.add_child(vbox)
-
-	var top_row := HBoxContainer.new()
-	top_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_row.add_theme_constant_override("separation", 8)
-	vbox.add_child(top_row)
-
-	_challenge_mini_title = Label.new()
-	_challenge_mini_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_challenge_mini_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_challenge_mini_title.add_theme_color_override("font_color", Color(1.0, 0.88, 0.36, 1.0))
-	_challenge_mini_title.add_theme_font_size_override("font_size", 14)
-	_challenge_mini_title.text = "挑戦中: #1"
-	top_row.add_child(_challenge_mini_title)
-
-	_challenge_mini_time = Label.new()
-	_challenge_mini_time.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_challenge_mini_time.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55, 1.0))
-	_challenge_mini_time.add_theme_font_size_override("font_size", 13)
-	_challenge_mini_time.text = "⏳ --.-s"
-	top_row.add_child(_challenge_mini_time)
-
-	_challenge_mini_bar = ProgressBar.new()
-	_challenge_mini_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_challenge_mini_bar.custom_minimum_size = Vector2(0, 12)
-	_challenge_mini_bar.show_percentage = false
-	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(0.08, 0.06, 0.03, 0.9)
-	bar_bg.set_corner_radius_all(3)
-	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.88, 0.68, 0.14, 1.0)
-	bar_fill.set_corner_radius_all(3)
-	_challenge_mini_bar.add_theme_stylebox_override("background", bar_bg)
-	_challenge_mini_bar.add_theme_stylebox_override("fill", bar_fill)
-	vbox.add_child(_challenge_mini_bar)
-
-	_challenge_mini_progress = Label.new()
-	_challenge_mini_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_challenge_mini_progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_challenge_mini_progress.add_theme_color_override("font_color", Color(0.95, 0.92, 0.85, 1.0))
-	_challenge_mini_progress.add_theme_font_size_override("font_size", 12)
-	_challenge_mini_progress.text = "🪙 0 / 0 (0%)"
-	vbox.add_child(_challenge_mini_progress)
+	if _challenge_mini_bar:
+		var bar_bg := StyleBoxFlat.new()
+		bar_bg.bg_color = Color(0.08, 0.06, 0.03, 0.9)
+		bar_bg.set_corner_radius_all(3)
+		var bar_fill := StyleBoxFlat.new()
+		bar_fill.bg_color = Color(0.88, 0.68, 0.14, 1.0)
+		bar_fill.set_corner_radius_all(3)
+		_challenge_mini_bar.add_theme_stylebox_override("background", bar_bg)
+		_challenge_mini_bar.add_theme_stylebox_override("fill", bar_fill)
 
 
 func _update_challenge_mini_window() -> void:

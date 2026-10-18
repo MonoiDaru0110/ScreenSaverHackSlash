@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://ypt4uxh84fvc"]
+[gd_scene load_steps=16 format=3 uid="uid://ypt4uxh84fvc"]
 
 [ext_resource type="Script" uid="uid://bgq5twia6bjbx" path="res://scripts/ui/challenge_window.gd" id="1_challenge_script"]
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
@@ -12,6 +12,91 @@ corner_radius_top_right = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
 bg_color = Color(0.12, 0.1, 0.05, 1)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
+bg_color = Color(0.16, 0.13, 0.05, 0.95)
+border_width_bottom = 2
+border_color = Color(0.88, 0.68, 0.14, 0.8)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.08, 0.06, 0.03, 0.9)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
+bg_color = Color(0.88, 0.68, 0.14, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_selected"]
+bg_color = Color(0.15, 0.15, 0.24, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.88, 0.68, 0.14, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0.32, 0.72, 0.18, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.45, 0.08, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 6
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_normal"]
+bg_color = Color(0.15, 0.15, 0.24, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.28, 0.1, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right_bg"]
+bg_color = Color(0.15, 0.15, 0.24, 1)
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn_hover"]
+bg_color = Color(0.95, 0.76, 0.24, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.9, 0.5, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn_normal"]
+bg_color = Color(0.88, 0.68, 0.14, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.85, 0.35, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
@@ -82,12 +167,964 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_body")
 
 [node name="BodyMargin" type="MarginContainer" parent="WindowVBox/BodyPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
 [node name="ContentContainer" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="BannerPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
+
+[node name="BannerMargin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="BannerActiveBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ActiveTopRow" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox"]
+layout_mode = 2
 theme_override_constants/separation = 16
+
+[node name="BannerTitleLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox/ActiveTopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
+theme_override_font_sizes/font_size = 15
+text = "進行中のチャレンジ: なし"
+
+[node name="BannerTimeLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox/ActiveTopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+text = "⏳ 残り: --.- 秒"
+
+[node name="ActiveBotRow" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BannerProgressBar" type="ProgressBar" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox/ActiveBotRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
+show_percentage = false
+
+[node name="BannerProgressLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/BannerPanel/BannerMargin/BannerActiveBox/ActiveBotRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "進捗: -- / -- (0%)"
+horizontal_alignment = 2
+
+[node name="ColumnsHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="LeftMargin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox"]
+custom_minimum_size = Vector2(740, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="LeftScroll" type="ScrollContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ChallengeGrid" type="GridContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 18
+theme_override_constants/v_separation = 18
+columns = 3
+
+[node name="Card1" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_selected")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_selected")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_selected")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🚫"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card1/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#1: 基礎強化禁止"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card2" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🛡️"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card2/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#2: 装備制限"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card3" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🧱"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card3/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#3: 壁報酬無効"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card4" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🎯"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card4/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#4: 角報酬無効"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card5" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🌲"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card5/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#5: スキル封印"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card6" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "⚛️"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card6/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 21
+text = "#6: 特殊スキル封印"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card7" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin/Inner"]
+modulate = Color(0.5, 0.5, 0.5, 0.7)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🔒"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 21
+text = "準備中"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card8" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin/Inner"]
+modulate = Color(0.5, 0.5, 0.5, 0.7)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🔒"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 21
+text = "準備中"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Card9" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+custom_minimum_size = Vector2(205, 170)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_card_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_card_normal")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 8
+
+[node name="Inner" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9/Margin"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="BadgePanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9/Margin/Inner"]
+visible = false
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="StatusMini" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9/Margin/Inner/BadgePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "✓"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9/Margin/Inner"]
+modulate = Color(0.5, 0.5, 0.5, 0.7)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -40.0
+offset_top = -42.0
+offset_right = 40.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "🔒"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NameLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card9/Margin/Inner"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_font_sizes/font_size = 21
+text = "準備中"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="VSep" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox"]
+custom_minimum_size = Vector2(2, 0)
+layout_mode = 2
+size_flags_vertical = 3
+color = Color(0.88, 0.68, 0.14, 0.55)
+
+[node name="RightBgPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_right_bg")
+
+[node name="RightMargin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="RightVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="DetailHeader" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="DetailTitleName" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 26
+text = "#1: 基礎強化禁止"
+
+[node name="DetailStatusBadge" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+text = "未達成"
+vertical_alignment = 1
+
+[node name="RightSep" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.6, 0.48, 0.18, 0.6)
+
+[node name="DetailDescBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 22
+
+[node name="PenaltySection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PenaltyHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/PenaltySection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "ペナルティ"
+
+[node name="DetailPenaltyLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/PenaltySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "ペナルティ内容"
+autowrap_mode = 3
+
+[node name="TargetSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TargetHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "目標"
+
+[node name="DetailTargetLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "目標内容"
+autowrap_mode = 3
+
+[node name="RewardSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RewardHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "報酬"
+
+[node name="DetailRewardLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "報酬内容"
+autowrap_mode = 3
+
+[node name="DetailActionBtn" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_focus")
+theme_override_styles/hover = SubResource("StyleBoxFlat_action_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_action_btn_normal")
+theme_override_styles/normal = SubResource("StyleBoxFlat_action_btn_normal")
+
+[node name="DetailActionBtnLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailActionBtn"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+text = "挑戦する"
+horizontal_alignment = 1
+vertical_alignment = 1

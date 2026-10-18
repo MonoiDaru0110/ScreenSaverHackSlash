@@ -1,4 +1,4 @@
-[gd_scene load_steps=27 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=28 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" uid="uid://c5qpm4utfsvo" path="res://scenes/ui/blacksmith_window.tscn" id="9_blacksmith_scene"]
 [ext_resource type="PackedScene" uid="uid://bn614xlh8t5m7" path="res://scenes/ui/reinc_tree_window.tscn" id="10_reinc_tree_scene"]
 [ext_resource type="PackedScene" uid="uid://bn6hn2r3gg5m7" path="res://scenes/ui/reinc_ability_window.tscn" id="11_reinc_ability_scene"]
+[ext_resource type="PackedScene" uid="uid://cfhojkdlop3c" path="res://scenes/ui/amplifier_window.tscn" id="12_amplifier_scene"]
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_window_root"]
 
@@ -158,6 +159,77 @@ theme_override_constants/shadow_offset_y = 3
 theme_override_font_sizes/font_size = 48
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="DebugLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 1240.0
+offset_top = 70.0
+offset_right = 1520.0
+offset_bottom = 220.0
+theme_override_colors/font_color = Color(0.4, 0.9, 1, 0.9)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 2
+
+[node name="ChallengeMiniWindow" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+z_index = 12
+offset_left = 1356.0
+offset_top = 986.0
+offset_right = 1652.0
+offset_bottom = 1070.0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="ChallengeMiniWindow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="VBox" type="VBoxContainer" parent="ChallengeMiniWindow/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="TopRow" type="HBoxContainer" parent="ChallengeMiniWindow/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="ChallengeMiniTitle" type="Label" parent="ChallengeMiniWindow/Margin/VBox/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
+theme_override_font_sizes/font_size = 14
+text = "挑戦中: #1"
+
+[node name="ChallengeMiniTime" type="Label" parent="ChallengeMiniWindow/Margin/VBox/TopRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 13
+text = "⏳ --.-s"
+
+[node name="ChallengeMiniBar" type="ProgressBar" parent="ChallengeMiniWindow/Margin/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
+
+[node name="ChallengeMiniProgress" type="Label" parent="ChallengeMiniWindow/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.92, 0.85, 1)
+theme_override_font_sizes/font_size = 12
+text = "🪙 0 / 0 (0%)"
+horizontal_alignment = 2
 
 [node name="WindowDimmer" type="ColorRect" parent="."]
 unique_name_in_owner = true
@@ -437,6 +509,11 @@ visible = false
 z_index = 10
 
 [node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 10
+
+[node name="AmplifierWindow" parent="." instance=ExtResource("12_amplifier_scene")]
 unique_name_in_owner = true
 visible = false
 z_index = 10
@@ -876,7 +953,7 @@ text = "⚛️"
 
 [node name="SubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(440, 36)
+custom_minimum_size = Vector2(540, 36)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
@@ -919,6 +996,13 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 13
 text = "🔨 鍛冶"
+
+[node name="AmplifierTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 13
+text = "⚡ 融合"
 
 [node name="ReincarnationSubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
