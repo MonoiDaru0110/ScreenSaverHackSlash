@@ -7,7 +7,7 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
-bg_color = Color(0.18, 0.42, 0.78, 1)
+bg_color = Color(0.18, 0.52, 0.92, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
@@ -296,7 +296,7 @@ layout_mode = 2
 [node name="Separator" type="ColorRect" parent="WindowVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0, 0, 0, 1)
+color = Color(0.35, 0.75, 1, 1)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 clip_children = 2

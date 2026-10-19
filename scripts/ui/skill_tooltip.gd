@@ -65,15 +65,23 @@ func setup(skill_data: Dictionary) -> void:
 	if icon_panel:
 		var icon_style := StyleBoxFlat.new()
 		icon_style.bg_color = skill_color.darkened(0.4)
-		icon_style.border_width_left = 5
-		icon_style.border_width_top = 5
-		icon_style.border_width_right = 5
-		icon_style.border_width_bottom = 5
+		icon_style.border_width_left = 7
+		icon_style.border_width_top = 7
+		icon_style.border_width_right = 7
+		icon_style.border_width_bottom = 7
+		icon_style.expand_margin_left = 4
+		icon_style.expand_margin_top = 4
+		icon_style.expand_margin_right = 4
+		icon_style.expand_margin_bottom = 4
+		icon_style.content_margin_left = 3
+		icon_style.content_margin_top = 3
+		icon_style.content_margin_right = 3
+		icon_style.content_margin_bottom = 3
 		icon_style.border_color = skill_color
-		icon_style.corner_radius_top_left = 4
-		icon_style.corner_radius_top_right = 4
-		icon_style.corner_radius_bottom_right = 4
-		icon_style.corner_radius_bottom_left = 4
+		icon_style.corner_radius_top_left = 3
+		icon_style.corner_radius_top_right = 3
+		icon_style.corner_radius_bottom_right = 3
+		icon_style.corner_radius_bottom_left = 3
 		icon_panel.add_theme_stylebox_override("panel", icon_style)
 		
 		# アイコン画像または頭文字の表示
@@ -130,12 +138,27 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	if not GameData.tokens_changed.is_connected(_on_tokens_changed):
 		GameData.tokens_changed.connect(_on_tokens_changed)
 	
-	var current_level = GameData.skill_levels.get(skill_node.skill_id, 0)
-	var max_level = skill_node.max_level
-	var cost = skill_node.get_upgrade_cost(current_level)
+	var current_count = GameData.get_skill_level(skill_node.skill_id)
+	var is_unlocked = current_count > 0
+	var is_max = not skill_node.is_unlimited and is_unlocked
+	var cost = skill_node.get_upgrade_cost(current_count)
 	
-	var lvl_str = "[Lv MAX]" if current_level >= max_level else "[Lv %d/%d]" % [current_level, max_level]
-	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %s" % GameData.format_num(cost)
+	var lvl_str := ""
+	var cost_str := ""
+	var show_cost := true
+	
+	if skill_node.is_unlimited:
+		lvl_str = "[無制限: %d回]" % current_count if current_count > 0 else "[無制限強化]"
+		cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
+		show_cost = true
+	else:
+		if is_max:
+			lvl_str = "[解放済み]"
+			show_cost = false
+		else:
+			lvl_str = "[未解放]"
+			cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
+			show_cost = true
 	
 	var skill_name = skill_node.skill_name if not skill_node.skill_name.is_empty() else skill_node.skill_id
 	var full_desc = skill_node.description
@@ -149,16 +172,19 @@ func setup_from_node(skill_node: SkillNode) -> void:
 		var node_style = skill_node.get_theme_stylebox("normal")
 		if node_style is StyleBoxFlat:
 			var icon_style = node_style.duplicate() as StyleBoxFlat
-			# ツールチップの小さなアイコン内に収まるよう拡張マージンをリセット
-			icon_style.expand_margin_left = 0
-			icon_style.expand_margin_top = 0
-			icon_style.expand_margin_right = 0
-			icon_style.expand_margin_bottom = 0
-			# 枠線の太さを3pxにスケールダウンして、36x36の枠内でちょうど良くなるように調整
-			icon_style.border_width_left = 6
-			icon_style.border_width_top = 6
-			icon_style.border_width_right = 6
-			icon_style.border_width_bottom = 6
+			icon_style.expand_margin_left = 4
+			icon_style.expand_margin_top = 4
+			icon_style.expand_margin_right = 4
+			icon_style.expand_margin_bottom = 4
+			icon_style.content_margin_left = 3
+			icon_style.content_margin_top = 3
+			icon_style.content_margin_right = 3
+			icon_style.content_margin_bottom = 3
+			# 枠線の太さを7px（約0.8倍）にして内側に調整
+			icon_style.border_width_left = 7
+			icon_style.border_width_top = 7
+			icon_style.border_width_right = 7
+			icon_style.border_width_bottom = 7
 			icon_panel.add_theme_stylebox_override("panel", icon_style)
 			border_color = icon_style.border_color
 		
@@ -188,7 +214,7 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	if level_label:
 		level_label.text = lvl_str
 	if cost_label:
-		cost_label.visible = true
+		cost_label.visible = show_cost
 		cost_label.text = cost_str
 	if desc_label:
 		desc_label.text = full_desc

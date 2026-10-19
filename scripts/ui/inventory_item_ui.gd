@@ -116,7 +116,8 @@ func _on_mouse_entered() -> void:
 		"icon": item_icon,
 		"level": item_level,
 		"rarity": item_rarity,
-		"equip_skill": item_equip_skill
+		"equip_skill": item_equip_skill,
+		"forge_count": item_forge_count
 	}
 	_custom_tooltip.setup(item_data)
 	_update_tooltip_position()

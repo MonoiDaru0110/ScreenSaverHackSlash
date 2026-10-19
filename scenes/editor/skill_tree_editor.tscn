@@ -168,19 +168,18 @@ text = "説明文:"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MaxRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+[node name="UnlimitedRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/UnlimitedRow"]
 custom_minimum_size = Vector2(85, 0)
 layout_mode = 2
-text = "最大レベル:"
+text = "無制限強化:"
 
-[node name="SidebarMaxSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MaxRow"]
+[node name="SidebarUnlimitedCheck" type="CheckBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/UnlimitedRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 1.0
-value = 5.0
+text = "何回でも解放可能"
 
 [node name="CostRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2

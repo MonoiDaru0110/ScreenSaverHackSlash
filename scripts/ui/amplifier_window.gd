@@ -8,6 +8,10 @@ var _ui_timer: Timer = null
 var _shake_timer: float = 0.0
 
 @export_group("Card & Text Colors")
+@export var gold_card_bg_affordable: Color = Color(0.92, 0.68, 0.12, 1.0)
+@export var gold_card_bg_normal: Color = Color(0.18, 0.15, 0.09, 1.0)
+@export var token_card_bg_affordable: Color = Color(0.18, 0.42, 0.78, 1.0)
+@export var token_card_bg_normal: Color = Color(0.10, 0.15, 0.24, 1.0)
 @export var card_bg_affordable: Color = Color(0.18, 0.42, 0.78, 1.0)
 @export var card_bg_normal: Color = Color(0.10, 0.15, 0.24, 1.0)
 @export var card_border_color: Color = Color(0.05, 0.06, 0.09, 1.0)
@@ -71,8 +75,8 @@ var _buy_mode_indices: Dictionary = {
 
 
 func _ready() -> void:
-	header_color = Color(0.18, 0.42, 0.78, 1.0)
-	separator_color = Color(0.0, 0.0, 0.0, 1.0)
+	header_color = Color(0.18, 0.52, 0.92, 1.0)
+	separator_color = Color(0.35, 0.75, 1.0, 1.0)
 	super._ready()
 
 	# ボーナスボタン押下シグナル接続
@@ -186,18 +190,16 @@ func _format_decimal_val(val: float) -> String:
 	return "%.2f" % val
 
 
-func _apply_box_style(btn: Button, can_afford: bool, is_unlocked_max: bool = false, _is_gold_cost: bool = false) -> void:
+func _apply_box_style(btn: Button, can_afford: bool, is_unlocked_max: bool = false, is_token_section: bool = false) -> void:
 	if not btn:
 		return
-	var bg_col := card_bg_normal
-	var border_col := card_border_color
-
-	if is_unlocked_max:
-		bg_col = card_bg_affordable
-	elif can_afford:
-		bg_col = card_bg_affordable
+	var bg_col: Color
+	if is_token_section:
+		bg_col = token_card_bg_affordable if (can_afford or is_unlocked_max) else token_card_bg_normal
 	else:
-		bg_col = card_bg_normal
+		bg_col = gold_card_bg_affordable if (can_afford or is_unlocked_max) else gold_card_bg_normal
+
+	var border_col := card_border_color
 
 	var st_normal := StyleBoxFlat.new()
 	st_normal.bg_color = bg_col
@@ -230,10 +232,10 @@ func _apply_box_style(btn: Button, can_afford: bool, is_unlocked_max: bool = fal
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
-func _apply_mode_btn_style(btn: Button) -> void:
+func _apply_mode_btn_style(btn: Button, is_token_section: bool = false) -> void:
 	if not btn:
 		return
-	var bg_col := card_bg_affordable
+	var bg_col := token_card_bg_affordable if is_token_section else gold_card_bg_affordable
 	var border_col := card_border_color
 
 	var st_normal := StyleBoxFlat.new()
@@ -274,6 +276,8 @@ func _apply_mode_btn_style(btn: Button) -> void:
 	btn.add_theme_color_override("font_pressed_color", Color(0.92, 0.95, 1, 1))
 	btn.add_theme_color_override("font_focus_color", Color(1, 1, 1, 1))
 	btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 1))
+	btn.add_theme_constant_override("outline_size", 4)
+	btn.add_theme_color_override("font_outline_color", Color(0.05, 0.06, 0.09, 1.0))
 
 
 func _format_mode_text(mode: int) -> String:
@@ -361,7 +365,7 @@ func _update_upgrade_card(
 	btn.disabled = not can_afford
 	_apply_box_style(btn, can_afford, false, is_token_section)
 	if mode_btn:
-		_apply_mode_btn_style(mode_btn)
+		_apply_mode_btn_style(mode_btn, is_token_section)
 
 
 func update_all() -> void:

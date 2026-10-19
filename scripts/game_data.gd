@@ -275,7 +275,7 @@ func init_skill_tree_auto_unlock_order() -> void:
 	for skill_id: String in skills:
 		children_map[skill_id] = []
 		var s: Dictionary = skills[skill_id]
-		skill_max_levels[skill_id] = int(s.get("max_level", 5))
+		skill_max_levels[skill_id] = 1
 	
 	for skill_id: String in skills:
 		var s: Dictionary = skills[skill_id]
@@ -677,19 +677,19 @@ func get_equipped_skill_total_val(skill_id: String) -> float:
 
 
 func get_equipped_saving_cost_multiplier() -> float:
-	var lvl: int = equipped_skill_levels.get("saving", 0)
+	var lvl: int = equipped_skill_levels.get("gold_cost", 0) + equipped_skill_levels.get("saving", 0)
 	if lvl <= 0:
 		return 1.0
-	var unit_val: float = float(equipment_skill_defs.get("saving", {}).get("unit_value", 0.99))
-	return pow(unit_val, lvl)
+	var unit_val: float = float(equipment_skill_defs.get("gold_cost", {}).get("unit_value", 0.99))
+	return pow(unit_val, float(lvl))
 
 
 func get_equipped_token_saving_cost_multiplier() -> float:
-	var lvl: int = equipped_skill_levels.get("token_saving", 0)
+	var lvl: int = equipped_skill_levels.get("token_cost", 0) + equipped_skill_levels.get("token_saving", 0)
 	if lvl <= 0:
 		return 1.0
-	var unit_val: float = float(equipment_skill_defs.get("token_saving", {}).get("unit_value", 0.99))
-	return pow(unit_val, lvl)
+	var unit_val: float = float(equipment_skill_defs.get("token_cost", {}).get("unit_value", 0.99))
+	return pow(unit_val, float(lvl))
 
 
 func is_slot_unlocked(slot_key: String) -> bool:
@@ -978,19 +978,61 @@ func get_logo_upgrade_cost() -> float:
 	return base * get_equipped_saving_cost_multiplier()
 
 
-func get_speed_upgrade_cost() -> float:
-	var base := 10.0 + float(speed_level) * 15.0
-	return base * get_equipped_saving_cost_multiplier()
+func _calc_arithmetic_cost(base_init: float, step: float, current_level: int, count: int, saving_mult: float) -> float:
+	if count <= 0:
+		return 0.0
+	var a0 := (base_init + float(current_level) * step) * saving_mult
+	if count == 1:
+		return a0
+	var d := step * saving_mult
+	return float(count) * a0 + d * float(count * (count - 1)) * 0.5
 
 
-func get_boost_upgrade_cost() -> float:
-	var base := 20.0 + float(boost_level) * 25.0
-	return base * get_equipped_saving_cost_multiplier()
+func _calc_arithmetic_max_count(base_init: float, step: float, current_level: int, currency: float, saving_mult: float) -> int:
+	var a0 := (base_init + float(current_level) * step) * saving_mult
+	if currency < a0:
+		return 0
+	var d := step * saving_mult
+	var n := 0
+	if is_zero_approx(d):
+		n = int(currency / a0)
+	else:
+		var b := a0 - d * 0.5
+		var disc := b * b + 2.0 * d * currency
+		if disc >= 0.0:
+			n = int(floor((-b + sqrt(disc)) / d))
+	var actual_cost := _calc_arithmetic_cost(base_init, step, current_level, n, saving_mult)
+	if actual_cost > currency and n > 0:
+		n -= 1
+	elif n >= 0:
+		var next_cost := _calc_arithmetic_cost(base_init, step, current_level, n + 1, saving_mult)
+		if next_cost <= currency:
+			n += 1
+	return maxi(0, n)
 
 
-func get_size_upgrade_cost() -> float:
-	var base := 15.0 + float(size_level) * 20.0
-	return base * get_equipped_saving_cost_multiplier()
+func get_speed_upgrade_cost(count: int = 1) -> float:
+	return _calc_arithmetic_cost(10.0, 15.0, speed_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_speed_upgrade_max_count() -> int:
+	return _calc_arithmetic_max_count(10.0, 15.0, speed_level, gold, get_equipped_saving_cost_multiplier())
+
+
+func get_boost_upgrade_cost(count: int = 1) -> float:
+	return _calc_arithmetic_cost(20.0, 25.0, boost_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_boost_upgrade_max_count() -> int:
+	return _calc_arithmetic_max_count(20.0, 25.0, boost_level, gold, get_equipped_saving_cost_multiplier())
+
+
+func get_size_upgrade_cost(count: int = 1) -> float:
+	return _calc_arithmetic_cost(15.0, 20.0, size_level, count, get_equipped_saving_cost_multiplier())
+
+
+func get_size_upgrade_max_count() -> int:
+	return _calc_arithmetic_max_count(15.0, 20.0, size_level, gold, get_equipped_saving_cost_multiplier())
 
 
 func get_ascension_multiplier() -> float:
@@ -998,7 +1040,7 @@ func get_ascension_multiplier() -> float:
 
 
 func can_ascend() -> bool:
-	return gold >= 1000
+	return true
 
 
 func buy_logo_upgrade() -> bool:
@@ -1013,34 +1055,40 @@ func buy_logo_upgrade() -> bool:
 	return false
 
 
-func buy_speed_upgrade() -> bool:
-	var cost := get_speed_upgrade_cost()
+func buy_speed_upgrade(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_speed_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
 		gold_changed.emit(gold)
-		speed_level += 1
+		speed_level += count
 		upgrades_changed.emit()
 		return true
 	return false
 
 
-func buy_boost_upgrade() -> bool:
-	var cost := get_boost_upgrade_cost()
+func buy_boost_upgrade(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_boost_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
 		gold_changed.emit(gold)
-		boost_level += 1
+		boost_level += count
 		upgrades_changed.emit()
 		return true
 	return false
 
 
-func buy_size_upgrade() -> bool:
-	var cost := get_size_upgrade_cost()
+func buy_size_upgrade(count: int = 1) -> bool:
+	if count <= 0:
+		return false
+	var cost := get_size_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
 		gold_changed.emit(gold)
-		size_level += 1
+		size_level += count
 		upgrades_changed.emit()
 		return true
 	return false
@@ -1058,8 +1106,8 @@ func get_logo_size_multiplier() -> float:
 	var level_A := float(get_effective_size_level())
 	var contrib_A := half_C * (1.0 - exp(-0.02 * level_A))
 	
-	# 装備スキルレベル B (size_boost) による収束寄与
-	var level_B := get_equipped_skill_total_val("size_boost")
+	# 装備スキルレベル B (size_factor / size_boost) による収束寄与
+	var level_B := get_equipped_skill_total_val("size_factor") + get_equipped_skill_total_val("size_boost")
 	var contrib_B := half_C * (1.0 - exp(-0.03 * level_B))
 	
 	return 1.0 + contrib_A + contrib_B
@@ -1110,10 +1158,12 @@ func get_token_direct_hit_parameter() -> float:
 
 
 func calculate_crit_result(crit_factor: float) -> Dictionary:
-	if crit_factor <= 0.0:
+	var equip_crit_rate := get_equipped_skill_total_val("crit_rate")
+	var equip_crit_yield := get_equipped_skill_total_val("crit_yield")
+	var chance_percent := 5.0 * crit_factor + equip_crit_rate
+	if chance_percent <= 0.0:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 	
-	var chance_percent := 5.0 * crit_factor
 	var n := int(floor(chance_percent / 100.0))
 	var m := chance_percent - float(n * 100)
 	
@@ -1124,7 +1174,7 @@ func calculate_crit_result(crit_factor: float) -> Dictionary:
 	if weight <= 0:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 		
-	var base_crit_bonus := 0.05 * crit_factor
+	var base_crit_bonus := 0.05 * crit_factor + equip_crit_yield * 0.01
 	var mult := 1.0 + float(weight) * base_crit_bonus
 	return {"multiplier": mult, "is_crit": true, "weight": weight}
 
@@ -1138,16 +1188,17 @@ func roll_token_critical() -> Dictionary:
 
 
 func calculate_direct_result(direct_factor: float) -> Dictionary:
-	if direct_factor <= 0.0:
+	var equip_direct_rate := get_equipped_skill_total_val("direct_rate")
+	var equip_direct_yield := get_equipped_skill_total_val("direct_yield")
+	var chance_percent := minf(100.0, 5.0 * direct_factor + equip_direct_rate)
+	if chance_percent <= 0.0:
 		return {"multiplier": 1.0, "is_direct": false}
 	
-	var chance_percent := minf(100.0, 5.0 * direct_factor)
 	var is_direct := (randf() * 100.0) < chance_percent
-	
 	if not is_direct:
 		return {"multiplier": 1.0, "is_direct": false}
 		
-	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0)
+	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0) + equip_direct_yield * 0.01
 	var mult := 1.0 + base_direct_bonus
 	return {"multiplier": mult, "is_direct": true}
 
@@ -1238,8 +1289,8 @@ func _recalculate_all_cumulative_levels() -> void:
 
 func _recalculate_cached_multipliers() -> void:
 	check_gamble_activation()
-	var gold_equip_mult := 1.0 + get_equipped_skill_total_val("gold_boost") * 0.01
-	var token_equip_mult := 1.0 + get_equipped_skill_total_val("token_boost") * 0.01
+	var gold_equip_mult := 1.0 + (get_equipped_skill_total_val("gold_gain") + get_equipped_skill_total_val("gold_boost")) * 0.01
+	var token_equip_mult := 1.0 + (get_equipped_skill_total_val("token_gain") + get_equipped_skill_total_val("token_boost")) * 0.01
 	var div_mult := get_diversity_multiplier()
 	var accum_mult := get_accumulation_multiplier()
 	var reinc_mult := get_reincarnation_multiplier()
@@ -1306,10 +1357,10 @@ func _update_cumulative_levels(skill_id: String) -> void:
 	_recalculate_cached_multipliers()
 
 
-func buy_skill_upgrade(skill_id: String, cost: float, max_level: int) -> bool:
+func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false) -> bool:
 	if tokens >= cost:
 		var current_lvl = get_skill_level(skill_id)
-		if current_lvl < max_level:
+		if is_unlimited or current_lvl == 0:
 			tokens -= cost
 			skill_levels[skill_id] = current_lvl + 1
 			
@@ -1396,19 +1447,18 @@ func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool =
 		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
 		var unit_val: float = float(sk_def.get("unit_value", 1.0))
 		var desc_tmpl: String = sk_def.get("desc_template", "%s")
-		var total_val = unit_val * s_level
-		if sk_id == "saving" or sk_id == "token_saving":
-			total_val = pow(unit_val, float(s_level))
+		var is_pow: bool = (sk_id == "gold_cost" or sk_id == "token_cost" or sk_id == "saving" or sk_id == "token_saving")
+		var total_val: float = pow(unit_val, float(s_level)) if is_pow else unit_val * float(s_level)
 		
 		if sk_id == "corner_trick":
 			var chance_percent := int((1.0 - pow(0.99, float(s_level))) * 100.0)
 			return desc_tmpl % chance_percent
-		elif "%" in desc_tmpl:
-			var tmpl := desc_tmpl.replace("%f", "%.1f")
-			if "%.2f" in tmpl or "%.1f" in tmpl:
-				return tmpl % float(total_val)
-			else:
-				return tmpl % int(total_val)
+		elif "%.2f" in desc_tmpl:
+			return desc_tmpl % total_val
+		elif "%.1f" in desc_tmpl or "%f" in desc_tmpl:
+			return desc_tmpl.replace("%f", "%.1f") % total_val
+		elif "%d" in desc_tmpl:
+			return desc_tmpl % int(round(total_val))
 		return desc_tmpl
 
 
@@ -1462,7 +1512,7 @@ func generate_random_equipment() -> Dictionary:
 	
 	# Generate random rarity using Gaussian (Normal) Distribution model
 	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
-	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_luck"))
+	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_rarity") + get_equipped_skill_total_val("drop_luck"))
 	var L := float(rarity_level)
 	var mu := minf(5.0, 0.05 * L)
 	# muが5.0に達する(L > 100)までは広いばらつき sigma=1.10 を維持し、
@@ -1515,7 +1565,7 @@ func generate_random_equipment() -> Dictionary:
 	skill_keys.shuffle()
 	
 	# スキルレベル配分 (平均 = 装備レベル/10 + 洗練レベル*0.1)
-	var refinement_total := get_equipped_skill_total_val("refinement")
+	var refinement_total := get_equipped_skill_total_val("drop_skill_level") + get_equipped_skill_total_val("refinement")
 	var target_avg_skill_level := (float(level) / 10.0) + refinement_total
 	
 	var float_skill_levels: Array[float] = []
@@ -1911,6 +1961,9 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	# 分数関数(反比例)漸近収束モデル: P(L) = 1.0 - (1.0 - P_base) / (1.0 + 0.03 * L)
 	var base_drop_chance := 0.15 if is_corner else 0.02
 	var drop_chance := 1.0 - (1.0 - base_drop_chance) / (1.0 + 0.03 * L)
+	# 装備スキル「装備ドロップ率」ボーナス (+1.2n%)
+	var equip_drop_rate_bonus := get_equipped_skill_total_val("drop_rate") * 0.01
+	drop_chance = minf(1.0, drop_chance + equip_drop_rate_bonus)
 		
 	if randf() < drop_chance:
 		var item := generate_random_equipment()

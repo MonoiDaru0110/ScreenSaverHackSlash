@@ -1,7 +1,24 @@
-[gd_scene load_steps=3 format=3 uid="uid://bfs0vsifx4xc7"]
+[gd_scene load_steps=8 format=3 uid="uid://bfs0vsifx4xc7"]
 
 [ext_resource type="Script" uid="uid://cviyyt4wwyibd" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" uid="uid://bth5hfbmp82qx" path="res://scenes/ui/hud.tscn" id="3_hud"]
+[ext_resource type="Shader" uid="uid://c5dj03i2eyvey" path="res://shaders/background_stage.gdshader" id="4_bgstage"]
+[ext_resource type="Shader" uid="uid://bag0cg1m58cmw" path="res://shaders/aura_edge.gdshader" id="5_aura"]
+[ext_resource type="Script" uid="uid://veiju8335doo" path="res://scripts/visual_fx.gd" id="6_visualfx"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_bgstage"]
+shader = ExtResource("4_bgstage")
+shader_parameter/stage = 0.0
+shader_parameter/brightness = 1.0
+shader_parameter/rect_size = Vector2(1662, 1080)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_aura"]
+shader = ExtResource("5_aura")
+shader_parameter/rect_size = Vector2(1662, 1080)
+shader_parameter/aura_type = 0
+shader_parameter/strength = 0.0
+shader_parameter/edge_width = 170.0
+shader_parameter/pulse_speed = 1.2
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -10,6 +27,13 @@ script = ExtResource("1_main")
 offset_right = 1662.0
 offset_bottom = 1080.0
 color = Color(0.05, 0.05, 0.09, 1)
+
+[node name="BackgroundStage" type="ColorRect" parent="."]
+visible = false
+material = SubResource("ShaderMaterial_bgstage")
+offset_right = 1662.0
+offset_bottom = 1080.0
+mouse_filter = 2
 
 [node name="Separator" type="ColorRect" parent="."]
 offset_left = 1662.0
@@ -44,5 +68,17 @@ offset_right = 1662.0
 offset_bottom = 880.0
 mouse_filter = 2
 theme_override_constants/separation = 8
+
+[node name="AuraOverlay" type="ColorRect" parent="."]
+visible = false
+material = SubResource("ShaderMaterial_aura")
+offset_right = 1662.0
+offset_bottom = 1080.0
+mouse_filter = 2
+
+[node name="VisualFx" type="Node" parent="." node_paths=PackedStringArray("bg_stage_rect", "aura_rect")]
+script = ExtResource("6_visualfx")
+bg_stage_rect = NodePath("../BackgroundStage")
+aura_rect = NodePath("../AuraOverlay")
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]

@@ -1,88 +1,95 @@
 {
 	"equipment_skills": {
-		"corner_trick": {
-			"desc_template": "辺ヒット時、%d%%の確率で角ヒットになる",
-			"id": "corner_trick",
-			"memo": "辺ヒット時に一定確率で角ヒットに昇格させる。",
-			"name": "トリック",
+		"crit_rate": {
+			"desc_template": "クリティカル率 +%.1f%%",
+			"id": "crit_rate",
+			"memo": "クリティカル発生確率を加算 (+4.3% × Lv)",
+			"name": "クリティカル率",
+			"unit_value": 4.3
+		},
+		"crit_yield": {
+			"desc_template": "クリティカル時入手ゴールド/トークン +%.1f%%",
+			"id": "crit_yield",
+			"memo": "クリティカル発生時の獲得量ボーナス (+5.1% × Lv)",
+			"name": "クリティカル獲得量",
+			"unit_value": 5.1
+		},
+		"direct_rate": {
+			"desc_template": "ダイレクトヒット率 +%.1f%%",
+			"id": "direct_rate",
+			"memo": "ダイレクトヒット発生確率を加算 (最大100%, +1.7% × Lv)",
+			"name": "ダイレクトヒット率",
+			"unit_value": 1.7
+		},
+		"direct_yield": {
+			"desc_template": "ダイレクトヒット時入手ゴールド/トークン +%.1f%%",
+			"id": "direct_yield",
+			"memo": "ダイレクトヒット発生時の獲得量ボーナス (+15.2% × Lv)",
+			"name": "直撃獲得量",
+			"unit_value": 15.2
+		},
+		"drop_rarity": {
+			"desc_template": "ドロップ装備のレアリティ係数 +%d",
+			"id": "drop_rarity",
+			"memo": "装備ドロップ時のレアリティ抽選レベルを加算 (+1 × Lv)",
+			"name": "レアリティ係数",
 			"unit_value": 1.0
 		},
-		"crit_boost": {
-			"desc_template": "クリティカル係数 +%d",
-			"id": "crit_boost",
-			"memo": "クリティカル係数を直接加算する。",
-			"name": "見切り",
-			"unit_value": 1.0
+		"drop_rate": {
+			"desc_template": "装備ドロップ率 +%.1f%%",
+			"id": "drop_rate",
+			"memo": "装備ドロップ確率に直接加算 (+1.2% × Lv)",
+			"name": "装備ドロップ率",
+			"unit_value": 1.2
 		},
-		"direct_boost": {
-			"desc_template": "ダイレクトヒット係数 +%d",
-			"id": "direct_boost",
-			"memo": "ダイレクトヒット係数を直接加算する。",
-			"name": "直撃",
-			"unit_value": 1.0
-		},
-		"drop_luck": {
-			"desc_template": "装備レアリティ係数 +%d",
-			"id": "drop_luck",
-			"memo": "装備のドロップレアリティ係数を上昇させる。",
-			"name": "鑑定",
-			"unit_value": 1.0
-		},
-		"drop_rate_boost": {
-			"desc_template": "装備ドロップ率係数 +%d",
-			"id": "drop_rate_boost",
-			"memo": "装備のドロップ率係数を上昇させる。",
-			"name": "大漁",
-			"unit_value": 1.0
-		},
-		"gold_boost": {
-			"desc_template": "ゴールド獲得量 +%d%%",
-			"id": "gold_boost",
-			"memo": "ゴールド獲得倍率にパーセンテージ乗算補正をかける。",
-			"name": "強撃",
-			"unit_value": 5.0
-		},
-		"refinement": {
+		"drop_skill_level": {
 			"desc_template": "ドロップ装備のスキルレベル +%.1f",
-			"id": "refinement",
-			"memo": "ドロップする装備の各スキル基本レベルに加算する。",
-			"name": "洗練",
+			"id": "drop_skill_level",
+			"memo": "ドロップする装備の各スキル基本レベルに加算 (+0.1 × Lv)",
+			"name": "スキルレベル+",
 			"unit_value": 0.1
 		},
-		"saving": {
-			"desc_template": "ステータス強化時の消費ゴールド x%.2f",
-			"id": "saving",
-			"memo": "基礎レベルアップ(ロゴ/速度/ブースト/サイズ)のゴールドコストに 0.99^Lv 倍をかける。",
-			"name": "節約",
+		"gold_cost": {
+			"desc_template": "消費ゴールド x%.2f",
+			"id": "gold_cost",
+			"memo": "ステータス強化時の消費ゴールドに 0.99^Lv を乗算",
+			"name": "消費ゴールド",
 			"unit_value": 0.99
 		},
-		"size_boost": {
-			"desc_template": "巨大化レベル +%d",
-			"id": "size_boost",
-			"memo": "巨大化レベルに直接加算する。",
-			"name": "巨大化",
+		"gold_gain": {
+			"desc_template": "ゴールド入手量 +%.1f%%",
+			"id": "gold_gain",
+			"memo": "ゴールド獲得量に乗算補正 (+1.8% × Lv)",
+			"name": "ゴールド入手量",
+			"unit_value": 1.8
+		},
+		"move_speed": {
+			"desc_template": "ロゴ移動速度 +%.1f%%",
+			"id": "move_speed",
+			"memo": "ロゴ移動速度にパーセンテージ乗算補正 (+1.5% × Lv)",
+			"name": "ロゴ移動速度",
+			"unit_value": 1.5
+		},
+		"size_factor": {
+			"desc_template": "ロゴサイズ係数 +%d",
+			"id": "size_factor",
+			"memo": "ロゴサイズ計算の装備寄与係数 (+1 × Lv)",
+			"name": "ロゴサイズ係数",
 			"unit_value": 1.0
 		},
-		"speed_boost": {
-			"desc_template": "移動速度 +%d",
-			"id": "speed_boost",
-			"memo": "ロゴの移動速度に直接加算する。",
-			"name": "加速",
-			"unit_value": 20.0
-		},
-		"token_boost": {
-			"desc_template": "トークン獲得量 +%d%%",
-			"id": "token_boost",
-			"memo": "トークン獲得倍率にパーセンテージ乗算補正をかける。",
-			"name": "集中",
-			"unit_value": 5.0
-		},
-		"token_saving": {
-			"desc_template": "スキルツリー解放時の消費トークン x%.2f",
-			"id": "token_saving",
-			"memo": "スキルツリーレベルアップ時の消費トークンコストに 0.99^Lv 倍をかける。",
-			"name": "節約【特】",
+		"token_cost": {
+			"desc_template": "消費トークン x%.2f",
+			"id": "token_cost",
+			"memo": "スキルツリー解放時の消費トークンに 0.99^Lv を乗算",
+			"name": "消費トークン",
 			"unit_value": 0.99
+		},
+		"token_gain": {
+			"desc_template": "トークン入手量 +%.1f%%",
+			"id": "token_gain",
+			"memo": "トークン獲得量に乗算補正 (+1.6% × Lv)",
+			"name": "トークン入手量",
+			"unit_value": 1.6
 		}
 	}
 }

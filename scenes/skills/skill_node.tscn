@@ -5,11 +5,16 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_522ik"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p2hsv"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
 bg_color = Color(0.1, 0.1, 0.15, 1)
-border_width_left = 9
-border_width_top = 9
-border_width_right = 9
-border_width_bottom = 9
+border_width_left = 11
+border_width_top = 11
+border_width_right = 11
+border_width_bottom = 11
+border_color = Color(0.35, 0.4, 0.55, 1)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
@@ -20,11 +25,16 @@ expand_margin_right = 9.0
 expand_margin_bottom = 9.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cs5l0"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
 bg_color = Color(0.18, 0.18, 0.28, 1)
-border_width_left = 9
-border_width_top = 9
-border_width_right = 9
-border_width_bottom = 9
+border_width_left = 11
+border_width_top = 11
+border_width_right = 11
+border_width_bottom = 11
+border_color = Color(0.35, 0.4, 0.55, 1)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
@@ -35,11 +45,16 @@ expand_margin_right = 9.0
 expand_margin_bottom = 9.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mx63b"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
 bg_color = Color(0.08, 0.08, 0.15, 1)
-border_width_left = 9
-border_width_top = 9
-border_width_right = 9
-border_width_bottom = 9
+border_width_left = 11
+border_width_top = 11
+border_width_right = 11
+border_width_bottom = 11
+border_color = Color(0.35, 0.4, 0.55, 1)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
@@ -50,11 +65,16 @@ expand_margin_right = 9.0
 expand_margin_bottom = 9.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qs7b7"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
 bg_color = Color(0.12, 0.12, 0.2, 1)
-border_width_left = 9
-border_width_top = 9
-border_width_right = 9
-border_width_bottom = 9
+border_width_left = 11
+border_width_top = 11
+border_width_right = 11
+border_width_bottom = 11
+border_color = Color(0.35, 0.4, 0.55, 1)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
@@ -68,6 +88,10 @@ expand_margin_bottom = 9.0
 custom_minimum_size = Vector2(80, 80)
 offset_right = 80.0
 offset_bottom = 80.0
+tooltip_text = "SkillNode
+
+タイプ: 1回のみ解放
+Base Cost: 💎 1"
 focus_mode = 0
 theme_override_font_sizes/font_size = 32
 theme_override_styles/focus = SubResource("StyleBoxEmpty_522ik")
@@ -76,4 +100,6 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_cs5l0")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_mx63b")
 theme_override_styles/normal = SubResource("StyleBoxFlat_qs7b7")
 text = "❓"
+icon_alignment = 1
+expand_icon = true
 script = ExtResource("1_skill")

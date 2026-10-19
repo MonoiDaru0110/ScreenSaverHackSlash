@@ -8,7 +8,9 @@ class_name SlotButton
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
 @onready var empty_label: Label = $EmptyLabel
 @onready var lock_label: Label = get_node_or_null("LockLabel") as Label
-@onready var equip_skill_labels: Control = $EquipSkillGrid/EquipSkillLabels
+@onready var equip_info_container: VBoxContainer = get_node_or_null("EquipInfoContainer") as VBoxContainer
+@onready var item_name_label: Label = get_node_or_null("%ItemNameLabel") as Label
+@onready var item_level_label: Label = get_node_or_null("%ItemLevelLabel") as Label
 var _custom_tooltip: EquipmentTooltip = null
 
 
@@ -55,8 +57,12 @@ func _ensure_nodes() -> void:
 		empty_label = get_node_or_null("EmptyLabel") as Label
 	if not lock_label:
 		lock_label = get_node_or_null("LockLabel") as Label
-	if not equip_skill_labels:
-		equip_skill_labels = get_node_or_null("EquipSkillGrid/EquipSkillLabels") as Control
+	if not equip_info_container:
+		equip_info_container = get_node_or_null("EquipInfoContainer") as VBoxContainer
+	if not item_name_label:
+		item_name_label = get_node_or_null("%ItemNameLabel") as Label
+	if not item_level_label:
+		item_level_label = get_node_or_null("%ItemLevelLabel") as Label
 
 
 func update_slot_ui(_slot_name: String, eq: Variant) -> void:
@@ -87,8 +93,8 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 			lock_label.visible = true
 		if empty_label:
 			empty_label.visible = false
-		if equip_skill_labels:
-			equip_skill_labels.visible = false
+		if equip_info_container:
+			equip_info_container.visible = false
 		if separator_line:
 			separator_line.visible = false
 		if equipment_icon:
@@ -109,7 +115,10 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 	base_style.bg_color = Color(0.05, 0.05, 0.08, 0.8)
 
 	if eq != null and not eq.is_empty():
+		var item_name: String = eq.get("name", "")
 		var item_rarity: String = eq.get("rarity", "コモン")
+		var item_level: int = eq.get("level", 1)
+		var forge_count: int = eq.get("forge_count", 0)
 		var rarity_color := GameData.get_rarity_color(item_rarity)
 		base_style.border_color = rarity_color
 		if slot_base:
@@ -118,37 +127,16 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 		tooltip_text = ""
 		if empty_label:
 			empty_label.visible = false
-		if equip_skill_labels:
-			equip_skill_labels.visible = true
-			var item_equip_skills = eq.get("equip_skill", [])
-			# 縦優先の並び順マッピング (1,3,5=左列 / 2,4,6=右列)
-			var node_order := [1, 3, 5, 2, 4, 6]
-			for slot_idx in range(6):
-				var node_num: int = node_order[slot_idx]
-				var name_node = equip_skill_labels.get_node_or_null("EquipSkillName%d" % node_num) as Label
-				var val_node = equip_skill_labels.get_node_or_null("EquipSkillVal%d" % node_num) as Label
-				
-				if slot_idx < item_equip_skills.size():
-					var skill = item_equip_skills[slot_idx]
-					if name_node:
-						name_node.tooltip_text = ""
-						name_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-						name_node.text = skill.get("name", "")
-						name_node.visible = true
-						if skill.get("is_special", false):
-							name_node.add_theme_color_override("font_color", GameData.special_skill_color)
-						else:
-							name_node.remove_theme_color_override("font_color")
-					if val_node:
-						val_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
-						val_node.text = "+%d" % skill.get("level", 1)
-						val_node.visible = true
+		if equip_info_container:
+			equip_info_container.visible = true
+			if item_name_label:
+				if forge_count > 0:
+					item_name_label.text = "%s[+%d]" % [item_name, forge_count]
 				else:
-					if name_node:
-						name_node.tooltip_text = ""
-						name_node.visible = false
-					if val_node:
-						val_node.visible = false
+					item_name_label.text = item_name
+				item_name_label.add_theme_color_override("font_color", rarity_color)
+			if item_level_label:
+				item_level_label.text = "Lv.%d" % item_level
 						
 		if equipment_icon:
 			equipment_icon.set_show_icon_base(false)
@@ -163,8 +151,8 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 		tooltip_text = "" # 空にしてツールチップを無効化
 		if empty_label:
 			empty_label.visible = true
-		if equip_skill_labels:
-			equip_skill_labels.visible = false
+		if equip_info_container:
+			equip_info_container.visible = false
 		if equipment_icon:
 			equipment_icon.update_item(null)
 			equipment_icon.set_show_icon_base(false)

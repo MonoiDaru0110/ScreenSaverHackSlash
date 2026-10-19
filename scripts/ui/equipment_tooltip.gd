@@ -5,7 +5,11 @@ class_name EquipmentTooltip
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
 @onready var name_label: Label = %NameLabel
 @onready var level_label: Label = %LevelLabel
-@onready var equip_skill_label: Control = %EquipSkillLabel
+@onready var normal_skill_label: RichTextLabel = get_node_or_null("%NormalSkillLabel") as RichTextLabel
+@onready var special_skill_label: RichTextLabel = get_node_or_null("%SpecialSkillLabel") as RichTextLabel
+@onready var special_section_header: Label = get_node_or_null("%SpecialSectionHeader") as Label
+@onready var separator_2: ColorRect = get_node_or_null("%Separator2") as ColorRect
+@onready var equip_skill_label: Control = get_node_or_null("%EquipSkillLabel") as Control
 
 
 func _ready() -> void:
@@ -33,8 +37,16 @@ func _ensure_nodes() -> void:
 		name_label = %NameLabel as Label
 	if not level_label:
 		level_label = %LevelLabel as Label
+	if not normal_skill_label:
+		normal_skill_label = get_node_or_null("%NormalSkillLabel") as RichTextLabel
+	if not special_skill_label:
+		special_skill_label = get_node_or_null("%SpecialSkillLabel") as RichTextLabel
+	if not special_section_header:
+		special_section_header = get_node_or_null("%SpecialSectionHeader") as Label
+	if not separator_2:
+		separator_2 = get_node_or_null("%Separator2") as ColorRect
 	if not equip_skill_label:
-		equip_skill_label = %EquipSkillLabel as Control
+		equip_skill_label = get_node_or_null("%EquipSkillLabel") as Control
 
 
 func setup(item_data: Dictionary) -> void:
@@ -60,40 +72,50 @@ func setup(item_data: Dictionary) -> void:
 	var forge_count: int = item_data.get("forge_count", 0)
 	if name_label:
 		if forge_count > 0:
-			name_label.text = "%s +%d" % [item_name, forge_count]
+			name_label.text = "%s[+%d]" % [item_name, forge_count]
 		else:
 			name_label.text = item_name
 		name_label.add_theme_color_override("font_color", rarity_color)
 	if level_label:
 		level_label.text = "Lv.%d" % item_level
 		
-	# スキル説明の構築（スキルレベルおよび効果数値の+部分を薄緑色 #b2ebb2 でハイライト）
+	# スキル説明の構築（通常スキルと特殊スキルに分離、先頭に「・」を追加、赤みを帯びた明るめの深い青に完全統一）
+	var item_equip_skills = item_data.get("equip_skill", [])
+	var normal_lines := PackedStringArray()
+	var special_lines := PackedStringArray()
+	var color_hex := "#6470f0"
+	
+	for skill in item_equip_skills:
+		var sk_name: String = skill.get("name", "")
+		var sk_lvl: int = skill.get("level", 1)
+		var is_spec: bool = skill.get("is_special", false)
+		var raw_desc: String = skill.get("desc", "")
+		
+		if is_spec:
+			special_lines.append("[color=%s]・%s +%d: %s[/color]" % [color_hex, sk_name, sk_lvl, raw_desc])
+		else:
+			normal_lines.append("[color=%s]・%s[/color]" % [color_hex, raw_desc])
+			
+	if normal_lines.is_empty():
+		normal_lines.append("[color=#58557a]・なし[/color]")
+	if special_lines.is_empty():
+		special_lines.append("[color=#58557a]・なし[/color]")
+		
+	# スキル間の余白（フォントサイズ1px分のわずかなスペースでほんの少しだけ隙間を空ける）
+	var skill_spacing := "\n[font_size=1] \n[/font_size]"
+	if normal_skill_label:
+		normal_skill_label.text = skill_spacing.join(normal_lines)
+	if special_skill_label:
+		special_skill_label.text = skill_spacing.join(special_lines)
+	if special_section_header:
+		special_section_header.add_theme_color_override("font_color", GameData.special_skill_color)
+		
+	# 旧ノードへのフォールバック（存在する場合）
 	if equip_skill_label:
-		var item_equip_skills = item_data.get("equip_skill", [])
-		var lines := PackedStringArray()
-		var green_color := "#b2ebb2" # 右装備欄のスキルレベルカラー Color(0.7, 0.9, 0.7)
-		
-		var regex := RegEx.new()
-		regex.compile("(?:\\+|x|×|\\*)?(?:\\d{1,3}(?:,\\d{3})+|\\d+)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?%?")
-		
-		for skill in item_equip_skills:
-			var sk_name: String = skill.get("name", "")
-			var sk_lvl: int = skill.get("level", 1)
-			var is_spec: bool = skill.get("is_special", false)
-			
-			if is_spec:
-				var spec_hex = GameData.special_skill_color.to_html()
-				sk_name = "[color=#%s]%s[/color]" % [spec_hex, sk_name]
-
-			var level_str := "[color=%s]+%d[/color]" % [green_color, sk_lvl]
-			var raw_desc: String = skill.get("desc", "")
-			var highlighted_desc := regex.sub(raw_desc, "[color=%s]$0[/color]" % green_color, true)
-			# 「5分ごとにリセットされる」の 5 は緑色にしない
-			highlighted_desc = highlighted_desc.replace("[color=%s]5[/color]分" % green_color, "5分")
-			
-			lines.append("%s %s: %s" % [sk_name, level_str, highlighted_desc])
-			
+		var all_lines := PackedStringArray()
+		all_lines.append_array(normal_lines)
+		all_lines.append_array(special_lines)
 		if equip_skill_label is RichTextLabel:
-			(equip_skill_label as RichTextLabel).text = "\n".join(lines)
+			(equip_skill_label as RichTextLabel).text = "\n".join(all_lines)
 		elif equip_skill_label is Label:
-			(equip_skill_label as Label).text = "\n".join(lines)
+			(equip_skill_label as Label).text = "\n".join(all_lines)

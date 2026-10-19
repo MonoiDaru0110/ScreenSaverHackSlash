@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=35 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
@@ -42,6 +42,42 @@ bg_color = Color(0.06, 0.06, 0.1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
 bg_color = Color(0.08, 0.08, 0.14, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_buymode_normal"]
+bg_color = Color(0.22, 0.2, 0.35, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.65, 0.6, 0.9, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_buymode_hover"]
+bg_color = Color(0.3, 0.26, 0.46, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.8, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_buymode_pressed"]
+bg_color = Color(0.15, 0.13, 0.24, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.48, 0.42, 0.72, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
 bg_color = Color(0.24, 0.14, 0.42, 1)
@@ -90,6 +126,54 @@ corner_radius_top_left = 3
 corner_radius_top_right = 3
 corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ascend_disabled"]
+bg_color = Color(0.2, 0.1, 0.12, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.15, 0.18, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ascend_hover"]
+bg_color = Color(0.62, 0.16, 0.22, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.38, 0.46, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ascend_pressed"]
+bg_color = Color(0.36, 0.08, 0.12, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.55, 0.15, 0.2, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ascend_normal"]
+bg_color = Color(0.48, 0.12, 0.18, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.78, 0.26, 0.34, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bottom"]
 bg_color = Color(0.08, 0.08, 0.14, 1)
@@ -587,8 +671,37 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="BuyModeRow" type="HBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="BuyModeLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/BuyModeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.82, 0.82, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "購入数"
+vertical_alignment = 1
+
+[node name="SidebarBuyModeBtn" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/BuyModeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 17
+theme_override_styles/disabled = SubResource("StyleBoxFlat_buymode_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_buymode_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_buymode_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_buymode_normal")
+text = "1"
+
 [node name="UpgradeButton1" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
-custom_minimum_size = Vector2(0, 75)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
@@ -629,7 +742,7 @@ text = "🪙 100"
 horizontal_alignment = 1
 
 [node name="UpgradeButton2" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
-custom_minimum_size = Vector2(0, 75)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
@@ -670,7 +783,7 @@ text = "🪙 10"
 horizontal_alignment = 1
 
 [node name="UpgradeButton3" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
-custom_minimum_size = Vector2(0, 75)
+custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
@@ -711,14 +824,15 @@ text = "🪙 20"
 horizontal_alignment = 1
 
 [node name="UpgradeButton4" type="Button" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList"]
-custom_minimum_size = Vector2(0, 75)
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
-theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_pressed")
-theme_override_styles/normal = SubResource("StyleBoxFlat_btn_normal")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_ascend_disabled")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ascend_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_ascend_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_ascend_normal")
 
-[node name="Content" type="VBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4"]
+[node name="Content" type="HBoxContainer" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -732,13 +846,6 @@ alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "アセンション"
-horizontal_alignment = 1
-
-[node name="CostLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-theme_override_font_sizes/font_size = 16
-text = "🪙 1,000"
 horizontal_alignment = 1
 
 [node name="Separator1" type="ColorRect" parent="Sidebar/SidebarLayout"]

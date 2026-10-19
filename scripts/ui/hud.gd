@@ -10,7 +10,11 @@ extends CanvasLayer
 @onready var btn_size: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton1
 @onready var btn_speed: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton2
 @onready var btn_boost: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton3
-@onready var btn_ascend: Button = $Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4
+@onready var btn_ascend: Button = %UpgradeButton4
+@onready var btn_buy_mode: Button = %SidebarBuyModeBtn
+
+const BUY_MODES: Array[int] = [1, 5, 10, 100, -1]
+var _sidebar_buy_mode_idx: int = 0
 
 # Tab UI references
 @onready var star_label: Label = %StarLabel
@@ -116,7 +120,6 @@ var _lbl_title_boost: Label
 var _lbl_diff_boost: Label
 var _lbl_cost_boost: Label
 var _lbl_title_ascend: Label
-var _lbl_cost_ascend: Label
 
 
 func _ready() -> void:
@@ -172,7 +175,7 @@ func _ready() -> void:
 
 	var style_focus := StyleBoxEmpty.new() # Removes focus outline border highlighting
 
-	for btn in [btn_size, btn_speed, btn_boost, btn_ascend]:
+	for btn in [btn_size, btn_speed, btn_boost]:
 		btn.add_theme_stylebox_override("normal", style_normal)
 		btn.add_theme_stylebox_override("hover", style_hover)
 		btn.add_theme_stylebox_override("pressed", style_pressed)
@@ -192,7 +195,12 @@ func _ready() -> void:
 			title_node = btn.get_node_or_null("Content/TitleLabel")
 		if title_node:
 			title_node.add_theme_font_size_override("font_size", 18)
-		btn.get_node("Content/CostLabel").add_theme_font_size_override("font_size", 16)
+		var cost_node = btn.get_node_or_null("Content/CostLabel")
+		if cost_node:
+			cost_node.add_theme_font_size_override("font_size", 16)
+
+	if btn_ascend:
+		btn_ascend.add_theme_stylebox_override("focus", style_focus)
 
 	# Main Tab button styles setup (ホーム / 転生)
 	# Inactive: base dark charcoal/navy
@@ -396,6 +404,8 @@ func _ready() -> void:
 	btn_speed.pressed.connect(_on_speed_pressed)
 	btn_boost.pressed.connect(_on_boost_pressed)
 	btn_ascend.pressed.connect(_on_ascend_pressed)
+	if btn_buy_mode:
+		btn_buy_mode.pressed.connect(_on_buy_mode_pressed)
 	GameData.setup_close_button(btn_close_window)
 	btn_close_window.pressed.connect(close_skill_tree)
 	if btn_toggle_skill_vis:
@@ -485,10 +495,11 @@ func _ready() -> void:
 	_lbl_diff_boost = btn_boost.get_node("Content/TitleHBox/DiffLabel")
 	_lbl_cost_boost = btn_boost.get_node("Content/CostLabel")
 	_lbl_title_ascend = btn_ascend.get_node("Content/TitleLabel")
-	_lbl_cost_ascend = btn_ascend.get_node("Content/CostLabel")
 	
 	close_inventory()
 	_update_all()
+
+
 
 
 func _on_gold_changed(_amount: float) -> void:
@@ -726,6 +737,16 @@ func _process(_delta: float) -> void:
 		_was_trinity_active = false
 		_restore_upgrade_button_styles()
 
+	# アセンションボタン: 押せるとき (can_ascend() && !disabled) にスター画面の注入ボタンや鍛造ボタンのようにゆっくり明滅
+	if btn_ascend:
+		if not btn_ascend.disabled and GameData.can_ascend():
+			var t: float = float(Time.get_ticks_msec()) * 0.0022
+			var pulse: float = 0.5 + 0.5 * sin(t)
+			var glow: Color = Color(1.0, 1.0, 1.0, 1.0).lerp(Color(1.5, 1.3, 1.8, 1.0), pulse)
+			btn_ascend.modulate = glow
+		else:
+			btn_ascend.modulate = Color.WHITE
+
 
 func _on_trinity_changed() -> void:
 	_update_upgrade_buttons()
@@ -795,18 +816,42 @@ func _restore_upgrade_button_styles() -> void:
 			btn.add_theme_stylebox_override("disabled", defaults["disabled"])
 
 
+
+func _on_buy_mode_pressed() -> void:
+	_sidebar_buy_mode_idx = (_sidebar_buy_mode_idx + 1) % BUY_MODES.size()
+	_update_upgrade_buttons()
+
+
 func _update_upgrade_buttons() -> void:
 	var gold := GameData.gold
 	var is_trinity := GameData.is_trinity_active()
+	var mode: int = BUY_MODES[_sidebar_buy_mode_idx]
+
+	if btn_buy_mode:
+		btn_buy_mode.text = "最大" if mode == -1 else str(mode)
 
 	# --- Upgrade 1: Logo Size ---
-	var cost_size := GameData.get_size_upgrade_cost()
-	var size_ok := gold >= cost_size
+	var cost_size: float = 0.0
+	var size_ok: bool = false
+	if mode == -1:
+		var max_size_cnt := GameData.get_size_upgrade_max_count()
+		if max_size_cnt > 0:
+			cost_size = GameData.get_size_upgrade_cost(max_size_cnt)
+			size_ok = true
+			_lbl_cost_size.text = "🪙 " + _format_number(cost_size) + " (+%d)" % max_size_cnt
+		else:
+			cost_size = GameData.get_size_upgrade_cost(1)
+			size_ok = false
+			_lbl_cost_size.text = "🪙 " + _format_number(cost_size) + " (+0)"
+	else:
+		cost_size = GameData.get_size_upgrade_cost(mode)
+		size_ok = gold >= cost_size
+		_lbl_cost_size.text = "🪙 " + _format_number(cost_size)
+
 	btn_size.disabled = !size_ok
 	_lbl_title_size.text = "ロゴサイズ強化  Lv. %d" % GameData.size_level
 	_lbl_title_size.add_theme_color_override("font_color", Color.WHITE if size_ok else Color(1, 1, 1, 0.4))
-	_lbl_cost_size.text = "🪙 " + _format_number(cost_size)
-	_lbl_cost_size.add_theme_color_override("font_color", Color.RED if !size_ok else Color(0.85, 0.85, 0.85))
+	_lbl_cost_size.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if size_ok else Color.RED)
 
 	var size_diff := GameData.get_trinity_stat_diff("size")
 	if is_trinity:
@@ -826,13 +871,27 @@ func _update_upgrade_buttons() -> void:
 		_lbl_diff_size.text = ""
 
 	# --- Upgrade 2: Speed ---
-	var cost_speed := GameData.get_speed_upgrade_cost()
-	var speed_ok := gold >= cost_speed
+	var cost_speed: float = 0.0
+	var speed_ok: bool = false
+	if mode == -1:
+		var max_speed_cnt := GameData.get_speed_upgrade_max_count()
+		if max_speed_cnt > 0:
+			cost_speed = GameData.get_speed_upgrade_cost(max_speed_cnt)
+			speed_ok = true
+			_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed) + " (+%d)" % max_speed_cnt
+		else:
+			cost_speed = GameData.get_speed_upgrade_cost(1)
+			speed_ok = false
+			_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed) + " (+0)"
+	else:
+		cost_speed = GameData.get_speed_upgrade_cost(mode)
+		speed_ok = gold >= cost_speed
+		_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed)
+
 	btn_speed.disabled = !speed_ok
 	_lbl_title_speed.text = "速度強化  Lv. %d" % GameData.speed_level
 	_lbl_title_speed.add_theme_color_override("font_color", Color.WHITE if speed_ok else Color(1, 1, 1, 0.4))
-	_lbl_cost_speed.text = "🪙 " + _format_number(cost_speed)
-	_lbl_cost_speed.add_theme_color_override("font_color", Color.RED if !speed_ok else Color(0.85, 0.85, 0.85))
+	_lbl_cost_speed.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if speed_ok else Color.RED)
 
 	var speed_diff := GameData.get_trinity_stat_diff("speed")
 	if is_trinity:
@@ -852,13 +911,27 @@ func _update_upgrade_buttons() -> void:
 		_lbl_diff_speed.text = ""
 
 	# --- Upgrade 3: Gold/Token Boost ---
-	var cost_boost := GameData.get_boost_upgrade_cost()
-	var boost_ok := gold >= cost_boost
+	var cost_boost: float = 0.0
+	var boost_ok: bool = false
+	if mode == -1:
+		var max_boost_cnt := GameData.get_boost_upgrade_max_count()
+		if max_boost_cnt > 0:
+			cost_boost = GameData.get_boost_upgrade_cost(max_boost_cnt)
+			boost_ok = true
+			_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost) + " (+%d)" % max_boost_cnt
+		else:
+			cost_boost = GameData.get_boost_upgrade_cost(1)
+			boost_ok = false
+			_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost) + " (+0)"
+	else:
+		cost_boost = GameData.get_boost_upgrade_cost(mode)
+		boost_ok = gold >= cost_boost
+		_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost)
+
 	btn_boost.disabled = !boost_ok
 	_lbl_title_boost.text = "ゴールド・トークン増加  Lv. %d" % GameData.boost_level
 	_lbl_title_boost.add_theme_color_override("font_color", Color.WHITE if boost_ok else Color(1, 1, 1, 0.4))
-	_lbl_cost_boost.text = "🪙 " + _format_number(cost_boost)
-	_lbl_cost_boost.add_theme_color_override("font_color", Color.RED if !boost_ok else Color(0.85, 0.85, 0.85))
+	_lbl_cost_boost.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if boost_ok else Color.RED)
 
 	var boost_diff := GameData.get_trinity_stat_diff("boost")
 	if is_trinity:
@@ -882,23 +955,27 @@ func _update_upgrade_buttons() -> void:
 	btn_ascend.disabled = !ascend_ok
 	_lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
 	_lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
-	_lbl_cost_ascend.text = "🪙 " + _format_number(1000.0)
-	_lbl_cost_ascend.add_theme_color_override("font_color", Color.RED if !ascend_ok else Color(0.85, 0.85, 0.85))
-
-
-
 
 
 func _on_speed_pressed() -> void:
-	GameData.buy_speed_upgrade()
+	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var count := GameData.get_speed_upgrade_max_count() if mode == -1 else mode
+	if count > 0:
+		GameData.buy_speed_upgrade(count)
 
 
 func _on_boost_pressed() -> void:
-	GameData.buy_boost_upgrade()
+	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var count := GameData.get_boost_upgrade_max_count() if mode == -1 else mode
+	if count > 0:
+		GameData.buy_boost_upgrade(count)
 
 
 func _on_size_pressed() -> void:
-	GameData.buy_size_upgrade()
+	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var count := GameData.get_size_upgrade_max_count() if mode == -1 else mode
+	if count > 0:
+		GameData.buy_size_upgrade(count)
 
 
 func _on_ascend_pressed() -> void:
@@ -1406,13 +1483,13 @@ func _on_skill_node_pressed(node: SkillNode) -> void:
 		return
 		
 	var current_lvl = GameData.get_skill_level(node.skill_id)
-	if current_lvl >= node.max_level:
+	if not node.is_unlimited and current_lvl > 0:
 		return
 	
 	var cost = node.get_upgrade_cost(current_lvl)
 	# シグナル（tokens_changed, skill_upgraded）を介して各ノードの見た目は自動更新されるため、
 	# ここで手動で全ノードを走査し直す必要はありません
-	GameData.buy_skill_upgrade(node.skill_id, cost, node.max_level)
+	GameData.buy_skill_upgrade(node.skill_id, cost, node.is_unlimited)
 
 
 func _update_skill_nodes() -> void:
@@ -1462,7 +1539,7 @@ func _load_skills_from_json() -> void:
 		node.skill_name = s.get("name", "")
 		node.icon_char = s.get("icon", "❓")
 		node.description = s.get("description", "")
-		node.max_level = int(s.get("max_level", 5))
+		node.is_unlimited = bool(s.get("is_unlimited", false))
 		node.base_cost = float(s.get("base_cost", 1.0))
 		node.cost_multiplier = float(s.get("cost_multiplier", 1.5))
 		# パネル間の隙間を微調整（枠のさらなる太枠化に伴い、元の0.95倍から1.1倍に変更）して辺の長さを調整する

@@ -6,7 +6,7 @@ class_name SkillNode
 @export var skill_name: String = ""
 @export var icon_char: String = "❓"
 @export_multiline var description: String = ""
-@export var max_level: int = 5
+@export var is_unlimited: bool = false
 @export var base_cost: float = 1.0
 @export var cost_multiplier: float = 1.5
 @export var prerequisites: Array[String] = []
@@ -42,17 +42,21 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		item_rect_changed.connect(_update_connections)
 	
-	# スタイルボックスを動的に初期化して外側の枠（フチ）を構成する（太さ3倍：9px）
+	# スタイルボックスを動的に初期化して外側の枠（フチ）を構成する（太さ：11px）
 	_style_normal = StyleBoxFlat.new()
 	_style_normal.bg_color = Color(0.12, 0.12, 0.2, 1.0)
-	_style_normal.border_width_left = 9
-	_style_normal.border_width_top = 9
-	_style_normal.border_width_right = 9
-	_style_normal.border_width_bottom = 9
+	_style_normal.border_width_left = 11
+	_style_normal.border_width_top = 11
+	_style_normal.border_width_right = 11
+	_style_normal.border_width_bottom = 11
 	_style_normal.expand_margin_left = 9
 	_style_normal.expand_margin_top = 9
 	_style_normal.expand_margin_right = 9
 	_style_normal.expand_margin_bottom = 9
+	_style_normal.content_margin_left = 2
+	_style_normal.content_margin_top = 2
+	_style_normal.content_margin_right = 2
+	_style_normal.content_margin_bottom = 2
 	_style_normal.corner_radius_top_left = 3
 	_style_normal.corner_radius_top_right = 3
 	_style_normal.corner_radius_bottom_right = 3
@@ -74,6 +78,9 @@ func _ready() -> void:
 	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	
 	focus_mode = Control.FOCUS_NONE
+	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	expand_icon = true
 	
 	# トークン変化やスキル解放状況の変化による購入可能状態の変化をリアルタイムに更新反映する
 	# (永続シングルトンのシグナルに接続するため、リークやフリーズを防ぐようメンバー関数に直接接続する)
@@ -209,10 +216,11 @@ func _update_ui_editor() -> void:
 	if _style_disabled:
 		_style_disabled.border_color = border_color
 		
-	tooltip_text = "%s\n%s\nMax Lvl: %d\nBase Cost: 💎 %d" % [
+	var type_str := "無制限強化" if is_unlimited else "1回のみ解放"
+	tooltip_text = "%s\n%s\nタイプ: %s\nBase Cost: 💎 %d" % [
 		skill_name if not skill_name.is_empty() else (skill_id if not skill_id.is_empty() else name),
 		description,
-		max_level,
+		type_str,
 		base_cost
 	]
 
@@ -235,33 +243,36 @@ func _update_ui_actual() -> void:
 		text = icon_char
 	
 	# ゲーム実行時のUI更新
-	var current_level = GameData.skill_levels.get(skill_id, 0)
-	var cost = get_upgrade_cost(current_level)
+	var current_count = GameData.get_skill_level(skill_id)
+	var is_unlocked = current_count > 0
+	var is_max = not is_unlimited and is_unlocked
 	
-	var lvl_str = "MAX" if current_level >= max_level else "Lvl %d/%d" % [current_level, max_level]
-	var cost_str = "最大レベルに達しました" if current_level >= max_level else "コスト: 💎 %s" % GameData.format_num(cost)
+	var cost = get_upgrade_cost(current_count)
 	
 	# マニュアル管理ツールチップを使用するため、Godot標準のポップアップは完全に無効化します
 	tooltip_text = ""
 	
-	# 解放可能状態（前提スキルがすべてレベル1以上）
+	# 解放可能状態（前提スキルがすべて1回以上解放されているか）
 	var playable = is_playable()
 			
 	# トークンが足りるかどうかの判定
 	var player_tokens = GameData.tokens
 	var is_affordable = player_tokens >= cost
 	
-	# 枠線の色決定 (購入可能なら緑、不可能なら赤。MAX状態は完了なので金色っぽくする)
-	var border_color = Color(0.9, 0.2, 0.2) # 赤
-	if current_level >= max_level:
-		border_color = Color(1.0, 0.82, 0.0) # MAX: 金色っぽく
+	# 枠線の色決定 (少し彩度を抑えた上品なトーン):
+	# 完了状態 (1回きりで解放済み): 落ち着いたゴールド
+	# 解放可能かつトークン充足: 落ち着いたグリーン
+	# それ以外 (トークン不足またはロック中): 落ち着いたレッド
+	var border_color = Color(0.82, 0.30, 0.30) # 赤
+	if is_max:
+		border_color = Color(0.92, 0.78, 0.28) # 金色
 	elif playable:
 		if is_affordable:
-			border_color = Color(0.2, 0.9, 0.2) # 購入可能: 緑
+			border_color = Color(0.28, 0.80, 0.35) # 緑
 		else:
-			border_color = Color(0.9, 0.2, 0.2) # トークン不足: 赤
+			border_color = Color(0.82, 0.30, 0.30) # 赤
 	else:
-		border_color = Color(0.9, 0.2, 0.2) # ロック中: 赤
+		border_color = Color(0.82, 0.30, 0.30) # ロック中: 赤
 		
 	# 枠線の適用
 	if _style_normal:
@@ -273,15 +284,22 @@ func _update_ui_actual() -> void:
 	if _style_disabled:
 		_style_disabled.border_color = border_color
 		
-	# 未購入スキルのグレーアウト (modulate を使用して追加した枠の上からかける)
-	self_modulate = Color(1.0, 1.0, 1.0) # self_modulateをクリア
+	# グレーアウト判定:
+	# 購入可能な位置で、かつコスト上購入不可能なノードにのみ行う
+	var should_gray_out = false
+	if not is_max and playable and not is_affordable:
+		should_gray_out = true
 	
-	if current_level > 0:
-		# 1回以上購入済み
-		modulate = Color(1.0, 1.0, 1.0)
-	else:
-		# 未購入 (current_level == 0) は一律でグレーアウト
+	if should_gray_out:
 		modulate = Color(0.65, 0.65, 0.65, 1.0)
+	else:
+		modulate = Color(1.0, 1.0, 1.0)
+
+
+func is_maxed() -> bool:
+	if is_unlimited:
+		return false
+	return GameData.get_skill_level(skill_id) > 0
 
 
 func get_upgrade_cost(level: int) -> float:
