@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi1v1v32k8ukg"
-path="res://.godot/imported/gold_direct_hit_boost.png-94f059e1017f0aaf3fe22f9e116cab75.ctex"
+uid="uid://cm7di6ldojm8c"
+path="res://.godot/imported/equip_corner_enhance.png-f00ec83708341eb4b8286c4d0544cc64.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/gold_direct_hit_boost.png"
-dest_files=["res://.godot/imported/gold_direct_hit_boost.png-94f059e1017f0aaf3fe22f9e116cab75.ctex"]
+source_file="res://images/skill_icon/equip/equip_corner_enhance.png"
+dest_files=["res://.godot/imported/equip_corner_enhance.png-f00ec83708341eb4b8286c4d0544cc64.ctex"]
 
 [params]
 

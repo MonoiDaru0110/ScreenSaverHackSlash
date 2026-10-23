@@ -198,6 +198,7 @@ func setup_from_node(skill_node: SkillNode) -> void:
 			if icon_rect:
 				icon_rect.visible = true
 				icon_rect.texture = skill_node._icon_texture
+				icon_rect.modulate = skill_node.modulate
 		else:
 			# 通常の頭文字表示の場合
 			if icon_rect:
@@ -206,6 +207,7 @@ func setup_from_node(skill_node: SkillNode) -> void:
 				icon_char_label.visible = true
 				icon_char_label.text = skill_node.icon_char
 				icon_char_label.add_theme_color_override("font_color", border_color.lightened(0.2))
+				icon_char_label.modulate = skill_node.modulate
 				
 	# 2. テキストの設定
 	if name_label:

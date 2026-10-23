@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bhe0jkk02bgem"
-path="res://.godot/imported/token_direct_hit_boost.png-f970888d736c77ff71a395aadc68fb51.ctex"
+uid="uid://dg4l38e20hk2c"
+path="res://.godot/imported/get_gold_when_discarding.png-2004aff7fd56a3dee7753b828a9eb231.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/token_direct_hit_boost.png"
-dest_files=["res://.godot/imported/token_direct_hit_boost.png-f970888d736c77ff71a395aadc68fb51.ctex"]
+source_file="res://images/skill_icon/equip/get_gold_when_discarding.png"
+dest_files=["res://.godot/imported/get_gold_when_discarding.png-2004aff7fd56a3dee7753b828a9eb231.ctex"]
 
 [params]
 

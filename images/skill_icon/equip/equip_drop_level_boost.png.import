@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dxuvkup8e8b27"
-path="res://.godot/imported/accessory_slot_unlock.png-11152487a183adbbfc2b15e96b16eb71.ctex"
+uid="uid://c27m56sn7te0l"
+path="res://.godot/imported/equip_drop_level_boost.png-1969c4c85ab00124cab2bf7f63446d49.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/accessory_slot_unlock.png"
-dest_files=["res://.godot/imported/accessory_slot_unlock.png-11152487a183adbbfc2b15e96b16eb71.ctex"]
+source_file="res://images/skill_icon/equip/equip_drop_level_boost.png"
+dest_files=["res://.godot/imported/equip_drop_level_boost.png-1969c4c85ab00124cab2bf7f63446d49.ctex"]
 
 [params]
 

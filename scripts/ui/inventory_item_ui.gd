@@ -1,6 +1,9 @@
 extends TextureButton
 class_name InventoryItemUI
 
+signal selection_toggled(item_ui: InventoryItemUI, is_selected: bool)
+signal item_clicked(item_ui: InventoryItemUI, button_index: int)
+
 var item_id: String = ""
 var item_name: String = ""
 var item_type: String = ""
@@ -9,8 +12,13 @@ var item_level: int = 1
 var item_rarity: String = "コモン"
 var item_equip_skill: Array = []
 var item_forge_count: int = 0
+var is_grayed_out: bool = false
+var is_selected: bool = false
+static var drag_select_mode: int = -1 # -1: 未開始, 0: 選択解除モード, 1: 選択モード
 
 @onready var equipment_icon: EquipmentIcon = %EquipmentIcon
+@onready var selected_border: Panel = %SelectedBorder
+@onready var check_mark: Control = %CheckMark
 var _custom_tooltip: EquipmentTooltip = null
 
 func setup(item_data: Dictionary) -> void:
@@ -27,8 +35,53 @@ func setup(item_data: Dictionary) -> void:
 		update_ui_display()
 
 
+func set_grayed_out(grayed: bool) -> void:
+	is_grayed_out = grayed
+	_update_grayed_out_visual()
+
+
+func set_selected(selected: bool) -> void:
+	is_selected = selected
+	_update_selection_visual()
+
+
+func _update_selection_visual() -> void:
+	if selected_border:
+		selected_border.visible = is_selected
+	if check_mark:
+		check_mark.visible = is_selected
+		if is_selected:
+			check_mark.queue_redraw()
+
+
+func _on_check_mark_draw() -> void:
+	if not check_mark:
+		return
+	var pts := PackedVector2Array([
+		Vector2(4.0, 12.0),
+		Vector2(9.0, 17.0),
+		Vector2(19.0, 5.0)
+	])
+	# 外枠の黒縁取り
+	check_mark.draw_polyline(pts, Color(0.0, 0.0, 0.0, 1.0), 5.0, true)
+	# 鮮やかな純黄色
+	check_mark.draw_polyline(pts, Color(1.0, 0.90, 0.05, 1.0), 3.0, true)
+
+
+func _update_grayed_out_visual() -> void:
+	if not equipment_icon:
+		return
+	if is_grayed_out:
+		equipment_icon.modulate = Color(0.38, 0.38, 0.44, 0.55)
+	else:
+		equipment_icon.modulate = Color.WHITE
+
+
 func _ready() -> void:
 	clip_contents = false
+	
+	if check_mark and not check_mark.draw.is_connected(_on_check_mark_draw):
+		check_mark.draw.connect(_on_check_mark_draw)
 	
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
@@ -69,6 +122,8 @@ func _update_style() -> void:
 	else:
 		equipment_icon.set_equipped_border(false)
 	tooltip_text = ""
+	_update_grayed_out_visual()
+	_update_selection_visual()
 
 
 func _update_bg_color(color: Color) -> void:
@@ -77,12 +132,30 @@ func _update_bg_color(color: Color) -> void:
 
 
 func _on_mouse_entered() -> void:
-	_update_bg_color(Color(1.18, 1.18, 1.18))
+	if is_grayed_out:
+		_update_bg_color(Color(1.15, 1.15, 1.15))
+		if equipment_icon:
+			equipment_icon.modulate = Color(0.52, 0.52, 0.58, 0.75)
+	else:
+		_update_bg_color(Color(1.18, 1.18, 1.18))
 	
 	if Engine.is_editor_hint():
 		return
 	if not is_visible_in_tree():
 		return
+
+	# 右クリックホールド中のなぞり選択（開始時の状態で揃える）
+	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+		_remove_tooltip()
+		if drag_select_mode != -1 and GameData.is_item_equipped(item_id) == "":
+			var target_state := (drag_select_mode == 1)
+			if is_selected != target_state:
+				set_selected(target_state)
+				selection_toggled.emit(self, is_selected)
+		return
+	else:
+		drag_select_mode = -1
+
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		return
 		
@@ -126,6 +199,7 @@ func _on_mouse_entered() -> void:
 
 func _on_mouse_exited() -> void:
 	_update_bg_color(Color.WHITE)
+	_update_grayed_out_visual()
 	_remove_tooltip()
 
 
@@ -135,15 +209,20 @@ func _on_button_down() -> void:
 
 func _on_button_up() -> void:
 	if is_hovered():
-		_update_bg_color(Color(1.18, 1.18, 1.18))
+		if is_grayed_out:
+			_update_bg_color(Color(1.15, 1.15, 1.15))
+			if equipment_icon:
+				equipment_icon.modulate = Color(0.52, 0.52, 0.58, 0.75)
+		else:
+			_update_bg_color(Color(1.18, 1.18, 1.18))
 	else:
 		_update_bg_color(Color.WHITE)
+		_update_grayed_out_visual()
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
-		if equipment_icon:
-			equipment_icon.modulate = Color.WHITE
+		_update_grayed_out_visual()
 
 
 func get_slot_index() -> int:
@@ -215,9 +294,30 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.double_click:
-			_auto_equip()
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			if event.pressed:
+				_remove_tooltip()
+				if GameData.is_item_equipped(item_id) == "":
+					var target_state := not is_selected
+					drag_select_mode = 1 if target_state else 0
+					set_selected(target_state)
+					selection_toggled.emit(self, is_selected)
+				accept_event()
+			else:
+				drag_select_mode = -1
+		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			if event.double_click:
+				_auto_equip()
+			else:
+				item_clicked.emit(self, event.button_index)
+
+
+func _discard_self() -> void:
+	if GameData.is_item_equipped(item_id) != "":
+		return
+	_remove_tooltip()
+	GameData.discard_inventory_item(item_type, get_slot_index())
 
 
 func _auto_equip() -> void:

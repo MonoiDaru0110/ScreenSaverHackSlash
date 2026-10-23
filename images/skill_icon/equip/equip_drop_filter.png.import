@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bk7qo2kwi3tis"
-path="res://.godot/imported/equip_drop_unlock.png-8f47fbda690e08b33c5b49daee63987d.ctex"
+uid="uid://c0aembwv4l5ry"
+path="res://.godot/imported/equip_drop_filter.png-f476031963c0a8f32c51f65f241e646a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/equip_drop_unlock.png"
-dest_files=["res://.godot/imported/equip_drop_unlock.png-8f47fbda690e08b33c5b49daee63987d.ctex"]
+source_file="res://images/skill_icon/equip/equip_drop_filter.png"
+dest_files=["res://.godot/imported/equip_drop_filter.png-f476031963c0a8f32c51f65f241e646a.ctex"]
 
 [params]
 

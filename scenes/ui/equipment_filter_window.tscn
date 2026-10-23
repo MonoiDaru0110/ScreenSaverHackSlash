@@ -260,7 +260,7 @@ custom_minimum_size = Vector2(130, 22)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 11
-text = "条件: OR (いずれか)"
+text = "条件: OR"
 
 [node name="BtnNormalClear" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/ContentVBox/NormalSkillSection/NormalSkillHeader"]
 unique_name_in_owner = true

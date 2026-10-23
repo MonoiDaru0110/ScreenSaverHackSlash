@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bmr5q220ga4q5"
-path="res://.godot/imported/equip_drop_probability_boost.png-52fade7ac48b925888f8ddd7ce24fad2.ctex"
+uid="uid://d4c25xw1iifwc"
+path="res://.godot/imported/get_token_when_discarding.png-1afcb39e9306ec2299057fa40e0a9b14.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/equip_drop_probability_boost.png"
-dest_files=["res://.godot/imported/equip_drop_probability_boost.png-52fade7ac48b925888f8ddd7ce24fad2.ctex"]
+source_file="res://images/skill_icon/equip/get_token_when_discarding.png"
+dest_files=["res://.godot/imported/get_token_when_discarding.png-1afcb39e9306ec2299057fa40e0a9b14.ctex"]
 
 [params]
 

@@ -25,7 +25,7 @@
 			"desc_template": "ダイレクトヒット時入手ゴールド/トークン +%.1f%%",
 			"id": "direct_yield",
 			"memo": "ダイレクトヒット発生時の獲得量ボーナス (+15.2% × Lv)",
-			"name": "直撃獲得量",
+			"name": "DH獲得量",
 			"unit_value": 15.2
 		},
 		"drop_rarity": {

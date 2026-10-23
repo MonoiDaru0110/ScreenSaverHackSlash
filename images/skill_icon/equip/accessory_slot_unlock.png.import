@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1c3fesbn5hj5"
-path="res://.godot/imported/token_cooltime_boost.png-0f999e967977d14392807a59e64b12b1.ctex"
+uid="uid://dxuvkup8e8b27"
+path="res://.godot/imported/accessory_slot_unlock.png-e9363a92e802344f4c29686d9fce81a7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/token_cooltime_boost.png"
-dest_files=["res://.godot/imported/token_cooltime_boost.png-0f999e967977d14392807a59e64b12b1.ctex"]
+source_file="res://images/skill_icon/equip/accessory_slot_unlock.png"
+dest_files=["res://.godot/imported/accessory_slot_unlock.png-e9363a92e802344f4c29686d9fce81a7.ctex"]
 
 [params]
 

@@ -282,7 +282,6 @@ func _build_normal_skills_ui() -> void:
 		
 		var chk := CheckBox.new()
 		chk.text = sk_name
-		chk.tooltip_text = tooltip
 		_setup_standard_checkbox(chk)
 		chk.add_theme_font_size_override("font_size", 12)
 		chk.toggled.connect(func(v): _on_normal_skill_toggled(sk_id, v))
@@ -296,18 +295,22 @@ func _build_special_skills_ui() -> void:
 	_special_skill_ids.clear()
 	
 	# Index 0: 指定なし
-	opt_special_skill.add_item("指定なし (全て許可)")
+	opt_special_skill.add_item("指定なし")
 	_special_skill_ids.append("")
+	
+	opt_special_skill.add_item("特殊スキルあり")
+	_special_skill_ids.append("__has_special__")
+	
+	opt_special_skill.add_item("特殊スキルなし")
+	_special_skill_ids.append("__no_special__")
 	
 	var spec_defs := GameData.special_skill_defs
 	
-	var idx := 1
 	for spec_id in spec_defs:
 		var def: Dictionary = spec_defs[spec_id]
 		var spec_name: String = def.get("name", spec_id)
 		opt_special_skill.add_item(spec_name)
 		_special_skill_ids.append(spec_id)
-		idx += 1
 		
 	var spec_color := GameData.special_skill_color
 	opt_special_skill.add_theme_color_override("font_color", spec_color)
@@ -368,11 +371,10 @@ func sync_from_data() -> void:
 
 func _update_normal_mode_button(mode: String) -> void:
 	if mode == "AND":
-		btn_normal_mode.text = "条件: AND (すべて)"
-		btn_normal_mode.tooltip_text = "選択したスキルを【すべて】持っている装備のみ入手します"
+		btn_normal_mode.text = "条件: AND"
 	else:
-		btn_normal_mode.text = "条件: OR (いずれか)"
-		btn_normal_mode.tooltip_text = "選択したスキルの【いずれか1つ以上】を持っている装備を入手します"
+		btn_normal_mode.text = "条件: OR"
+	btn_normal_mode.tooltip_text = ""
 
 
 func _on_lv_tier_toggled(tier_key: String, enabled: bool) -> void:

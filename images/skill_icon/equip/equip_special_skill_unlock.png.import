@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b6e15gnqgqjtr"
-path="res://.godot/imported/token_boost.png-6c3a9774a2c30629c562d04b49df486e.ctex"
+uid="uid://cj03yss3q63xw"
+path="res://.godot/imported/equip_special_skill_unlock.png-6199817bf6e4c4eba346cbcd0bbdee1f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/token_boost.png"
-dest_files=["res://.godot/imported/token_boost.png-6c3a9774a2c30629c562d04b49df486e.ctex"]
+source_file="res://images/skill_icon/equip/equip_special_skill_unlock.png"
+dest_files=["res://.godot/imported/equip_special_skill_unlock.png-6199817bf6e4c4eba346cbcd0bbdee1f.ctex"]
 
 [params]
 

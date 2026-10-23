@@ -3,90 +3,246 @@
 		"accessory_slot_unlock_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "アクセサリースロットを1つ解放する。",
-			"icon": "res://images/skill_icon/accessory_slot_unlock.png",
+			"description": "装備のアクセサリー枠を一つ解放する。",
+			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
 			"is_unlimited": false,
-			"name": "アクセサリースロット解放Ⅰ",
+			"name": "アクセサリー枠解放Ⅰ",
+			"prerequisites": [
+				"equip_drop_rarity_boost_1"
+			],
+			"x": 320.0,
+			"y": -480.0
+		},
+		"accessory_slot_unlock_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "装備のアクセサリー枠を一つ解放する。",
+			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "アクセサリー枠解放Ⅱ",
+			"prerequisites": [
+				"equip_drop_level_boost_2"
+			],
+			"x": 160.0,
+			"y": -800.0
+		},
+		"accessory_slot_unlock_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "装備のアクセサリー枠を一つ解放する。",
+			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "アクセサリー枠解放Ⅲ",
+			"prerequisites": [
+				"equip_drop_level_boost_3"
+			],
+			"x": 320.0,
+			"y": -960.0
+		},
+		"equip_corner_enhance": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "角ヒット時のドロップ装備の全スキルレベル+1、レアリティ係数+1。",
+			"icon": "res://images/skill_icon/equip/equip_corner_enhance.png",
+			"is_unlimited": false,
+			"name": "角ヒット時装備強化",
+			"prerequisites": [
+				"equip_skill_boost_2"
+			],
+			"x": 0.0,
+			"y": -720.0
+		},
+		"equip_drop_filter_unlock": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のフィルターが解放される。",
+			"icon": "res://images/skill_icon/equip/equip_drop_filter.png",
+			"is_unlimited": false,
+			"name": "ドロップフィルター解放",
+			"prerequisites": [
+				"equip_drop_probability_boost_2"
+			],
+			"x": -320.0,
+			"y": -640.0
+		},
+		"equip_drop_level_boost_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+10。",
+			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
+			"is_unlimited": false,
+			"name": "装備レベル上昇Ⅰ",
+			"prerequisites": [
+				"equip_drop_probability_boost_1"
+			],
+			"x": 160.0,
+			"y": -320.0
+		},
+		"equip_drop_level_boost_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+20。",
+			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
+			"is_unlimited": false,
+			"name": "装備レベル上昇Ⅱ",
+			"prerequisites": [
+				"equip_skill_boost_2"
+			],
+			"x": 160.0,
+			"y": -640.0
+		},
+		"equip_drop_level_boost_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+30。",
+			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
+			"is_unlimited": false,
+			"name": "装備レベル上昇Ⅲ",
+			"prerequisites": [
+				"equip_drop_probability_boost_3"
+			],
+			"x": 160.0,
+			"y": -960.0
+		},
+		"equip_drop_probability_boost_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ確率が2％上昇。",
+			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
+			"is_unlimited": false,
+			"name": "装備ドロップ確率上昇Ⅰ",
 			"prerequisites": [
 				"equip_drop_unlock"
 			],
 			"x": 0.0,
 			"y": -320.0
 		},
-		"drop_probability_boost_1": {
+		"equip_drop_probability_boost_2": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "装備のドロップ確率+2％",
-			"icon": "res://images/skill_icon/equip_drop_probability_boost.png",
+			"description": "装備のドロップ確率が5％上昇",
+			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
 			"is_unlimited": false,
-			"name": "装備ドロップ率上昇Ⅰ",
+			"name": "装備ドロップ確率上昇Ⅱ",
 			"prerequisites": [
-				"accessory_slot_unlock_1"
+				"equip_skill_boost_2"
 			],
-			"x": 0.0,
-			"y": -480.0
+			"x": -160.0,
+			"y": -640.0
 		},
-		"equip_drop_filter": {
+		"equip_drop_probability_boost_3": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "ドロップ装備のフィルターが解放される",
-			"icon": "res://images/skill_icon/equip_drop_filter.png",
+			"description": "装備のドロップ確率が10％上昇",
+			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
 			"is_unlimited": false,
-			"name": "ドロップフィルター",
+			"name": "装備ドロップ確率上昇Ⅲ",
 			"prerequisites": [
-				"equip_rarity_boost_1"
-			],
-			"x": 0.0,
-			"y": -800.0
-		},
-		"equip_drop_level_boost_1": {
-			"base_cost": 1.0,
-			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレベル+10",
-			"icon": "res://images/skill_icon/equip_drop_level_boost.png",
-			"is_unlimited": false,
-			"name": "装備レベル上昇Ⅰ",
-			"prerequisites": [
-				"equip_drop_filter"
+				"equip_corner_enhance"
 			],
 			"x": 0.0,
 			"y": -960.0
+		},
+		"equip_drop_rarity_boost_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のレアリティ係数+1。",
+			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
+			"is_unlimited": false,
+			"name": "装備レアリティ上昇Ⅰ",
+			"prerequisites": [
+				"equip_drop_level_boost_1"
+			],
+			"x": 160.0,
+			"y": -480.0
+		},
+		"equip_drop_rarity_boost_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のレアリティ係数+2。",
+			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
+			"is_unlimited": false,
+			"name": "装備レアリティ上昇Ⅱ",
+			"prerequisites": [
+				"equip_drop_level_boost_2"
+			],
+			"x": 320.0,
+			"y": -640.0
+		},
+		"equip_drop_rarity_boost_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のレアリティ係数+3。",
+			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
+			"is_unlimited": false,
+			"name": "装備レアリティ上昇Ⅲ",
+			"prerequisites": [
+				"equip_drop_level_boost_3"
+			],
+			"x": 160.0,
+			"y": -1120.0
 		},
 		"equip_drop_unlock": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
 			"description": "装備のドロップが解放される。装備ウィンドウが解放される。",
-			"icon": "res://images/skill_icon/equip_drop_unlock.png",
+			"icon": "res://images/skill_icon/equip/equip_drop_unlock.png",
 			"is_unlimited": false,
 			"name": "装備ドロップ解放",
 			"prerequisites": [
-				"root"
+				"new_skill_1"
 			],
 			"x": 0.0,
 			"y": -160.0
 		},
-		"equip_rarity_boost_1": {
+		"equip_skill_boost_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備のレア度係数+1",
-			"icon": "res://images/skill_icon/equip_drop_rarity_boost.png",
+			"description": "ドロップする装備の全スキルレベル+2。",
+			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
 			"is_unlimited": false,
-			"name": "装備レア度上昇Ⅰ",
+			"name": "装備スキル強化Ⅰ",
 			"prerequisites": [
-				"drop_probability_boost_1"
+				"inventory_expand_1"
+			],
+			"x": -160.0,
+			"y": -480.0
+		},
+		"equip_skill_boost_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備の全スキルレベル+1。",
+			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
+			"is_unlimited": false,
+			"name": "装備スキル強化Ⅱ",
+			"prerequisites": [
+				"equip_drop_probability_boost_1"
 			],
 			"x": 0.0,
-			"y": -640.0
+			"y": -480.0
+		},
+		"equip_skill_boost_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備の全スキルレベル+3。",
+			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
+			"is_unlimited": false,
+			"name": "装備スキル強化Ⅲ",
+			"prerequisites": [
+				"inventory_expand_3"
+			],
+			"x": -160.0,
+			"y": -1120.0
 		},
 		"equip_special_skill_unlock": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "装備への特殊スキル付与が解放される",
-			"icon": "res://images/skill_icon/equip_special_skill_unlock.png",
+			"description": "ドロップ装備への特殊スキル付与が解放される。",
+			"icon": "res://images/skill_icon/equip/equip_special_skill_unlock.png",
 			"is_unlimited": false,
 			"name": "特殊スキル解放",
 			"prerequisites": [
-				"equip_drop_level_boost_1"
+				"equip_drop_probability_boost_3"
 			],
 			"x": 0.0,
 			"y": -1120.0
@@ -94,49 +250,88 @@
 		"get_gold_when_discarding": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "装備廃棄時、ゴールドを獲得する(壁衝突時と同じ量)",
-			"icon": "res://images/skill_icon/get_gold_when_discarding.png",
+			"description": "装備廃棄時、ゴールド獲得(角衝突時と同じ量)。",
+			"icon": "res://images/skill_icon/equip/get_gold_when_discarding.png",
 			"is_unlimited": false,
 			"name": "廃棄時ゴールド獲得",
 			"prerequisites": [
-				"inventory_expand_1"
+				"get_token_when_discarding"
 			],
-			"x": 0.0,
-			"y": -1440.0
+			"x": -320.0,
+			"y": -960.0
 		},
 		"get_token_when_discarding": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "装備廃棄時、トークンを獲得する(角衝突時と同じ量)",
-			"icon": "res://images/skill_icon/get_token_when_discarding.png",
+			"description": "装備廃棄時、トークンを獲得(角衝突時と同じ量)。",
+			"icon": "res://images/skill_icon/equip/get_token_when_discarding.png",
 			"is_unlimited": false,
 			"name": "廃棄時トークン獲得",
 			"prerequisites": [
-				"get_gold_when_discarding"
+				"equip_drop_filter_unlock"
 			],
-			"x": 0.0,
-			"y": -1600.0
+			"x": -320.0,
+			"y": -800.0
 		},
 		"inventory_expand_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "インベントリが30拡張される",
-			"icon": "res://images/skill_icon/inventory_expand.png",
+			"description": "装備インベントリが10拡張。",
+			"icon": "res://images/skill_icon/equip/inventory_expand.png",
 			"is_unlimited": false,
 			"name": "インベントリ拡張Ⅰ",
+			"prerequisites": [
+				"equip_drop_probability_boost_1"
+			],
+			"x": -160.0,
+			"y": -320.0
+		},
+		"inventory_expand_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "装備インベントリが10拡張。",
+			"icon": "res://images/skill_icon/equip/inventory_expand.png",
+			"is_unlimited": false,
+			"name": "インベントリ拡張Ⅱ",
+			"prerequisites": [
+				"equip_drop_probability_boost_2"
+			],
+			"x": -160.0,
+			"y": -800.0
+		},
+		"inventory_expand_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "装備インベントリが10拡張。",
+			"icon": "res://images/skill_icon/equip/inventory_expand.png",
+			"is_unlimited": false,
+			"name": "インベントリ拡張Ⅲ",
+			"prerequisites": [
+				"equip_drop_probability_boost_3"
+			],
+			"x": -160.0,
+			"y": -960.0
+		},
+		"mythic_unlock": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "最高レアリティ[ミシック]が解放される。",
+			"icon": "res://images/skill_icon/equip/mythic_unlock.png",
+			"is_unlimited": false,
+			"name": "ミシック解放",
 			"prerequisites": [
 				"equip_special_skill_unlock"
 			],
 			"x": 0.0,
 			"y": -1280.0
 		},
-		"root": {
+		"new_skill_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "スキルの起点となる基本能力",
-			"icon": "res://images/skill_icon/gold_boost_icon.png",
+			"description": "説明を入力してください",
+			"icon": "❓",
 			"is_unlimited": false,
-			"name": "始まりの力",
+			"name": "新しいスキル 1",
 			"prerequisites": [],
 			"x": 0.0,
 			"y": 0.0

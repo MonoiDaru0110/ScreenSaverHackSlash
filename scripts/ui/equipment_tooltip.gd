@@ -79,11 +79,12 @@ func setup(item_data: Dictionary) -> void:
 	if level_label:
 		level_label.text = "Lv.%d" % item_level
 		
-	# スキル説明の構築（通常スキルと特殊スキルに分離、先頭に「・」を追加、赤みを帯びた明るめの深い青に完全統一）
+	# スキル説明の構築（通常スキルは深い青、特殊スキルは特殊スキルの紫）
 	var item_equip_skills = item_data.get("equip_skill", [])
 	var normal_lines := PackedStringArray()
 	var special_lines := PackedStringArray()
-	var color_hex := "#6470f0"
+	var normal_color_hex := "#6470f0"
+	var special_color_hex := "#" + GameData.special_skill_color.to_html(false)
 	
 	for skill in item_equip_skills:
 		var sk_name: String = skill.get("name", "")
@@ -92,9 +93,9 @@ func setup(item_data: Dictionary) -> void:
 		var raw_desc: String = skill.get("desc", "")
 		
 		if is_spec:
-			special_lines.append("[color=%s]・%s +%d: %s[/color]" % [color_hex, sk_name, sk_lvl, raw_desc])
+			special_lines.append("[color=%s]・%s +%d: %s[/color]" % [special_color_hex, sk_name, sk_lvl, raw_desc])
 		else:
-			normal_lines.append("[color=%s]・%s[/color]" % [color_hex, raw_desc])
+			normal_lines.append("[color=%s]・%s [Lv.%d][/color]" % [normal_color_hex, raw_desc, sk_lvl])
 			
 	if normal_lines.is_empty():
 		normal_lines.append("[color=#58557a]・なし[/color]")

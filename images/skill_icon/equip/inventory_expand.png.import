@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c27m56sn7te0l"
-path="res://.godot/imported/equip_drop_level_boost.png-46889fce422e3d348510deaad7c995f7.ctex"
+uid="uid://bltaraaxg8c4b"
+path="res://.godot/imported/inventory_expand.png-1da2262dc3a52a810ceefceba796bc6a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/equip_drop_level_boost.png"
-dest_files=["res://.godot/imported/equip_drop_level_boost.png-46889fce422e3d348510deaad7c995f7.ctex"]
+source_file="res://images/skill_icon/equip/inventory_expand.png"
+dest_files=["res://.godot/imported/inventory_expand.png-1da2262dc3a52a810ceefceba796bc6a.ctex"]
 
 [params]
 

@@ -15,6 +15,13 @@ var filter_unlocked_only: bool = true
 var _cached_skill_nodes: Array[SkillNode] = []
 var _skill_nodes_cached: bool = false
 
+# スキルツリーの親子関係とウィンドウ対応ルートノードのキャッシュ
+var _skill_node_map: Dictionary = {} # skill_id -> SkillNode
+var _main_root_ids: Array[String] = [] # prerequisites.is_empty() なノード
+var _window_root_ids: Array[String] = [] # prerequisites に main_root_id を持つノード (各ウィンドウ対応ルートノード)
+var _node_ancestor_window_roots: Dictionary = {} # skill_id -> Array[String]
+var _graph_cached: bool = false
+
 func _get_skill_nodes() -> Array[SkillNode]:
 	if _skill_nodes_cached:
 		return _cached_skill_nodes
@@ -30,6 +37,88 @@ func _get_skill_nodes() -> Array[SkillNode]:
 func invalidate_skill_node_cache() -> void:
 	_skill_nodes_cached = false
 	_cached_skill_nodes.clear()
+	_graph_cached = false
+	_skill_node_map.clear()
+	_main_root_ids.clear()
+	_window_root_ids.clear()
+	_node_ancestor_window_roots.clear()
+
+func _rebuild_skill_graph() -> void:
+	_skill_node_map.clear()
+	_main_root_ids.clear()
+	_window_root_ids.clear()
+	_node_ancestor_window_roots.clear()
+	
+	var nodes = _get_skill_nodes()
+	for node in nodes:
+		if not node.skill_id.is_empty():
+			_skill_node_map[node.skill_id] = node
+			
+	# 1. メインルートノードの特定（前提スキルが空のノード）
+	for node in nodes:
+		if node.prerequisites.is_empty():
+			_main_root_ids.append(node.skill_id)
+			
+	# 2. 各ウィンドウ対応ルートノードの特定（前提スキルにメインルートノードを含むノード）
+	for node in nodes:
+		if node.prerequisites.is_empty():
+			continue
+		for p in node.prerequisites:
+			if _main_root_ids.has(p):
+				if not _window_root_ids.has(node.skill_id):
+					_window_root_ids.append(node.skill_id)
+				break
+				
+	# 3. 各ノードの祖先ウィンドウルートノードを探索・キャッシュ
+	for node in nodes:
+		var ancestors: Array[String] = []
+		_find_ancestor_window_roots(node.skill_id, ancestors, {})
+		_node_ancestor_window_roots[node.skill_id] = ancestors
+		
+	_graph_cached = true
+
+func _find_ancestor_window_roots(current_id: String, out_roots: Array[String], visited: Dictionary) -> void:
+	if visited.has(current_id):
+		return
+	visited[current_id] = true
+	
+	if _window_root_ids.has(current_id):
+		if not out_roots.has(current_id):
+			out_roots.append(current_id)
+		return
+		
+	if _main_root_ids.has(current_id):
+		return
+		
+	var node = _skill_node_map.get(current_id) as SkillNode
+	if not node:
+		return
+		
+	for p in node.prerequisites:
+		_find_ancestor_window_roots(p, out_roots, visited)
+
+func is_node_progression_visible(node: SkillNode) -> bool:
+	if not _graph_cached:
+		_rebuild_skill_graph()
+		
+	# メインルートノードは常に可視
+	if _main_root_ids.has(node.skill_id):
+		return true
+		
+	# 各ウィンドウ対応ルートノードも常に可視（未解放でも見えている状態）
+	if _window_root_ids.has(node.skill_id):
+		return true
+		
+	# その先のノード: 祖先のウィンドウ対応ルートノードが解放されている場合のみ可視
+	var ancestor_roots: Array = _node_ancestor_window_roots.get(node.skill_id, [])
+	if ancestor_roots.is_empty():
+		return true # 祖先が見つからないノードはフォールバックとして表示
+		
+	for w_id in ancestor_roots:
+		if GameData.get_skill_level(w_id) > 0:
+			return true
+			
+	return false
 
 func _ready() -> void:
 	clip_contents = true
@@ -58,18 +147,14 @@ func _ready() -> void:
 		
 	visibility_changed.connect(update_culling)
 
-
 func toggle_filter_unlocked_only() -> bool:
 	filter_unlocked_only = not filter_unlocked_only
 	update_culling()
 	return filter_unlocked_only
 
-
 func is_node_filter_visible(node: SkillNode) -> bool:
-	if not filter_unlocked_only:
-		return true
-	return node.is_playable()
-
+	# 進行度に基づく可視性（ウィンドウ対応ルートノード解放でその先が見える）
+	return is_node_progression_visible(node)
 
 func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
 	update_culling()
@@ -229,6 +314,15 @@ func update_culling() -> void:
 					if line.visible:
 						line.visible = false
 					continue
+					
+				# 接続元（前提ノード）の可視性もチェック
+				var prereq_id: String = line.get_meta("prereq_id", "")
+				if not prereq_id.is_empty():
+					var parent_node = _skill_node_map.get(prereq_id) as SkillNode
+					if parent_node and not node_filter_map.get(parent_node, false):
+						if line.visible:
+							line.visible = false
+						continue
 					
 				var p1_global = line.to_global(line.points[0])
 				var p2_global = line.to_global(line.points[1])

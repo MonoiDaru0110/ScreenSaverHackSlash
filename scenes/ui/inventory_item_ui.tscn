@@ -1,7 +1,19 @@
-[gd_scene load_steps=3 format=3 uid="uid://bchpbp2mn8820"]
+[gd_scene load_steps=4 format=3 uid="uid://bchpbp2mn8820"]
 
 [ext_resource type="Script" uid="uid://m7102yhi1v7l" path="res://scripts/ui/inventory_item_ui.gd" id="1_inv_item"]
 [ext_resource type="PackedScene" uid="uid://bu2vvxlnln1hx" path="res://scenes/ui/equipment_icon.tscn" id="2_eq_icon"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_selected_border"]
+draw_center = false
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.85, 0.2, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [node name="InventoryItemUI" type="TextureButton"]
 custom_minimum_size = Vector2(64, 64)
@@ -23,3 +35,27 @@ offset_right = 0.0
 offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="SelectedBorder" type="Panel" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_selected_border")
+
+[node name="CheckMark" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 1
+anchors_preset = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 26.0
+offset_bottom = 26.0
+mouse_filter = 2

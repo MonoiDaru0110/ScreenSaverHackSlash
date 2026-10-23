@@ -3,8 +3,8 @@ extends Node
 ## Manages currencies, statistics, and game state.
 
 # --- Currency ---
-var gold: float = 10000.0
-var tokens: float = 10000.0
+var gold: float = 0.0
+var tokens: float = 0.0
 var stars: int = 0
 var infused_tokens: float = 0.0
 var is_infusing_tokens: bool = false
@@ -87,13 +87,20 @@ var stars_spent_in_current_cycle: int = 0 # 現サイクルで消費したスタ
 # --- Statistics ---
 var total_bounces: int = 0
 var corner_hits: int = 0
+var total_play_time: float = 0.0
+
+# --- Corner Assist Debug & Status ---
+var assist_time_threshold: float = 180.0
+var assist_max_angle_deg: float = 5.0
+var last_assist_result: String = "未判定"
+var last_assist_triggered: bool = false
 
 # --- Upgrade Levels ---
-var logo_count: int = 100
-var speed_level: int = 100
-var boost_level: int = 100
-var size_level: int = 100
-var ascension_level: int = 100
+var logo_count: int = 1
+var speed_level: int = 1
+var boost_level: int = 1
+var size_level: int = 1
+var ascension_level: int = 0
 var skill_levels: Dictionary = {} # { "skill_id": level_int }
 var auto_unlock_skill_order: Array[String] = []
 var skill_max_levels: Dictionary = {} # { "skill_id": max_level_int }
@@ -152,7 +159,19 @@ var unlocked_slots: Dictionary = {
 	"accessory_3": false,
 	"accessory_4": false
 }
+const BASE_INVENTORY_SIZE: int = 20
 const MAX_TYPE_INVENTORY_SIZE: int = 50
+
+
+func get_max_inventory_size() -> int:
+	var sz := BASE_INVENTORY_SIZE
+	if get_skill_level("inventory_expand_1") > 0:
+		sz += 10
+	if get_skill_level("inventory_expand_2") > 0:
+		sz += 10
+	if get_skill_level("inventory_expand_3") > 0:
+		sz += 10
+	return sz
 
 # --- Special Skill Settings & Definitions ---
 var special_skill_drop_chance: float = 0.03 # 基本確率 3%
@@ -293,7 +312,12 @@ func init_skill_tree_auto_unlock_order() -> void:
 	if root_skill_id.is_empty():
 		printerr("前提スキルが0個のルートスキルが見つかりません")
 		return
-		
+
+	# 開始時のルートノードを初期解放済みに設定
+	if skill_levels.get(root_skill_id, 0) == 0:
+		skill_levels[root_skill_id] = 1
+		permanently_unlocked_skills[root_skill_id] = true
+
 	# BFS でルートスキルからの最短経路距離（ホップ数）を計算
 	var dist: Dictionary = {}
 	dist[root_skill_id] = 0
@@ -708,6 +732,21 @@ func set_slot_unlocked(slot_key: String, unlocked: bool) -> void:
 	unlocked_slots[slot_key] = unlocked
 	equipment_changed.emit()
 
+
+func is_window_unlocked(window_id: String) -> bool:
+	match window_id:
+		"skill_tree":
+			return true
+		"equipment":
+			return get_skill_level("equip_drop_unlock") > 0
+		"challenge":
+			return get_skill_level("challenge_unlock") > 0
+		"blacksmith":
+			return get_skill_level("blacksmith_unlock") > 0
+		"amplifier":
+			return get_skill_level("amplifier_unlock") > 0
+	return false
+
 # --- Signals ---
 signal gold_changed(new_amount: float)
 signal tokens_changed(new_amount: float)
@@ -1011,36 +1050,104 @@ func _calc_arithmetic_max_count(base_init: float, step: float, current_level: in
 	return maxi(0, n)
 
 
+func _calc_base_geometric_cost(base_init: float, ratio: float, current_level: int, count: int, saving_mult: float) -> float:
+	if count <= 0:
+		return 0.0
+	var r := ratio
+	var start_lvl := maxi(1, current_level)
+	var first_cost := base_init * pow(r, float(start_lvl - 1)) * saving_mult
+	if count == 1:
+		return first_cost
+	if absf(r - 1.0) < 0.0001:
+		return first_cost * float(count)
+	return first_cost * (pow(r, float(count)) - 1.0) / (r - 1.0)
+
+
+func _calc_base_geometric_max_count(base_init: float, ratio: float, current_level: int, currency: float, saving_mult: float) -> int:
+	if currency <= 0.0:
+		return 0
+	var r := ratio
+	var start_lvl := maxi(1, current_level)
+	var first_cost := base_init * pow(r, float(start_lvl - 1)) * saving_mult
+	if currency < first_cost:
+		return 0
+	if absf(r - 1.0) < 0.0001:
+		return int(currency / first_cost)
+
+	var val := 1.0 + currency * (r - 1.0) / first_cost
+	if val <= 0.0:
+		return 0
+	var n := int(floor(log(val) / log(r)))
+	n = maxi(0, n)
+
+	var actual_cost := _calc_base_geometric_cost(base_init, r, current_level, n, saving_mult)
+	if actual_cost > currency and n > 0:
+		n -= 1
+	else:
+		var next_cost := _calc_base_geometric_cost(base_init, r, current_level, n + 1, saving_mult)
+		if next_cost <= currency:
+			n += 1
+	return maxi(0, n)
+
+
+func get_ascension_cost_multiplier() -> float:
+	# アセンションレベルごとに基本強化のコストが2倍
+	return pow(2.0, float(ascension_level))
+
+
 func get_speed_upgrade_cost(count: int = 1) -> float:
-	return _calc_arithmetic_cost(10.0, 15.0, speed_level, count, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_cost(10.0 * get_ascension_cost_multiplier(), 1.15, speed_level, count, get_equipped_saving_cost_multiplier())
 
 
 func get_speed_upgrade_max_count() -> int:
-	return _calc_arithmetic_max_count(10.0, 15.0, speed_level, gold, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_max_count(10.0 * get_ascension_cost_multiplier(), 1.15, speed_level, gold, get_equipped_saving_cost_multiplier())
 
 
 func get_boost_upgrade_cost(count: int = 1) -> float:
-	return _calc_arithmetic_cost(20.0, 25.0, boost_level, count, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_cost(20.0 * get_ascension_cost_multiplier(), 1.15, boost_level, count, get_equipped_saving_cost_multiplier())
 
 
 func get_boost_upgrade_max_count() -> int:
-	return _calc_arithmetic_max_count(20.0, 25.0, boost_level, gold, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_max_count(20.0 * get_ascension_cost_multiplier(), 1.15, boost_level, gold, get_equipped_saving_cost_multiplier())
 
 
 func get_size_upgrade_cost(count: int = 1) -> float:
-	return _calc_arithmetic_cost(15.0, 20.0, size_level, count, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_cost(15.0 * get_ascension_cost_multiplier(), 1.15, size_level, count, get_equipped_saving_cost_multiplier())
 
 
 func get_size_upgrade_max_count() -> int:
-	return _calc_arithmetic_max_count(15.0, 20.0, size_level, gold, get_equipped_saving_cost_multiplier())
+	return _calc_base_geometric_max_count(15.0 * get_ascension_cost_multiplier(), 1.15, size_level, gold, get_equipped_saving_cost_multiplier())
 
 
 func get_ascension_multiplier() -> float:
-	return 1.0 + ascension_level * 2.0
+	# アセンションごとに獲得率+100% (Lv0: 1.0倍, Lv1: 2.0倍, Lv2: 3.0倍...)
+	return 1.0 + float(ascension_level) * 1.0
+
+
+func get_base_upgrade_total_level() -> int:
+	return speed_level + boost_level + size_level
 
 
 func can_ascend() -> bool:
-	return true
+	# 基本強化が合計レベル100まで到達すると可能
+	return get_base_upgrade_total_level() >= 100
+
+
+## アセンションレベルに応じた追加ロゴ数
+## 1個ごとに必要アセンション回数が1増える (0->1, 2->3, 5->6...)
+func get_ascension_extra_logo_count(asc_lvl: int = -1) -> int:
+	var a := ascension_level if asc_lvl < 0 else asc_lvl
+	if a <= 0:
+		return 0
+	return int(floor((-1.0 + sqrt(1.0 + 8.0 * float(a))) / 2.0))
+
+
+## 次のロゴ追加までの残りアセンション回数
+func get_ascension_logos_next_remaining() -> int:
+	var current_k := get_ascension_extra_logo_count()
+	var next_k := current_k + 1
+	var next_threshold := int(round(float(next_k * (next_k + 1)) * 0.5))
+	return maxi(1, next_threshold - ascension_level)
 
 
 func buy_logo_upgrade() -> bool:
@@ -1122,15 +1229,14 @@ func get_corner_conversion_chance() -> float:
 
 func perform_ascension() -> bool:
 	if can_ascend():
-		gold = 0
-		# Do not reset tokens or skill_levels on ascension
+		# 所持ゴールドはリセットしない
 		ascension_level += 1
-		logo_count = 1 + ascension_level + get_skill_level("extra_logo")
-		speed_level = 0
-		boost_level = 0
-		size_level = 0
+		logo_count = 1 + get_ascension_extra_logo_count() + get_skill_level("extra_logo")
+		speed_level = 1
+		boost_level = 1
+		size_level = 1
 		
-		gold_changed.emit(gold)
+		_recalculate_cached_multipliers()
 		upgrades_changed.emit()
 		logo_reset_requested.emit()
 		return true
@@ -1223,6 +1329,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	total_play_time += delta
 	_amp_cache_timer += delta
 	if _amp_cache_timer >= 0.1:
 		_amp_cache_timer = 0.0
@@ -1263,10 +1370,145 @@ func get_inventory_count(type: String) -> int:
 	_ensure_inventory_sizes()
 	var count := 0
 	var arr: Array = inventories.get(type, [])
-	for item in arr:
-		if item != null:
+	var max_sz := get_max_inventory_size()
+	for i in range(mini(arr.size(), max_sz)):
+		if arr[i] != null:
 			count += 1
 	return count
+
+
+# --- Skill Tree Equipment Bonus Calculations ---
+
+func get_tree_equip_drop_probability_bonus() -> float:
+	var bonus := 0.0
+	if get_skill_level("equip_drop_probability_boost_1") > 0:
+		bonus += 0.02
+	if get_skill_level("equip_drop_probability_boost_2") > 0:
+		bonus += 0.05
+	if get_skill_level("equip_drop_probability_boost_3") > 0:
+		bonus += 0.10
+	return bonus
+
+
+func get_tree_equip_drop_level_bonus() -> int:
+	var bonus := 0
+	if get_skill_level("equip_drop_level_boost_1") > 0:
+		bonus += 10
+	if get_skill_level("equip_drop_level_boost_2") > 0:
+		bonus += 20
+	if get_skill_level("equip_drop_level_boost_3") > 0:
+		bonus += 30
+	return bonus
+
+
+func get_total_equip_drop_rarity_boost() -> int:
+	var boost := 0
+	if get_skill_level("equip_drop_rarity_boost_1") > 0:
+		boost += 1
+	if get_skill_level("equip_drop_rarity_boost_2") > 0:
+		boost += 2
+	if get_skill_level("equip_drop_rarity_boost_3") > 0:
+		boost += 3
+	return boost
+
+
+func get_tree_equip_skill_level_bonus() -> int:
+	var bonus := 0
+	if get_skill_level("equip_skill_boost_1") > 0:
+		bonus += 2
+	if get_skill_level("equip_skill_boost_2") > 0:
+		bonus += 1
+	if get_skill_level("equip_skill_boost_3") > 0:
+		bonus += 3
+	return bonus
+
+
+func get_corner_hit_gold_amount() -> float:
+	var mult := _cached_ascension_mult
+	var gold_skill_mult := _cached_gold_skill_mult * _cached_gold_amp_mult
+	var base_gold := (50.0 + float(get_effective_boost_level()) * 10.0) * mult * gold_skill_mult
+	if is_challenge_active("c3"):
+		return 0.0
+	return base_gold * get_challenge_corner_gold_multiplier()
+
+
+func get_corner_hit_token_amount() -> float:
+	var mult := _cached_ascension_mult
+	var token_skill_mult := _cached_token_skill_mult * _cached_token_amp_mult
+	var base_tokens := float(get_effective_boost_level()) * mult * token_skill_mult
+	var token_luck_level := get_skill_level("token_luck")
+	if token_luck_level > 0 and randf() < float(token_luck_level) * 0.3:
+		base_tokens += 1.0
+	return base_tokens
+
+
+func discard_equipment_rewards() -> Dictionary:
+	var res := { "gold": 100.0, "tokens": 0.0 }
+	if get_skill_level("get_gold_when_discarding") > 0:
+		res["gold"] += get_corner_hit_gold_amount()
+	if get_skill_level("get_token_when_discarding") > 0:
+		res["tokens"] += get_corner_hit_token_amount()
+	return res
+
+
+func discard_inventory_item(type: String, index: int) -> bool:
+	_ensure_inventory_sizes()
+	if not inventories.has(type):
+		return false
+	var arr: Array = inventories[type]
+	if index < 0 or index >= get_max_inventory_size():
+		return false
+	var item = arr[index]
+	if item == null or not item is Dictionary or item.is_empty():
+		return false
+	if is_item_equipped(item.get("id", "")) != "":
+		return false
+	arr[index] = null
+	var rewards := discard_equipment_rewards()
+	if rewards["gold"] > 0.0:
+		add_gold(rewards["gold"])
+	if rewards["tokens"] > 0.0:
+		add_tokens(rewards["tokens"])
+	equipment_changed.emit()
+	inventory_updated.emit()
+	return true
+
+
+func discard_multiple_inventory_items(items_to_discard: Array) -> Dictionary:
+	_ensure_inventory_sizes()
+	var total_rewards := { "gold": 0.0, "tokens": 0.0 }
+	var single_reward := discard_equipment_rewards()
+	var discarded_count := 0
+	
+	for entry in items_to_discard:
+		if not entry is Dictionary:
+			continue
+		var type: String = entry.get("type", "")
+		var item_id: String = entry.get("id", "")
+		if not inventories.has(type):
+			continue
+		if is_item_equipped(item_id) != "":
+			continue
+			
+		var arr: Array = inventories[type]
+		for i in range(arr.size()):
+			var it = arr[i]
+			if it != null and it is Dictionary and it.get("id", "") == item_id:
+				arr[i] = null
+				discarded_count += 1
+				total_rewards["gold"] += single_reward["gold"]
+				total_rewards["tokens"] += single_reward["tokens"]
+				break
+				
+	if discarded_count > 0:
+		if total_rewards["gold"] > 0.0:
+			add_gold(total_rewards["gold"])
+		if total_rewards["tokens"] > 0.0:
+			add_tokens(total_rewards["tokens"])
+		equipment_changed.emit()
+		inventory_updated.emit()
+		
+	return total_rewards
 
 
 func _recalculate_all_cumulative_levels() -> void:
@@ -1371,6 +1613,13 @@ func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false
 				
 			# Update cumulative skill levels
 			_update_cumulative_levels(skill_id)
+			
+			if skill_id.begins_with("inventory_expand_"):
+				_ensure_inventory_sizes()
+				inventory_updated.emit()
+				equipment_changed.emit()
+			elif skill_id == "equip_drop_unlock" or skill_id == "equip_drop_filter_unlock":
+				equipment_changed.emit()
 				
 			tokens_changed.emit(tokens)
 			skill_upgraded.emit(skill_id, skill_levels[skill_id])
@@ -1380,6 +1629,12 @@ func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false
 
 
 # --- Equipment Logic ---
+var _item_obtain_counter: int = 0
+
+func get_next_item_obtain_order() -> int:
+	_item_obtain_counter += 1
+	return _item_obtain_counter
+
 
 func get_rarity_color(rarity: String) -> Color:
 	match rarity:
@@ -1462,7 +1717,7 @@ func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool =
 		return desc_tmpl
 
 
-func generate_random_equipment() -> Dictionary:
+func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	var types: Array[String] = ["main", "sub", "accessory"]
 	var type: String = types[randi() % types.size()]
 	var name := ""
@@ -1496,7 +1751,7 @@ func generate_random_equipment() -> Dictionary:
 	# Generate level: 10の倍数補正 (アセンション*乱数0.9~1.1 + ツリー補正+10/lvl)
 	var base_asc := float(maxi(1, ascension_level))
 	var rand_factor := randf_range(0.9, 1.1)
-	var tree_level_bonus := float(total_equip_drop_level_boost_level * 10)
+	var tree_level_bonus := float(get_tree_equip_drop_level_bonus())
 	var reinc_level_bonus := float(get_base_equip_level_bonus())
 	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus
 	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
@@ -1512,17 +1767,25 @@ func generate_random_equipment() -> Dictionary:
 	
 	# Generate random rarity using Gaussian (Normal) Distribution model
 	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
-	var rarity_level := total_equip_drop_rarity_boost_level + int(get_equipped_skill_total_val("drop_rarity") + get_equipped_skill_total_val("drop_luck"))
+	var rarity_level := get_total_equip_drop_rarity_boost() + int(get_equipped_skill_total_val("drop_rarity") + get_equipped_skill_total_val("drop_luck"))
+	if is_corner and get_skill_level("equip_corner_enhance") > 0:
+		rarity_level += 1
+
+	var is_mythic_unlocked := get_skill_level("mythic_unlock") > 0
+	var max_rarity_idx := 5 if is_mythic_unlocked else 4
+	var max_mu := 5.0 if is_mythic_unlocked else 4.0
+
 	var L := float(rarity_level)
-	var mu := minf(5.0, 0.05 * L)
-	# muが5.0に達する(L > 100)までは広いばらつき sigma=1.10 を維持し、
-	# ミシック到達以降に標準偏差が収束してミシック100%確定へ向かう
-	var extra_L := maxf(0.0, L - 100.0)
+	var mu := minf(max_mu, 0.05 * L)
+	var threshold_L := 100.0 if is_mythic_unlocked else 80.0
+	var extra_L := maxf(0.0, L - threshold_L)
 	var sigma := 0.01 + 1.09 * exp(-0.02 * extra_L)
 
-	var weights: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+	var num_rarities := max_rarity_idx + 1
+	var weights: Array[float] = []
+	weights.resize(num_rarities)
 	var total_w := 0.0
-	for x in range(6):
+	for x in range(num_rarities):
 		var diff := float(x) - mu
 		var w := exp(- (diff * diff) / (2.0 * sigma * sigma))
 		weights[x] = w
@@ -1532,7 +1795,7 @@ func generate_random_equipment() -> Dictionary:
 	var accumulated_w := 0.0
 	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity: String = "コモン"
-	for x in range(6):
+	for x in range(num_rarities):
 		accumulated_w += weights[x]
 		if roll <= accumulated_w:
 			rarity = rarity_names[x]
@@ -1554,8 +1817,9 @@ func generate_random_equipment() -> Dictionary:
 		"ミシック":
 			num_skills = 6
 
-	# 特殊スキルの付与判定 (確立: 3%, 1装備につき最大1つ)
-	var has_special: bool = (randf() < special_skill_drop_chance) and not special_skill_defs.is_empty()
+	# 特殊スキルの付与判定 (スキル解放時のみ, 基本確率: 3%, 1装備につき最大1つ)
+	var can_have_special: bool = get_skill_level("equip_special_skill_unlock") > 0
+	var has_special: bool = can_have_special and (randf() < special_skill_drop_chance) and not special_skill_defs.is_empty()
 	var normal_skill_count: int = maxi(0, num_skills - 1 if has_special else num_skills)
 
 	# 利用可能なオプション効果（スキル）のキーをシャッフル
@@ -1594,12 +1858,17 @@ func generate_random_equipment() -> Dictionary:
 	# スキルレベルが大きい順（降順）にソート
 	final_skill_levels.sort_custom(_sort_descending_int)
 
+	# スキルツリーおよび角ヒットボーナス加算
+	var skill_level_bonus := get_tree_equip_skill_level_bonus()
+	if is_corner and get_skill_level("equip_corner_enhance") > 0:
+		skill_level_bonus += 1
+
 	var item_skills: Array[Dictionary] = []
 	for i in range(min(normal_skill_count, skill_keys.size())):
 		var sk_id: String = skill_keys[i]
 		var sk_def: Dictionary = equipment_skill_defs.get(sk_id, {})
 		var sk_name: String = sk_def.get("name", "")
-		var s_level: int = final_skill_levels[i]
+		var s_level: int = final_skill_levels[i] + skill_level_bonus
 		var formatted_desc := format_equipment_skill_desc(sk_id, s_level, false)
 				
 		item_skills.append({
@@ -1637,7 +1906,8 @@ func generate_random_equipment() -> Dictionary:
 		"rand_factor": rand_factor,
 		"rarity": rarity,
 		"equip_skill": item_skills,
-		"forge_count": 0
+		"forge_count": 0,
+		"obtain_order": get_next_item_obtain_order()
 	}
 
 
@@ -1715,7 +1985,9 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 
 	# レア度抽選確率の算出
 	# 1~5個: nからn-2の3種 (1のときはコモンのみ、2のときはコモンとアンコモン)
-	# 6個以上: 4~6に対応したレア度が等確率 (エピック, レジェンド, ミシック)
+	# 6個以上: 4~6に対応したレア度が等確率 (エピック, レジェンド, ミシック) ※ミシック未解放時はレジェンドまで
+	var is_mythic_unlocked := get_skill_level("mythic_unlock") > 0
+	var max_allowed_r := 6 if is_mythic_unlocked else 5
 	var n: int = all_skills.size()
 	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity_probs: Dictionary = {}
@@ -1726,17 +1998,18 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 		pass
 	elif n <= 5:
 		min_r = maxi(1, n - 2)
-		max_r = n
+		max_r = mini(n, max_allowed_r)
 		var count: float = float(max_r - min_r + 1)
 		for r_idx in range(min_r, max_r + 1):
 			var r_name: String = rarity_names[r_idx - 1]
 			rarity_probs[r_name] = 1.0 / count
 	else:
 		min_r = 4
-		max_r = 6
-		for r_idx in range(4, 7):
+		max_r = max_allowed_r
+		var count: float = float(max_r - min_r + 1)
+		for r_idx in range(min_r, max_r + 1):
 			var r_name: String = rarity_names[r_idx - 1]
-			rarity_probs[r_name] = 1.0 / 3.0
+			rarity_probs[r_name] = 1.0 / count
 
 	return {
 		"can_forge": materials.size() >= 2 and materials.size() <= 9,
@@ -1829,7 +2102,8 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 		"rand_factor": base_item.get("rand_factor", 1.0),
 		"rarity": chosen_rarity,
 		"equip_skill": final_skills,
-		"forge_count": forge_count
+		"forge_count": forge_count,
+		"obtain_order": get_next_item_obtain_order()
 	}
 
 	# インベントリ配置: 素材の中でインデックス最小の位置に新アイテムを配置し、残りは消滅
@@ -1944,10 +2218,222 @@ func is_item_matched_filter(item: Dictionary) -> bool:
 	# 4. 特殊スキル判定
 	var target_special: String = equipment_filter_settings.get("special_skill", "")
 	if not target_special.is_empty():
-		if item_special_id != target_special:
-			return false
+		if target_special == "__has_special__":
+			if item_special_id.is_empty():
+				return false
+		elif target_special == "__no_special__":
+			if not item_special_id.is_empty():
+				return false
+		else:
+			if item_special_id != target_special:
+				return false
 			
 	return true
+
+
+# --- Inventory Filter & Sorting Logic ---
+var inventory_filter_settings: Dictionary = {
+	"main": {
+		"sort_key": "rarity", # "rarity", "level", "obtain"
+		"sort_order": "desc", # "desc", "asc"
+		"rarities": {
+			"コモン": true,
+			"アンコモン": true,
+			"レア": true,
+			"エピック": true,
+			"レジェンド": true,
+			"ミシック": true
+		},
+		"normal_skills": {},
+		"normal_skill_mode": "OR",
+		"special_skill": ""
+	},
+	"sub": {
+		"sort_key": "rarity",
+		"sort_order": "desc",
+		"rarities": {
+			"コモン": true,
+			"アンコモン": true,
+			"レア": true,
+			"エピック": true,
+			"レジェンド": true,
+			"ミシック": true
+		},
+		"normal_skills": {},
+		"normal_skill_mode": "OR",
+		"special_skill": ""
+	},
+	"accessory": {
+		"sort_key": "rarity",
+		"sort_order": "desc",
+		"rarities": {
+			"コモン": true,
+			"アンコモン": true,
+			"レア": true,
+			"エピック": true,
+			"レジェンド": true,
+			"ミシック": true
+		},
+		"normal_skills": {},
+		"normal_skill_mode": "OR",
+		"special_skill": ""
+	}
+}
+signal inventory_filter_changed(type: String)
+
+
+func reset_inventory_filter_settings(type: String) -> void:
+	if not inventory_filter_settings.has(type):
+		return
+	inventory_filter_settings[type] = {
+		"sort_key": "rarity",
+		"sort_order": "desc",
+		"rarities": {
+			"コモン": true,
+			"アンコモン": true,
+			"レア": true,
+			"エピック": true,
+			"レジェンド": true,
+			"ミシック": true
+		},
+		"normal_skills": {},
+		"normal_skill_mode": "OR",
+		"special_skill": ""
+	}
+	inventory_filter_changed.emit(type)
+
+
+func is_item_matched_inventory_filter(item: Dictionary, type: String) -> bool:
+	if item.is_empty():
+		return false
+	var settings: Dictionary = inventory_filter_settings.get(type, {})
+	if settings.is_empty():
+		return true
+
+	# 1. レア度判定
+	var rarity: String = item.get("rarity", "コモン")
+	var rarity_settings: Dictionary = settings.get("rarities", {})
+	if not rarity_settings.get(rarity, true):
+		return false
+
+	# 2. 通常スキル判定
+	var item_skills: Array = item.get("equip_skill", [])
+	var item_normal_ids: Array[String] = []
+	var item_special_id: String = ""
+
+	for sk in item_skills:
+		if sk is Dictionary:
+			var sk_id: String = sk.get("id", "")
+			if sk.get("is_special", false):
+				item_special_id = sk_id
+			else:
+				item_normal_ids.append(sk_id)
+
+	var normal_filters: Dictionary = settings.get("normal_skills", {})
+	var selected_normal_skills: Array[String] = []
+	for sk_id in normal_filters:
+		if normal_filters[sk_id]:
+			selected_normal_skills.append(sk_id)
+
+	if not selected_normal_skills.is_empty():
+		var mode: String = settings.get("normal_skill_mode", "OR")
+		if mode == "AND":
+			for req_id in selected_normal_skills:
+				if req_id not in item_normal_ids:
+					return false
+		else: # "OR"
+			var matched := false
+			for req_id in selected_normal_skills:
+				if req_id in item_normal_ids:
+					matched = true
+					break
+			if not matched:
+				return false
+
+	# 3. 特殊スキル判定
+	var target_special: String = settings.get("special_skill", "")
+	if not target_special.is_empty():
+		if target_special == "__has_special__":
+			if item_special_id.is_empty():
+				return false
+		elif target_special == "__no_special__":
+			if not item_special_id.is_empty():
+				return false
+		else:
+			if item_special_id != target_special:
+				return false
+
+	return true
+
+
+func _compare_items_for_sort(a: Dictionary, b: Dictionary, sort_key: String, sort_order: String) -> bool:
+	var is_asc := (sort_order == "asc")
+	var r_map := { "コモン": 0, "アンコモン": 1, "レア": 2, "エピック": 3, "レジェンド": 4, "ミシック": 5 }
+
+	if sort_key == "rarity":
+		var val_a: int = r_map.get(a.get("rarity", "コモン"), 0)
+		var val_b: int = r_map.get(b.get("rarity", "コモン"), 0)
+		if val_a != val_b:
+			return (val_a < val_b) if is_asc else (val_a > val_b)
+		var lvl_a: int = a.get("level", 0)
+		var lvl_b: int = b.get("level", 0)
+		if lvl_a != lvl_b:
+			return lvl_a > lvl_b
+		return int(a.get("obtain_order", 0)) > int(b.get("obtain_order", 0))
+
+	elif sort_key == "level":
+		var val_a: int = a.get("level", 0)
+		var val_b: int = b.get("level", 0)
+		if val_a != val_b:
+			return (val_a < val_b) if is_asc else (val_a > val_b)
+		var r_a: int = r_map.get(a.get("rarity", "コモン"), 0)
+		var r_b: int = r_map.get(b.get("rarity", "コモン"), 0)
+		if r_a != r_b:
+			return r_a > r_b
+		return int(a.get("obtain_order", 0)) > int(b.get("obtain_order", 0))
+
+	else: # "obtain"
+		var val_a: int = int(a.get("obtain_order", 0))
+		var val_b: int = int(b.get("obtain_order", 0))
+		if val_a != val_b:
+			return (val_a < val_b) if is_asc else (val_a > val_b)
+		return a.get("id", "") < b.get("id", "")
+
+
+func sort_and_filter_inventory(type: String) -> void:
+	if not inventories.has(type):
+		return
+	_ensure_inventory_sizes()
+	var inv: Array = inventories[type]
+	var settings: Dictionary = inventory_filter_settings.get(type, {})
+	var sort_key: String = settings.get("sort_key", "rarity")
+	var sort_order: String = settings.get("sort_order", "desc")
+
+	var matched_items: Array[Dictionary] = []
+	var unmatched_items: Array[Dictionary] = []
+
+	for it in inv:
+		if it != null and it is Dictionary and not it.is_empty():
+			if is_item_matched_inventory_filter(it, type):
+				matched_items.append(it)
+			else:
+				unmatched_items.append(it)
+
+	matched_items.sort_custom(func(a, b): return _compare_items_for_sort(a, b, sort_key, sort_order))
+	unmatched_items.sort_custom(func(a, b): return _compare_items_for_sort(a, b, sort_key, sort_order))
+
+	var new_inv: Array = []
+	for it in matched_items:
+		new_inv.append(it)
+	for it in unmatched_items:
+		new_inv.append(it)
+
+	while new_inv.size() < MAX_TYPE_INVENTORY_SIZE:
+		new_inv.append(null)
+
+	inventories[type] = new_inv
+	inventory_updated.emit()
+	equipment_changed.emit()
 
 
 func roll_equipment_drop(is_corner: bool) -> Dictionary:
@@ -1955,32 +2441,38 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	if get_skill_level("equip_drop_unlock") <= 0:
 		return {}
 		
-	# 累積ドロップ率係数 L (スキルツリーレベル + 装備スキル「大漁」レベル)
-	var L := float(total_equip_drop_probability_boost_level) + get_equipped_skill_total_val("drop_rate_boost")
+	# 累積ドロップ率係数 L (装備スキル「大漁」レベル)
+	var L := get_equipped_skill_total_val("drop_rate_boost")
 	
 	# 分数関数(反比例)漸近収束モデル: P(L) = 1.0 - (1.0 - P_base) / (1.0 + 0.03 * L)
 	var base_drop_chance := 0.15 if is_corner else 0.02
+	base_drop_chance += get_tree_equip_drop_probability_bonus()
 	var drop_chance := 1.0 - (1.0 - base_drop_chance) / (1.0 + 0.03 * L)
 	# 装備スキル「装備ドロップ率」ボーナス (+1.2n%)
 	var equip_drop_rate_bonus := get_equipped_skill_total_val("drop_rate") * 0.01
 	drop_chance = minf(1.0, drop_chance + equip_drop_rate_bonus)
 		
 	if randf() < drop_chance:
-		var item := generate_random_equipment()
+		var item := generate_random_equipment(is_corner)
 		
-		# フィルタリング判定: 条件不一致の場合はインベントリに入れず自動売却 (+100G)
-		if not is_item_matched_filter(item):
-			var sell_price: float = 100.0
-			add_gold(sell_price)
+		# フィルタリング判定: フィルター解放済みかつ条件不一致の場合は自動廃棄
+		var is_filter_unlocked := get_skill_level("equip_drop_filter_unlock") > 0
+		if is_filter_unlocked and not is_item_matched_filter(item):
+			var filter_rewards := discard_equipment_rewards()
+			if filter_rewards["gold"] > 0.0:
+				add_gold(filter_rewards["gold"])
+			if filter_rewards["tokens"] > 0.0:
+				add_tokens(filter_rewards["tokens"])
 			return {}
 
 		var type = item.get("type", "")
 		_ensure_inventory_sizes()
 		var inv: Array = inventories.get(type, [])
+		var max_sz := get_max_inventory_size()
 		
-		# 最初の空きスロット (null) を探す
+		# 有効スロット範囲内で最初の空きスロット (null) を探す
 		var empty_index := -1
-		for i in range(inv.size()):
+		for i in range(mini(inv.size(), max_sz)):
 			if inv[i] == null:
 				empty_index = i
 				break
@@ -1990,11 +2482,14 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 			inventory_updated.emit()
 			return item
 		else:
-			# インベントリ満タン時: インベントリには追加せず、売却金を追加して通知用データを返す
-			var sell_price: float = 100.0
-			add_gold(sell_price)
+			# インベントリ満タン時: インベントリには追加せず、自動廃棄
+			var full_rewards := discard_equipment_rewards()
+			if full_rewards["gold"] > 0.0:
+				add_gold(full_rewards["gold"])
+			if full_rewards["tokens"] > 0.0:
+				add_tokens(full_rewards["tokens"])
 			item["is_sold"] = true
-			item["sell_price"] = sell_price
+			item["sell_price"] = full_rewards["gold"]
 			return item
 	return {}
 

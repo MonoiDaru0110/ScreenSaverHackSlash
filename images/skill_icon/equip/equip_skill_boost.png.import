@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1imfsr04c6en"
-path="res://.godot/imported/equip_drop_rarity_boost.png-223d8e8d409085f62d193e5faa80993a.ctex"
+uid="uid://bj8c8fobpqag1"
+path="res://.godot/imported/equip_skill_boost.png-e43e0692d50892d5802220c79a66daf1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/equip_drop_rarity_boost.png"
-dest_files=["res://.godot/imported/equip_drop_rarity_boost.png-223d8e8d409085f62d193e5faa80993a.ctex"]
+source_file="res://images/skill_icon/equip/equip_skill_boost.png"
+dest_files=["res://.godot/imported/equip_skill_boost.png-e43e0692d50892d5802220c79a66daf1.ctex"]
 
 [params]
 

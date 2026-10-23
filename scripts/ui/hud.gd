@@ -50,12 +50,20 @@ var _sidebar_buy_mode_idx: int = 0
 @onready var btn_close_inventory: Button = %CloseInventoryBtn
 @onready var btn_equipment_filter: Button = %EquipmentFilterBtn
 @onready var equipment_filter_window: PanelContainer = %EquipmentFilterWindow
+@onready var inventory_filter_window: PanelContainer = %InventoryFilterWindow
+@onready var inventory_dimmer: Panel = %InventoryDimmer
 @onready var main_title_label: Label = %MainTitleLabel
 @onready var sub_title_label: Label = %SubTitleLabel
 @onready var accessory_title_label: Label = %AccessoryTitleLabel
 @onready var main_grid: GridContainer = %MainGrid
 @onready var sub_grid: GridContainer = %SubGrid
 @onready var accessory_grid: GridContainer = %AccessoryGrid
+@onready var btn_main_sort: Button = %MainSortBtn
+@onready var btn_sub_sort: Button = %SubSortBtn
+@onready var btn_accessory_sort: Button = %AccessorySortBtn
+@onready var btn_main_filter: Button = %MainFilterBtn
+@onready var btn_sub_filter: Button = %SubFilterBtn
+@onready var btn_accessory_filter: Button = %AccessoryFilterBtn
 @onready var equipment_log_container: VBoxContainer = get_node_or_null("../PlayArea/EquipmentLogContainer") if get_node_or_null("../PlayArea/EquipmentLogContainer") else get_node_or_null("%EquipmentLogContainer")
 
 var _skill_tree_scene: PackedScene = preload("res://scenes/skills/skill_tree_data.tscn")
@@ -75,6 +83,7 @@ var _subtab_style_active_pressed: StyleBoxFlat
 var _subtab_style_inactive: StyleBoxFlat
 var _subtab_style_inactive_hover: StyleBoxFlat
 var _subtab_style_inactive_pressed: StyleBoxFlat
+var _subtab_style_locked: StyleBoxFlat
 
 var _reinc_subtab_index: int = 0
 var _is_skill_tree_open: bool = false
@@ -93,6 +102,14 @@ var _last_corner_announce_ticks: int = 0
 # パフォーマンス最適化: アップグレードボタン更新のスロットリング
 var _upgrade_buttons_dirty: bool = false
 var _upgrade_update_timer: Timer = null
+
+# インベントリ複数選択・廃棄システム
+var _selected_inventory_items: Dictionary = {}
+var _sell_overlay: Control = null
+var _sell_popup: PanelContainer = null
+var _sell_popup_button: Button = null
+var _discard_pop_node: PanelContainer = null
+var _discard_pop_tween: Tween = null
 
 # チャレンジ進行中ミニウィンドウ（右下・通貨欄の左）
 @onready var _challenge_mini_panel: PanelContainer = %ChallengeMiniWindow
@@ -350,6 +367,19 @@ func _ready() -> void:
 	_subtab_style_active_pressed.corner_radius_bottom_right = 3
 	_subtab_style_active_pressed.corner_radius_bottom_left = 3
 
+	# Sub Tab locked style
+	_subtab_style_locked = StyleBoxFlat.new()
+	_subtab_style_locked.bg_color = Color(0.06, 0.06, 0.09, 0.75)
+	_subtab_style_locked.border_width_left = 1
+	_subtab_style_locked.border_width_top = 1
+	_subtab_style_locked.border_width_right = 1
+	_subtab_style_locked.border_width_bottom = 1
+	_subtab_style_locked.border_color = Color(0.18, 0.18, 0.24, 0.8)
+	_subtab_style_locked.corner_radius_top_left = 3
+	_subtab_style_locked.corner_radius_top_right = 3
+	_subtab_style_locked.corner_radius_bottom_right = 3
+	_subtab_style_locked.corner_radius_bottom_left = 3
+
 	if btn_home_tab:
 		btn_home_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_home_tab.pressed.connect(_on_home_tab_pressed)
@@ -409,16 +439,16 @@ func _ready() -> void:
 	GameData.setup_close_button(btn_close_window)
 	btn_close_window.pressed.connect(close_skill_tree)
 	if btn_toggle_skill_vis:
-		btn_toggle_skill_vis.pressed.connect(_on_toggle_skill_vis_pressed)
-		if skill_tree_scroll:
-			_update_toggle_skill_vis_button_text(skill_tree_scroll.filter_unlocked_only)
+		btn_toggle_skill_vis.visible = false
 	
 	skill_tree_window.visible = false
 	
 	_init_slot_buttons()
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	GameData.inventory_updated.connect(_on_inventory_updated)
+	GameData.inventory_filter_changed.connect(func(_t): _update_inventory_ui())
 	GameData.reincarnation_performed.connect(_on_reincarnation_performed)
+	GameData.skill_upgraded.connect(_on_skill_upgraded)
 	GameData.setup_close_button(btn_close_inventory)
 	btn_close_inventory.pressed.connect(close_inventory)
 	if btn_equipment_filter:
@@ -428,8 +458,92 @@ func _ready() -> void:
 		btn_equipment_filter.add_theme_stylebox_override("pressed", style_pressed)
 		btn_equipment_filter.add_theme_stylebox_override("focus", style_focus)
 		btn_equipment_filter.pressed.connect(_on_equipment_filter_pressed)
+	var style_gear_normal := StyleBoxFlat.new()
+	style_gear_normal.bg_color = Color(0.16, 0.16, 0.24, 0.9)
+	style_gear_normal.border_width_left = 1
+	style_gear_normal.border_width_top = 1
+	style_gear_normal.border_width_right = 1
+	style_gear_normal.border_width_bottom = 1
+	style_gear_normal.border_color = Color(0.32, 0.32, 0.44, 0.9)
+	style_gear_normal.corner_radius_top_left = 4
+	style_gear_normal.corner_radius_top_right = 4
+	style_gear_normal.corner_radius_bottom_right = 4
+	style_gear_normal.corner_radius_bottom_left = 4
+
+	var style_gear_hover := StyleBoxFlat.new()
+	style_gear_hover.bg_color = Color(0.24, 0.24, 0.36, 1.0)
+	style_gear_hover.border_width_left = 1
+	style_gear_hover.border_width_top = 1
+	style_gear_hover.border_width_right = 1
+	style_gear_hover.border_width_bottom = 1
+	style_gear_hover.border_color = Color(0.55, 0.55, 0.72, 1.0)
+	style_gear_hover.corner_radius_top_left = 4
+	style_gear_hover.corner_radius_top_right = 4
+	style_gear_hover.corner_radius_bottom_right = 4
+	style_gear_hover.corner_radius_bottom_left = 4
+
+	var style_gear_pressed := StyleBoxFlat.new()
+	style_gear_pressed.bg_color = Color(0.10, 0.10, 0.16, 1.0)
+	style_gear_pressed.border_width_left = 1
+	style_gear_pressed.border_width_top = 1
+	style_gear_pressed.border_width_right = 1
+	style_gear_pressed.border_width_bottom = 1
+	style_gear_pressed.border_color = Color(0.22, 0.22, 0.32, 1.0)
+	style_gear_pressed.corner_radius_top_left = 4
+	style_gear_pressed.corner_radius_top_right = 4
+	style_gear_pressed.corner_radius_bottom_right = 4
+	style_gear_pressed.corner_radius_bottom_left = 4
+
+	for btn in [btn_main_filter, btn_sub_filter, btn_accessory_filter]:
+		if btn:
+			btn.custom_minimum_size = Vector2(28, 28)
+			btn.focus_mode = Control.FOCUS_NONE
+			btn.add_theme_stylebox_override("normal", style_gear_normal)
+			btn.add_theme_stylebox_override("hover", style_gear_hover)
+			btn.add_theme_stylebox_override("pressed", style_gear_pressed)
+			btn.add_theme_stylebox_override("focus", style_focus)
+			btn.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+			btn.add_theme_color_override("font_hover_color", Color.WHITE)
+			btn.tooltip_text = "インベントリ設定"
+
+	for btn in [btn_main_sort, btn_sub_sort, btn_accessory_sort]:
+		if btn:
+			btn.custom_minimum_size = Vector2(28, 28)
+			btn.focus_mode = Control.FOCUS_NONE
+			btn.add_theme_stylebox_override("normal", style_gear_normal)
+			btn.add_theme_stylebox_override("hover", style_gear_hover)
+			btn.add_theme_stylebox_override("pressed", style_gear_pressed)
+			btn.add_theme_stylebox_override("focus", style_focus)
+			btn.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+			btn.add_theme_color_override("font_hover_color", Color.WHITE)
+			btn.tooltip_text = "並び替え"
+
+	if btn_main_sort:
+		btn_main_sort.pressed.connect(func(): GameData.sort_and_filter_inventory("main"))
+	if btn_sub_sort:
+		btn_sub_sort.pressed.connect(func(): GameData.sort_and_filter_inventory("sub"))
+	if btn_accessory_sort:
+		btn_accessory_sort.pressed.connect(func(): GameData.sort_and_filter_inventory("accessory"))
+
+	if btn_main_filter:
+		btn_main_filter.pressed.connect(func(): _open_inventory_filter("main"))
+	if btn_sub_filter:
+		btn_sub_filter.pressed.connect(func(): _open_inventory_filter("sub"))
+	if btn_accessory_filter:
+		btn_accessory_filter.pressed.connect(func(): _open_inventory_filter("accessory"))
+
+	if inventory_dimmer:
+		inventory_dimmer.visible = false
+		inventory_dimmer.modulate.a = 0.0
+		inventory_dimmer.gui_input.connect(_on_inventory_dimmer_gui_input)
+	if inventory_filter_window:
+		inventory_filter_window.visible = false
+		if inventory_filter_window.has_signal("closed"):
+			inventory_filter_window.closed.connect(_update_inventory_dimmer)
 	if equipment_filter_window:
 		equipment_filter_window.visible = false
+		if equipment_filter_window.has_signal("closed"):
+			equipment_filter_window.closed.connect(_update_inventory_dimmer)
 	if challenge_window:
 		if challenge_window.has_signal("closed"):
 			challenge_window.closed.connect(close_challenge)
@@ -544,13 +658,13 @@ func _update_debug_and_stats_info() -> void:
 		bounce_label.text = "Bounces: " + _format_number(GameData.total_bounces)
 		corner_label.text = "★ Corners: " + _format_number(GameData.corner_hits)
 		
-	if _debug_label:
+	if _debug_label and _debug_label.visible:
 		var fps := Engine.get_frames_per_second()
 		var cpu_proc := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 		var cpu_phys := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 		var node_count := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 		var orphan_count := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
-		
+
 		_debug_label.text = "FPS: %d\nCPU Proc: %.2f ms\nPhysics: %.2f ms\nNodes: %d (Orphans: %d)\nLogos: %d" % [
 			fps, cpu_proc, cpu_phys, node_count, orphan_count, GameData.logo_count
 		]
@@ -560,6 +674,7 @@ func _on_upgrades_changed() -> void:
 	_update_upgrade_buttons()
 	_update_sidebar_star_progress()
 	_update_special_skill_custom_ui()
+	_update_tab_button_styles()
 
 
 func _on_reincarnation_performed() -> void:
@@ -951,10 +1066,16 @@ func _update_upgrade_buttons() -> void:
 		_lbl_diff_boost.text = ""
 
 	# --- Upgrade 4: Ascension ---
+	var total_base_lvl := GameData.get_base_upgrade_total_level()
 	var ascend_ok := GameData.can_ascend()
 	btn_ascend.disabled = !ascend_ok
-	_lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
+	_lbl_title_ascend.text = "アセンション  Lv. %d  (%d/100)" % [GameData.ascension_level, mini(100, total_base_lvl)]
 	_lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
+	var remaining := GameData.get_ascension_logos_next_remaining()
+	if remaining == 1:
+		btn_ascend.tooltip_text = "ロゴ追加まであと 1 回（今回でロゴ+1！）"
+	else:
+		btn_ascend.tooltip_text = "ロゴ追加まであと %d 回" % remaining
 
 
 func _on_speed_pressed() -> void:
@@ -1025,6 +1146,24 @@ func _apply_tab_style(btn: Button, is_active: bool, is_subtab: bool = false) -> 
 			btn.add_theme_stylebox_override("pressed", _subtab_style_inactive_pressed)
 
 
+func _apply_subtab_button(btn: Button, is_active: bool, is_unlocked: bool, unlocked_text: String, locked_text: String) -> void:
+	if not btn:
+		return
+	btn.visible = true
+	if is_unlocked:
+		btn.disabled = false
+		btn.text = unlocked_text
+		btn.tooltip_text = ""
+		btn.remove_theme_color_override("font_disabled_color")
+		_apply_tab_style(btn, is_active, true)
+	else:
+		btn.disabled = true
+		btn.text = locked_text
+		btn.tooltip_text = "🔒 スキルツリーで解放できます"
+		btn.add_theme_stylebox_override("disabled", _subtab_style_locked)
+		btn.add_theme_color_override("font_disabled_color", Color(0.40, 0.40, 0.48, 0.8))
+
+
 func _update_tab_button_styles() -> void:
 	# 大タブ（ホーム / 転生）のスタイル更新
 	_apply_tab_style(btn_home_tab, not _is_reincarnation_open, false)
@@ -1036,11 +1175,11 @@ func _update_tab_button_styles() -> void:
 	if reinc_sub_nav_container:
 		reinc_sub_nav_container.visible = _is_reincarnation_open
 
-	_apply_tab_style(btn_equipment_tab, _is_inventory_open, true)
-	_apply_tab_style(btn_skill_tree_tab, _is_skill_tree_open, true)
-	_apply_tab_style(btn_challenge_tab, _is_challenge_open, true)
-	_apply_tab_style(btn_blacksmith_tab, _is_blacksmith_open, true)
-	_apply_tab_style(btn_amplifier_tab, _is_amplifier_open, true)
+	_apply_subtab_button(btn_skill_tree_tab, _is_skill_tree_open, true, "🌳 スキル", "🌳 スキル")
+	_apply_subtab_button(btn_equipment_tab, _is_inventory_open, GameData.is_window_unlocked("equipment"), "🎒 装備", "🔒 装備")
+	_apply_subtab_button(btn_challenge_tab, _is_challenge_open, GameData.is_window_unlocked("challenge"), "🏆 チャレンジ", "🔒 チャレンジ")
+	_apply_subtab_button(btn_blacksmith_tab, _is_blacksmith_open, GameData.is_window_unlocked("blacksmith"), "🔨 鍛冶", "🔒 鍛冶")
+	_apply_subtab_button(btn_amplifier_tab, _is_amplifier_open, GameData.is_window_unlocked("amplifier"), "⚡ 融合", "🔒 融合")
 
 	_apply_tab_style(btn_reinc_tab_1, _is_reinc_tree_open, true)
 	_apply_tab_style(btn_reinc_tab_2, _is_reinc_ability_open, true)
@@ -1096,6 +1235,8 @@ func close_reincarnation() -> void:
 
 
 func _on_equipment_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("equipment"):
+		return
 	if _is_reincarnation_open:
 		close_reincarnation()
 	if _is_skill_tree_open:
@@ -1118,6 +1259,8 @@ func _on_equipment_tab_pressed() -> void:
 
 
 func open_inventory() -> void:
+	if not GameData.is_window_unlocked("equipment"):
+		return
 	if _is_inventory_open:
 		return
 		
@@ -1133,8 +1276,17 @@ func close_inventory() -> void:
 		return
 		
 	_is_inventory_open = false
+	if inventory_filter_window:
+		inventory_filter_window.visible = false
 	if equipment_filter_window:
 		equipment_filter_window.visible = false
+	if inventory_dimmer:
+		inventory_dimmer.visible = false
+		inventory_dimmer.modulate.a = 0.0
+	InventoryItemUI.drag_select_mode = -1
+	_hide_sell_popup()
+	_clear_inventory_selection()
+	_clear_discard_pop()
 	inventory_window.visible = false
 	_update_tab_button_styles()
 	_update_window_dimmer()
@@ -1143,9 +1295,63 @@ func close_inventory() -> void:
 func _on_equipment_filter_pressed() -> void:
 	if not equipment_filter_window:
 		return
+	if inventory_filter_window:
+		inventory_filter_window.visible = false
 	equipment_filter_window.visible = not equipment_filter_window.visible
 	if equipment_filter_window.visible and equipment_filter_window.has_method("sync_from_data"):
 		equipment_filter_window.sync_from_data()
+	_update_inventory_dimmer()
+
+
+func _open_inventory_filter(type: String) -> void:
+	if not inventory_filter_window:
+		return
+	if equipment_filter_window:
+		equipment_filter_window.visible = false
+	if inventory_filter_window.visible and inventory_filter_window.target_type == type:
+		inventory_filter_window.visible = false
+	else:
+		inventory_filter_window.open_for_type(type)
+	_update_inventory_dimmer()
+
+
+var _inv_dimmer_tween: Tween = null
+
+
+func _update_inventory_dimmer() -> void:
+	if not is_instance_valid(inventory_dimmer):
+		return
+	if is_instance_valid(_inv_dimmer_tween) and _inv_dimmer_tween.is_running():
+		_inv_dimmer_tween.kill()
+
+	var is_filter_open: bool = (
+		(equipment_filter_window != null and equipment_filter_window.visible) or
+		(inventory_filter_window != null and inventory_filter_window.visible)
+	)
+
+	if is_filter_open:
+		inventory_dimmer.visible = true
+		_inv_dimmer_tween = create_tween()
+		_inv_dimmer_tween.tween_property(inventory_dimmer, "modulate:a", 1.0, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	else:
+		if inventory_dimmer.visible:
+			_inv_dimmer_tween = create_tween()
+			_inv_dimmer_tween.tween_property(inventory_dimmer, "modulate:a", 0.0, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			_inv_dimmer_tween.tween_callback(func():
+				if is_instance_valid(inventory_dimmer):
+					inventory_dimmer.visible = false
+			)
+		else:
+			inventory_dimmer.modulate.a = 0.0
+
+
+func _on_inventory_dimmer_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if equipment_filter_window and equipment_filter_window.visible:
+			equipment_filter_window.visible = false
+		if inventory_filter_window and inventory_filter_window.visible:
+			inventory_filter_window.visible = false
+		_update_inventory_dimmer()
 
 
 func _on_skill_tree_tab_pressed() -> void:
@@ -1205,6 +1411,8 @@ func close_skill_tree() -> void:
 
 
 func _on_challenge_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("challenge"):
+		return
 	if _is_reincarnation_open:
 		close_reincarnation()
 	if _is_inventory_open:
@@ -1227,6 +1435,8 @@ func _on_challenge_tab_pressed() -> void:
 
 
 func open_challenge() -> void:
+	if not GameData.is_window_unlocked("challenge"):
+		return
 	if _is_challenge_open:
 		return
 	
@@ -1249,6 +1459,8 @@ func close_challenge() -> void:
 
 
 func _on_blacksmith_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("blacksmith"):
+		return
 	if _is_reincarnation_open:
 		close_reincarnation()
 	if _is_inventory_open:
@@ -1271,6 +1483,8 @@ func _on_blacksmith_tab_pressed() -> void:
 
 
 func open_blacksmith() -> void:
+	if not GameData.is_window_unlocked("blacksmith"):
+		return
 	if _is_blacksmith_open:
 		return
 	
@@ -1295,6 +1509,8 @@ func close_blacksmith() -> void:
 
 
 func _on_amplifier_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("amplifier"):
+		return
 	if _is_reincarnation_open:
 		close_reincarnation()
 	if _is_inventory_open:
@@ -1317,6 +1533,8 @@ func _on_amplifier_tab_pressed() -> void:
 
 
 func open_amplifier() -> void:
+	if not GameData.is_window_unlocked("amplifier"):
+		return
 	if _is_amplifier_open:
 		return
 	
@@ -1487,9 +1705,14 @@ func _on_skill_node_pressed(node: SkillNode) -> void:
 		return
 	
 	var cost = node.get_upgrade_cost(current_lvl)
-	# シグナル（tokens_changed, skill_upgraded）を介して各ノードの見た目は自動更新されるため、
-	# ここで手動で全ノードを走査し直す必要はありません
-	GameData.buy_skill_upgrade(node.skill_id, cost, node.is_unlimited)
+	if GameData.buy_skill_upgrade(node.skill_id, cost, node.is_unlimited):
+		_update_tab_button_styles()
+
+
+func _on_skill_upgraded(skill_id: String, _new_level: int) -> void:
+	_update_tab_button_styles()
+	if skill_id.begins_with("inventory_expand_") or skill_id == "equip_drop_unlock" or skill_id == "equip_drop_filter_unlock":
+		_update_inventory_ui()
 
 
 func _update_skill_nodes() -> void:
@@ -1560,6 +1783,10 @@ func _load_skills_from_json() -> void:
 		node.pressed.connect(_on_skill_node_pressed.bind(node))
 		# 初期表示の更新（他ノードとの接続線を引く処理を含む）
 		node.refresh()
+		
+	if skill_tree_scroll:
+		skill_tree_scroll.invalidate_skill_node_cache()
+		skill_tree_scroll.update_culling()
 
 
 # --- Equipment UI Logic ---
@@ -1592,6 +1819,9 @@ func _update_inventory_ui() -> void:
 	if not _is_inventory_open:
 		return
 		
+	if btn_equipment_filter:
+		btn_equipment_filter.visible = GameData.get_skill_level("equip_drop_filter_unlock") > 0
+		
 	var inv_main: Array = GameData.inventories.get("main", [])
 	var inv_sub: Array = GameData.inventories.get("sub", [])
 	var inv_acc: Array = GameData.inventories.get("accessory", [])
@@ -1599,10 +1829,11 @@ func _update_inventory_ui() -> void:
 	var count_main = GameData.get_inventory_count("main")
 	var count_sub = GameData.get_inventory_count("sub")
 	var count_acc = GameData.get_inventory_count("accessory")
+	var max_sz := GameData.get_max_inventory_size()
 	
-	main_title_label.text = "メイン (%d / %d)" % [count_main, GameData.MAX_TYPE_INVENTORY_SIZE]
-	sub_title_label.text = "サブ (%d / %d)" % [count_sub, GameData.MAX_TYPE_INVENTORY_SIZE]
-	accessory_title_label.text = "アクセサリー (%d / %d)" % [count_acc, GameData.MAX_TYPE_INVENTORY_SIZE]
+	main_title_label.text = "メイン (%d / %d)" % [count_main, max_sz]
+	sub_title_label.text = "サブ (%d / %d)" % [count_sub, max_sz]
+	accessory_title_label.text = "アクセサリー (%d / %d)" % [count_acc, max_sz]
 	
 	_update_grid_slots(main_grid, "main", inv_main)
 	_update_grid_slots(sub_grid, "sub", inv_sub)
@@ -1697,20 +1928,30 @@ class InventoryEmptySlot extends Button:
 
 
 func _update_grid_slots(grid: GridContainer, grid_type: String, items: Array) -> void:
-	if grid.get_child_count() < GameData.MAX_TYPE_INVENTORY_SIZE:
+	var max_sz := GameData.get_max_inventory_size()
+	if grid.get_child_count() != max_sz:
 		for child in grid.get_children():
 			grid.remove_child(child)
 			child.queue_free()
-		for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
+		for i in range(max_sz):
 			var wrapper := InventorySlotWrapper.new()
 			wrapper.setup_slot(grid_type, i)
 			grid.add_child(wrapper)
 			
-	for i in range(GameData.MAX_TYPE_INVENTORY_SIZE):
+	for i in range(max_sz):
 		var wrapper = grid.get_child(i) as InventorySlotWrapper
 		var item_data = items[i] if i < items.size() else null
 		if wrapper:
 			wrapper.update_slot_item(item_data)
+			if wrapper.child_item_ui and item_data != null and not item_data.is_empty():
+				var is_matched: bool = GameData.is_item_matched_inventory_filter(item_data, grid_type)
+				wrapper.child_item_ui.set_grayed_out(not is_matched)
+				var it_id: String = item_data.get("id", "")
+				wrapper.child_item_ui.set_selected(_selected_inventory_items.has(it_id))
+				if not wrapper.child_item_ui.selection_toggled.is_connected(_on_inventory_item_selection_toggled):
+					wrapper.child_item_ui.selection_toggled.connect(_on_inventory_item_selection_toggled)
+				if not wrapper.child_item_ui.item_clicked.is_connected(_on_inventory_item_clicked):
+					wrapper.child_item_ui.item_clicked.connect(_on_inventory_item_clicked)
 
 
 func _on_equipment_changed() -> void:
@@ -1815,8 +2056,15 @@ func _setup_grid_frames() -> void:
 	frame_style.content_margin_right = 6
 	frame_style.content_margin_bottom = 8
 	
-	# Adjust separation spacing (4px) and dynamically inject PanelContainer wrapper frames
-	for grid in [main_grid, sub_grid, accessory_grid]:
+	var sections := [
+		{"grid": main_grid, "header": get_node_or_null("%MainHeaderHBox")},
+		{"grid": sub_grid, "header": get_node_or_null("%SubHeaderHBox")},
+		{"grid": accessory_grid, "header": get_node_or_null("%AccessoryHeaderHBox")}
+	]
+
+	for item in sections:
+		var grid: GridContainer = item["grid"]
+		var header: Control = item["header"]
 		if grid:
 			grid.add_theme_constant_override("h_separation", 4)
 			grid.add_theme_constant_override("v_separation", 4)
@@ -1836,6 +2084,10 @@ func _setup_grid_frames() -> void:
 				frame.add_child(grid)
 				parent.add_child(frame)
 				parent.move_child(frame, index)
+				
+				if header:
+					header.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+					header.custom_minimum_size.x = 350.0
 
 
 func _on_toggle_skill_vis_pressed() -> void:
@@ -1924,3 +2176,301 @@ func _on_challenge_progress_updated_mini(cur: float, target: float, time_left: f
 
 func _on_challenge_ended_mini(_challenge_id: String) -> void:
 	_update_challenge_mini_window()
+
+
+# ==============================================================================
+# インベントリ複数選択・売却システム (Inventory Multi-Selection & Sell System)
+# ==============================================================================
+
+func _ensure_sell_popup() -> void:
+	if _sell_overlay != null:
+		return
+
+	_sell_overlay = Control.new()
+	_sell_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_sell_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_sell_overlay.z_index = 80
+	_sell_overlay.visible = false
+	_sell_overlay.gui_input.connect(_on_sell_overlay_gui_input)
+	add_child(_sell_overlay)
+
+	_sell_popup = PanelContainer.new()
+	_sell_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	var pop_style := StyleBoxFlat.new()
+	pop_style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
+	pop_style.border_width_left = 2
+	pop_style.border_width_top = 2
+	pop_style.border_width_right = 2
+	pop_style.border_width_bottom = 2
+	pop_style.border_color = Color(1.0, 0.85, 0.2, 1.0)
+	pop_style.corner_radius_top_left = 8
+	pop_style.corner_radius_top_right = 8
+	pop_style.corner_radius_bottom_right = 8
+	pop_style.corner_radius_bottom_left = 8
+	pop_style.content_margin_left = 8
+	pop_style.content_margin_right = 8
+	pop_style.content_margin_top = 6
+	pop_style.content_margin_bottom = 6
+	_sell_popup.add_theme_stylebox_override("panel", pop_style)
+	_sell_overlay.add_child(_sell_popup)
+
+	_sell_popup_button = Button.new()
+	_sell_popup_button.custom_minimum_size = Vector2(120, 38)
+	_sell_popup_button.focus_mode = Control.FOCUS_NONE
+
+	var btn_normal := StyleBoxFlat.new()
+	btn_normal.bg_color = Color(0.82, 0.22, 0.16, 1.0)
+	btn_normal.corner_radius_top_left = 6
+	btn_normal.corner_radius_top_right = 6
+	btn_normal.corner_radius_bottom_right = 6
+	btn_normal.corner_radius_bottom_left = 6
+	btn_normal.border_width_left = 1
+	btn_normal.border_width_top = 1
+	btn_normal.border_width_right = 1
+	btn_normal.border_width_bottom = 1
+	btn_normal.border_color = Color(0.95, 0.45, 0.35, 1.0)
+
+	var btn_hover := StyleBoxFlat.new()
+	btn_hover.bg_color = Color(0.92, 0.32, 0.24, 1.0)
+	btn_hover.corner_radius_top_left = 6
+	btn_hover.corner_radius_top_right = 6
+	btn_hover.corner_radius_bottom_right = 6
+	btn_hover.corner_radius_bottom_left = 6
+	btn_hover.border_width_left = 1
+	btn_hover.border_width_top = 1
+	btn_hover.border_width_right = 1
+	btn_hover.border_width_bottom = 1
+	btn_hover.border_color = Color(1.0, 0.65, 0.55, 1.0)
+
+	var btn_pressed := StyleBoxFlat.new()
+	btn_pressed.bg_color = Color(0.68, 0.15, 0.10, 1.0)
+	btn_pressed.corner_radius_top_left = 6
+	btn_pressed.corner_radius_top_right = 6
+	btn_pressed.corner_radius_bottom_right = 6
+	btn_pressed.corner_radius_bottom_left = 6
+
+	_sell_popup_button.add_theme_stylebox_override("normal", btn_normal)
+	_sell_popup_button.add_theme_stylebox_override("hover", btn_hover)
+	_sell_popup_button.add_theme_stylebox_override("pressed", btn_pressed)
+	_sell_popup_button.add_theme_font_size_override("font_size", 16)
+	_sell_popup_button.add_theme_color_override("font_color", Color.WHITE)
+	_sell_popup_button.pressed.connect(_on_sell_button_pressed)
+	_sell_popup.add_child(_sell_popup_button)
+
+
+func _show_sell_popup(target_ui: InventoryItemUI) -> void:
+	if _selected_inventory_items.is_empty():
+		_hide_sell_popup()
+		return
+	_ensure_sell_popup()
+
+	var count := _selected_inventory_items.size()
+	_sell_popup_button.text = "廃棄 (%d個)" % count
+	_sell_overlay.visible = true
+
+	var pop_size := _sell_popup.get_combined_minimum_size()
+	var target_rect := target_ui.get_global_rect()
+
+	var target_pos := Vector2(
+		target_rect.position.x + (target_rect.size.x - pop_size.x) * 0.5,
+		target_rect.end.y + 6
+	)
+
+	var vp_size := get_viewport().get_visible_rect().size
+	if target_pos.y + pop_size.y > vp_size.y - 10:
+		target_pos.y = target_rect.position.y - pop_size.y - 6
+	target_pos.x = clampf(target_pos.x, 10, vp_size.x - pop_size.x - 10)
+
+	_sell_popup.global_position = target_pos
+
+
+func _hide_sell_popup() -> void:
+	if is_instance_valid(_sell_overlay):
+		_sell_overlay.visible = false
+
+
+func _on_sell_overlay_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_hide_sell_popup()
+
+
+func _on_sell_button_pressed() -> void:
+	if _selected_inventory_items.is_empty():
+		_hide_sell_popup()
+		return
+	var items_to_sell: Array = _selected_inventory_items.values()
+	var count := items_to_sell.size()
+	var rewards := GameData.discard_multiple_inventory_items(items_to_sell)
+	_clear_inventory_selection()
+	_hide_sell_popup()
+	show_inventory_discard_pop(count, rewards)
+
+
+func _clear_discard_pop() -> void:
+	if is_instance_valid(_discard_pop_tween) and _discard_pop_tween.is_running():
+		_discard_pop_tween.kill()
+	if is_instance_valid(_discard_pop_node):
+		_discard_pop_node.queue_free()
+		_discard_pop_node = null
+
+
+func show_inventory_discard_pop(count: int, rewards: Dictionary) -> void:
+	if not inventory_window:
+		return
+	_clear_discard_pop()
+
+	var has_gold_skill := GameData.get_skill_level("get_gold_when_discarding") > 0
+	var has_token_skill := GameData.get_skill_level("get_token_when_discarding") > 0
+
+	var text_str := ""
+	if has_gold_skill and has_token_skill:
+		text_str = "装備×%dを廃棄(🪙+%s/💎+%s)" % [
+			count,
+			GameData.format_num(rewards.get("gold", 0.0)),
+			GameData.format_num(rewards.get("tokens", 0.0))
+		]
+	elif has_gold_skill:
+		text_str = "装備×%dを廃棄(🪙+%s)" % [
+			count,
+			GameData.format_num(rewards.get("gold", 0.0))
+		]
+	elif has_token_skill:
+		text_str = "装備×%dを廃棄(💎+%s)" % [
+			count,
+			GameData.format_num(rewards.get("tokens", 0.0))
+		]
+	else:
+		text_str = "装備×%dを廃棄。" % count
+
+	var pop := PanelContainer.new()
+	pop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_discard_pop_node = pop
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.06, 0.10, 0.90)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = Color(0.85, 0.35, 0.30, 0.90)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_right = 6
+	style.corner_radius_bottom_left = 6
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	pop.add_theme_stylebox_override("panel", style)
+
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = text_str
+	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.95, 1.0))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pop.add_child(label)
+
+	add_child(pop)
+	pop.z_index = 70
+
+	# 右下に配置（インベントリ最大サイズ時でも下部余白に収まりスロットと干渉しない）
+	var inv_rect := inventory_window.get_global_rect()
+	var pop_size := pop.get_combined_minimum_size()
+	pop.global_position = Vector2(
+		inv_rect.end.x - pop_size.x - 20,
+		inv_rect.end.y - pop_size.y - 14
+	)
+
+	pop.modulate.a = 0.0
+	_discard_pop_tween = pop.create_tween()
+	_discard_pop_tween.tween_property(pop, "modulate:a", 1.0, 0.15)
+	_discard_pop_tween.tween_property(pop, "modulate:a", 0.0, 0.35).set_delay(2.2)
+	_discard_pop_tween.chain().tween_callback(func():
+		if is_instance_valid(pop):
+			pop.queue_free()
+		if _discard_pop_node == pop:
+			_discard_pop_node = null
+	)
+
+
+func _clear_inventory_selection() -> void:
+	_selected_inventory_items.clear()
+	_update_all_inventory_item_selection_visuals()
+
+
+func _update_all_inventory_item_selection_visuals() -> void:
+	for grid in [main_grid, sub_grid, accessory_grid]:
+		if not grid:
+			continue
+		for child in grid.get_children():
+			if child is InventorySlotWrapper and child.child_item_ui:
+				var it_id: String = child.child_item_ui.item_id
+				child.child_item_ui.set_selected(_selected_inventory_items.has(it_id))
+
+
+func _on_inventory_item_selection_toggled(item_ui: InventoryItemUI, is_selected: bool) -> void:
+	if is_selected:
+		_selected_inventory_items[item_ui.item_id] = {
+			"type": item_ui.item_type,
+			"id": item_ui.item_id,
+			"name": item_ui.item_name,
+			"level": item_ui.item_level,
+			"rarity": item_ui.item_rarity
+		}
+		if is_instance_valid(_sell_overlay) and _sell_overlay.visible and is_instance_valid(_sell_popup_button):
+			_sell_popup_button.text = "廃棄 (%d個)" % _selected_inventory_items.size()
+	else:
+		_selected_inventory_items.erase(item_ui.item_id)
+		if _selected_inventory_items.is_empty():
+			_hide_sell_popup()
+		elif is_instance_valid(_sell_overlay) and _sell_overlay.visible and is_instance_valid(_sell_popup_button):
+			_sell_popup_button.text = "廃棄 (%d個)" % _selected_inventory_items.size()
+
+
+func _on_inventory_item_clicked(item_ui: InventoryItemUI, button_index: int) -> void:
+	if button_index == MOUSE_BUTTON_LEFT:
+		if item_ui.is_selected:
+			_show_sell_popup(item_ui)
+		else:
+			_hide_sell_popup()
+			if not _selected_inventory_items.is_empty():
+				_clear_inventory_selection()
+
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		InventoryItemUI.drag_select_mode = -1
+
+	if not _is_inventory_open:
+		return
+	if _selected_inventory_items.is_empty():
+		return
+	# 廃棄ボタンが出現中の場合は、左クリックは現状通り廃棄ボタンのオフのままでok
+	if is_instance_valid(_sell_overlay) and _sell_overlay.visible:
+		return
+
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# 選択中の装備の上にマウスがあるかチェック
+		var clicked_on_selected := false
+		for item_ui in _get_selected_item_uis():
+			if is_instance_valid(item_ui) and item_ui.is_visible_in_tree():
+				if item_ui.get_global_rect().has_point(event.global_position):
+					clicked_on_selected = true
+					break
+
+		if not clicked_on_selected:
+			_clear_inventory_selection()
+
+
+func _get_selected_item_uis() -> Array[InventoryItemUI]:
+	var result: Array[InventoryItemUI] = []
+	for grid in [main_grid, sub_grid, accessory_grid]:
+		if not grid:
+			continue
+		for child in grid.get_children():
+			if child is InventorySlotWrapper and child.child_item_ui:
+				if child.child_item_ui.is_selected:
+					result.append(child.child_item_ui)
+	return result

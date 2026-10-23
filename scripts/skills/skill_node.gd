@@ -136,6 +136,7 @@ func _update_connections() -> void:
 			line.width = 4.0
 			# スキル間の辺の色は完全な白に変更
 			line.default_color = Color(1.0, 1.0, 1.0, 1.0)
+			line.set_meta("prereq_id", prereq_id)
 			
 			# 上下左右に並んでいる場合は辺の中央同士、ななめに並んでいる場合は角同士を結ぶ
 			var points = _get_connection_points(self, target)
@@ -259,20 +260,17 @@ func _update_ui_actual() -> void:
 	var player_tokens = GameData.tokens
 	var is_affordable = player_tokens >= cost
 	
-	# 枠線の色決定 (少し彩度を抑えた上品なトーン):
-	# 完了状態 (1回きりで解放済み): 落ち着いたゴールド
-	# 解放可能かつトークン充足: 落ち着いたグリーン
-	# それ以外 (トークン不足またはロック中): 落ち着いたレッド
+	# 枠線の色決定:
+	# 購入済み：黄色枠
+	# コスト的に購入可能：緑枠
+	# コスト的に購入不可能：赤枠
 	var border_color = Color(0.82, 0.30, 0.30) # 赤
 	if is_max:
-		border_color = Color(0.92, 0.78, 0.28) # 金色
-	elif playable:
-		if is_affordable:
-			border_color = Color(0.28, 0.80, 0.35) # 緑
-		else:
-			border_color = Color(0.82, 0.30, 0.30) # 赤
+		border_color = Color(0.92, 0.78, 0.28) # 黄色/ゴールド
+	elif is_affordable:
+		border_color = Color(0.28, 0.80, 0.35) # 緑
 	else:
-		border_color = Color(0.82, 0.30, 0.30) # ロック中: 赤
+		border_color = Color(0.82, 0.30, 0.30) # 赤
 		
 	# 枠線の適用
 	if _style_normal:
@@ -285,13 +283,15 @@ func _update_ui_actual() -> void:
 		_style_disabled.border_color = border_color
 		
 	# グレーアウト判定:
-	# 購入可能な位置で、かつコスト上購入不可能なノードにのみ行う
+	# 前提ノードが解放されている：グレーアウト無し(現状のまま)
+	# 前提ノードが解放されていない：グレーアウトアリ
+	# 購入済み：黄色枠(グレーアウト無し)
 	var should_gray_out = false
-	if not is_max and playable and not is_affordable:
+	if not is_max and not playable:
 		should_gray_out = true
 	
 	if should_gray_out:
-		modulate = Color(0.65, 0.65, 0.65, 1.0)
+		modulate = Color(0.45, 0.45, 0.45, 1.0)
 	else:
 		modulate = Color(1.0, 1.0, 1.0)
 
@@ -335,8 +335,8 @@ func queue_update_ui() -> void:
 
 
 func _on_visibility_changed() -> void:
-	if is_visible_in_tree() and _is_dirty:
-		_update_ui_actual()
+	if is_visible_in_tree():
+		queue_update_ui()
 
 
 func _on_tokens_changed(_new_tokens: float) -> void:

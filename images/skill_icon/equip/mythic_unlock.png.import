@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cm6hkpm4ep8ff"
-path="res://.godot/imported/gold_boost_icon.png-288a0a58823ad0a8dd7f243d019bb7f1.ctex"
+uid="uid://dxxaxveyc21bs"
+path="res://.godot/imported/mythic_unlock.png-89d332eb9425f0ee2aed97c4ec5d0f52.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://images/skill_icon/gold_boost_icon.png"
-dest_files=["res://.godot/imported/gold_boost_icon.png-288a0a58823ad0a8dd7f243d019bb7f1.ctex"]
+source_file="res://images/skill_icon/equip/mythic_unlock.png"
+dest_files=["res://.godot/imported/mythic_unlock.png-89d332eb9425f0ee2aed97c4ec5d0f52.ctex"]
 
 [params]
 

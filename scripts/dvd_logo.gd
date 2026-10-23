@@ -17,6 +17,11 @@ func get_logo_height() -> float:
 
 @export var base_speed: float = 150.0
 
+## 角誘導（アシスト）設定
+## 開始後一度も角に当たっていない場合、一定時間経過後に反射角度が角ルートから±一定度以内なら直接角へ補正
+@export var assist_time_threshold: float = 180.0 # 3分経過後に発動
+@export var assist_max_angle_deg: float = 5.0 # ±5度以内のズレなら補正
+
 ## The area in which the logo can move (set by Main scene)
 var play_area := Rect2(0, 0, 1662, 1080)
 
@@ -43,6 +48,8 @@ signal wall_hit(pos: Vector2, is_corner: bool, direction: Vector2)
 
 
 func _ready() -> void:
+	GameData.assist_time_threshold = assist_time_threshold
+	GameData.assist_max_angle_deg = assist_max_angle_deg
 	GameData.upgrades_changed.connect(_update_speed)
 
 	# Sprite2Dのサイズが200x100になるように初期スケールを設定
@@ -130,13 +137,118 @@ func _check_bounds() -> void:
 		hit_y = true
 		hit_dir.y = 1.0
 
+	# 離散フレームステップによる微小なすり抜け防止 (角吸着マージン)
+	var corner_margin := maxf(4.0, velocity.length() * 0.02)
+	if hit_x and not hit_y:
+		if absf(position.y - half_h - top) <= corner_margin:
+			position.y = top + half_h
+			velocity.y = absf(velocity.y)
+			hit_y = true
+			hit_dir.y = -1.0
+		elif absf(position.y + half_h - bottom) <= corner_margin:
+			position.y = bottom - half_h
+			velocity.y = -absf(velocity.y)
+			hit_y = true
+			hit_dir.y = 1.0
+	elif hit_y and not hit_x:
+		if absf(position.x - half_w - left) <= corner_margin:
+			position.x = left + half_w
+			velocity.x = absf(velocity.x)
+			hit_x = true
+			hit_dir.x = -1.0
+		elif absf(position.x + half_w - right) <= corner_margin:
+			position.x = right - half_w
+			velocity.x = -absf(velocity.x)
+			hit_x = true
+			hit_dir.x = 1.0
+
 	if hit_x or hit_y:
 		var is_corner := hit_x and hit_y
 		if not is_corner:
 			var conversion_chance := GameData.get_corner_conversion_chance()
 			if conversion_chance > 0.0 and randf() < conversion_chance:
 				is_corner = true
+
+		# 通常の壁バウンス時、角アシスト判定を実行
+		if not is_corner:
+			_check_and_apply_corner_assist()
+
 		_on_bounce(is_corner, hit_dir)
+
+
+func _check_and_apply_corner_assist() -> void:
+	# 1. 発動条件判定: 一度も角に衝突しておらず、かつ一定時間が経過しているか
+	if GameData.corner_hits > 0:
+		GameData.last_assist_result = "消費済み (角ヒット済)"
+		return
+	if GameData.total_play_time < assist_time_threshold:
+		var remain := assist_time_threshold - GameData.total_play_time
+		GameData.last_assist_result = "タイマー待機中 (残り %.1fs)" % remain
+		return
+
+	# 2. 現在の可動領域サイズおよび4つの角座標計算（現在のロゴサイズ込み）
+	var half_w := _cached_half_w
+	var half_h := _cached_half_h
+	var x_min := play_area.position.x + half_w
+	var x_max := play_area.end.x - half_w
+	var y_min := play_area.position.y + half_h
+	var y_max := play_area.end.y - half_h
+
+	if (x_max - x_min) <= 10.0 or (y_max - y_min) <= 10.0:
+		return
+
+	var cur_speed := velocity.length()
+	if cur_speed <= 0.001:
+		return
+
+	var natural_angle := velocity.angle()
+	var max_angle_rad := deg_to_rad(assist_max_angle_deg)
+	var best_angle := natural_angle
+	var best_diff := INF
+	var found := false
+
+	# 3. 4つの角 (左上, 右上, 左下, 右下) を定義
+	var corners: Array[Vector2] = [
+		Vector2(x_min, y_min), # 左上
+		Vector2(x_max, y_min), # 右上
+		Vector2(x_min, y_max), # 左下
+		Vector2(x_max, y_max), # 右下
+	]
+
+	# 4. 反射後の進行方向（前方）にある角の中で、最も角度差が小さい角を探索
+	for corner: Vector2 in corners:
+		var to_corner: Vector2 = corner - position
+		var dist: float = to_corner.length()
+		if dist <= 10.0:
+			continue
+
+		# 反射直後の自然な進行方向（内積が正）にある角のみを対象とする
+		if velocity.dot(to_corner) <= 0.0:
+			continue
+
+		var target_angle := to_corner.angle()
+		var diff := absf(angle_difference(natural_angle, target_angle))
+
+		if diff < best_diff:
+			best_diff = diff
+			best_angle = target_angle
+			if diff <= max_angle_rad:
+				found = true
+
+	# 5. 条件を満たす直接角ルートが見つかった場合、速度ベクトルを更新
+	if found:
+		velocity = Vector2.from_angle(best_angle) * cur_speed
+		GameData.last_assist_triggered = true
+		GameData.last_assist_result = "★発動！ 差%.2f° (角へ誘導)" % rad_to_deg(best_diff)
+		print("[CornerAssist] 直接角ルートへ補正: 元=%.1f度 -> 補正=%.1f度 (角度差=%.2f度)" % [
+			rad_to_deg(natural_angle), rad_to_deg(best_angle), rad_to_deg(best_diff)
+		])
+	else:
+		GameData.last_assist_triggered = false
+		if best_diff < INF:
+			GameData.last_assist_result = "不成立: 差%.1f° (>%.1f°)" % [rad_to_deg(best_diff), assist_max_angle_deg]
+		else:
+			GameData.last_assist_result = "不成立: 候補角なし"
 
 
 func _on_bounce(is_corner: bool, direction: Vector2) -> void:
