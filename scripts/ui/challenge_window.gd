@@ -26,6 +26,7 @@ var _selected_challenge_id: String = "c1"
 @onready var _detail_reward_label: Label = %DetailRewardLabel
 @onready var _detail_action_btn: Button = %DetailActionBtn
 @onready var _detail_action_btn_label: Label = %DetailActionBtnLabel
+@onready var _open_editor_btn: Button = get_node_or_null("%OpenChallengeEditorBtn")
 
 
 func _ready() -> void:
@@ -50,35 +51,32 @@ func _setup_challenge_ui() -> void:
 	if _detail_action_btn and not _detail_action_btn.pressed.is_connected(_on_detail_action_pressed):
 		_detail_action_btn.pressed.connect(_on_detail_action_pressed)
 
+	if _open_editor_btn and not _open_editor_btn.pressed.is_connected(_on_open_editor_pressed):
+		_open_editor_btn.pressed.connect(_on_open_editor_pressed)
+
 	_list_item_nodes.clear()
 	if not _grid_container:
 		return
 
 	var sorted_keys: Array = GameData.CHALLENGE_DEFS.keys()
-	sorted_keys.sort()
+	sorted_keys.sort_custom(func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0)
 
 	var all_defs: Array = []
 	for ch_id in sorted_keys:
 		all_defs.append(GameData.CHALLENGE_DEFS[ch_id])
 
-	# ダミーチャレンジ定義（9枠分）
-	var dummy_defs: Array = [
-		{"id": "c7_dummy", "name": "？？？？？", "icon": "🔒", "is_dummy": true, "desc": "今後のアップデートで解放予定のチャレンジです。", "reward_desc": "？？？"},
-		{"id": "c8_dummy", "name": "？？？？？", "icon": "🔒", "is_dummy": true, "desc": "今後のアップデートで解放予定のチャレンジです。", "reward_desc": "？？？"},
-		{"id": "c9_dummy", "name": "？？？？？", "icon": "🔒", "is_dummy": true, "desc": "今後のアップデートで解放予定のチャレンジです。", "reward_desc": "？？？"},
-	]
-	for d in dummy_defs:
-		if all_defs.size() < 9:
-			all_defs.append(d)
-
 	var cards := _grid_container.get_children()
-	for i in range(mini(cards.size(), all_defs.size())):
+	for i in range(cards.size()):
 		var btn := cards[i] as Button
 		if not btn:
 			continue
+		if i >= all_defs.size():
+			btn.visible = false
+			continue
+
+		btn.visible = true
 		var def: Dictionary = all_defs[i]
 		var ch_id: String = def.get("id", "")
-		var is_dummy: bool = def.get("is_dummy", false)
 
 		var badge_panel := btn.get_node_or_null("Margin/Inner/BadgePanel") as PanelContainer
 		var status_mini := btn.get_node_or_null("Margin/Inner/BadgePanel/StatusMini") as Label
@@ -87,14 +85,11 @@ func _setup_challenge_ui() -> void:
 
 		if icon_lbl:
 			icon_lbl.text = def.get("icon", "⚔️")
-			icon_lbl.modulate = Color(0.5, 0.5, 0.5, 0.7) if is_dummy else Color(1.0, 1.0, 1.0, 1.0)
+			icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		if name_lbl:
-			if is_dummy:
-				name_lbl.text = "準備中"
-			else:
-				var num_str := ch_id.replace("c", "")
-				name_lbl.text = "#%s: %s" % [num_str, def.get("name", "")]
-			name_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65, 1.0) if is_dummy else Color(1.0, 1.0, 1.0, 1.0))
+			var num_str := ch_id.replace("c", "")
+			name_lbl.text = "#%s: %s" % [num_str, def.get("name", "")]
+			name_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 
 		btn.pressed.connect(func(): _select_challenge(ch_id))
 
@@ -265,22 +260,33 @@ func _update_detail_panel() -> void:
 	var is_cleared: bool = GameData.is_challenge_cleared(ch_id) if not is_dummy else false
 	var is_current_active: bool = GameData.is_challenge_active(ch_id) if not is_dummy else false
 
+	var target_lvl := GameData.get_challenge_target_level(ch_id)
+	var max_lvl := GameData.get_challenge_max_level(ch_id)
+	var cleared_lvl := GameData.get_challenge_cleared_level(ch_id)
+	var lv_def: Dictionary = GameData.get_challenge_level_def(ch_id, target_lvl)
+
 	# タイトル設定
 	if is_dummy:
 		_detail_title_name.text = def.get("name", "？？？？？")
 	else:
 		var num_str := ch_id.replace("c", "")
-		_detail_title_name.text = "#%s: %s" % [num_str, def.get("name", "")]
+		if max_lvl > 1:
+			_detail_title_name.text = "#%s: %s (Lv.%d / %d)" % [num_str, def.get("name", ""), target_lvl, max_lvl]
+		else:
+			_detail_title_name.text = "#%s: %s" % [num_str, def.get("name", "")]
 
 	# 状態バッジ
 	if is_dummy:
 		_detail_status_badge.text = "【 準備中 】"
 		_detail_status_badge.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 	elif is_current_active:
-		_detail_status_badge.text = "【 挑戦中 】"
+		_detail_status_badge.text = "【 挑戦中 (Lv.%d) 】" % GameData.active_challenge_level
 		_detail_status_badge.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2, 1.0))
-	elif is_cleared:
-		_detail_status_badge.text = "✔ CLEAR!"
+	elif cleared_lvl >= max_lvl:
+		_detail_status_badge.text = "✔ ALL CLEAR!"
+		_detail_status_badge.add_theme_color_override("font_color", Color(0.4, 0.95, 0.55, 1.0))
+	elif cleared_lvl > 0:
+		_detail_status_badge.text = "CLEAR (Lv.%d達成)" % cleared_lvl
 		_detail_status_badge.add_theme_color_override("font_color", Color(0.4, 0.95, 0.55, 1.0))
 	else:
 		_detail_status_badge.text = "未達成"
@@ -289,18 +295,33 @@ func _update_detail_panel() -> void:
 	# 制限内容
 	_detail_penalty_label.text = def.get("desc", "")
 
-	var target_currency := "🪙" if def.get("target_type", "gold") == "gold" else "💎"
+	var target_currency := "🪙" if lv_def.get("target_type", "gold") == "gold" else "💎"
 
 	# 達成ノルマ
 	if is_dummy:
 		_detail_target_label.text = "現在準備中です。解放をお楽しみに！"
 	else:
-		var target_str := GameData.format_num(float(def.get("target_val", 0.0)))
-		var duration_str := "%d秒" % int(def.get("duration", 60.0))
+		var target_str := GameData.format_num(float(lv_def.get("target_val", 0.0)))
+		var duration_str := "%d秒" % int(lv_def.get("duration", 60.0))
 		_detail_target_label.text = "制限時間 %s 以内に %s %s を獲得" % [duration_str, target_currency, target_str]
 
 	# 報酬内容
-	_detail_reward_label.text = def.get("reward_desc", "")
+	var levels: Array = def.get("levels", [])
+	if levels.size() > 1:
+		var reward_lines: Array[String] = []
+		for i in levels.size():
+			var lv_item: Dictionary = levels[i]
+			var lv_num: int = int(lv_item.get("level", i + 1))
+			var r_text: String = lv_item.get("reward_desc", "")
+			var status_tag := ""
+			if cleared_lvl >= lv_num:
+				status_tag = " [達成済 ✔]"
+			elif target_lvl == lv_num:
+				status_tag = " [次の目標 🎯]"
+			reward_lines.append("Lv.%d: %s%s" % [lv_num, r_text, status_tag])
+		_detail_reward_label.text = "\n".join(reward_lines)
+	else:
+		_detail_reward_label.text = lv_def.get("reward_desc", def.get("reward_desc", ""))
 
 	# アクションボタン
 	_detail_action_btn.text = ""
@@ -391,3 +412,7 @@ func _on_challenge_completed(_challenge_id: String) -> void:
 
 func _on_challenge_failed(_challenge_id: String) -> void:
 	_update_all_ui()
+
+
+func _on_open_editor_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/editor/challenge_editor.tscn")

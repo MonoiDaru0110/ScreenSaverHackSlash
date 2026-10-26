@@ -13,8 +13,20 @@ extends CanvasLayer
 @onready var btn_ascend: Button = %UpgradeButton4
 @onready var btn_buy_mode: Button = %SidebarBuyModeBtn
 
-const BUY_MODES: Array[int] = [1, 5, 10, 100, -1]
+const BUY_MODES_DEFAULT: Array[int] = [1, 5, 10]
+const BUY_MODES_EXPANDED: Array[int] = [1, 5, 10, 100, -1]
 var _sidebar_buy_mode_idx: int = 0
+
+func _get_available_buy_modes() -> Array[int]:
+	if GameData.get_skill_level("buying_expand") > 0:
+		return BUY_MODES_EXPANDED
+	return BUY_MODES_DEFAULT
+
+func _get_current_buy_mode() -> int:
+	var modes := _get_available_buy_modes()
+	if _sidebar_buy_mode_idx >= modes.size():
+		_sidebar_buy_mode_idx = 0
+	return modes[_sidebar_buy_mode_idx]
 
 # Tab UI references
 @onready var star_label: Label = %StarLabel
@@ -98,6 +110,15 @@ var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 var _corner_tween: Tween = null
 var _last_corner_announce_ticks: int = 0
+var _btn_debug_free_skill: Button = null
+
+# Quick Save / Load / Reset UI references
+@onready var quick_save_btn: Button = get_node_or_null("%QuickSaveBtn")
+@onready var quick_load_btn: Button = get_node_or_null("%QuickLoadBtn")
+@onready var quick_reset_btn: Button = get_node_or_null("%QuickResetBtn")
+@onready var save_toast_label: Label = get_node_or_null("%SaveToastLabel")
+@onready var reset_confirm_dialog: ConfirmationDialog = get_node_or_null("%ResetConfirmDialog")
+var _save_toast_tween: Tween = null
 
 # パフォーマンス最適化: アップグレードボタン更新のスロットリング
 var _upgrade_buttons_dirty: bool = false
@@ -408,6 +429,15 @@ func _ready() -> void:
 		btn_reinc_tab_2.add_theme_stylebox_override("focus", style_focus)
 		btn_reinc_tab_2.pressed.connect(_on_reinc_tab_2_pressed)
 
+	if quick_save_btn:
+		quick_save_btn.pressed.connect(_on_quick_save_pressed)
+	if quick_load_btn:
+		quick_load_btn.pressed.connect(_on_quick_load_pressed)
+	if quick_reset_btn:
+		quick_reset_btn.pressed.connect(_on_quick_reset_pressed)
+	if reset_confirm_dialog:
+		reset_confirm_dialog.confirmed.connect(_on_reset_confirmed)
+
 	_update_tab_button_styles()
 
 	# Instantiate and add skill tree container to viewport
@@ -440,6 +470,7 @@ func _ready() -> void:
 	btn_close_window.pressed.connect(close_skill_tree)
 	if btn_toggle_skill_vis:
 		btn_toggle_skill_vis.visible = false
+	_setup_debug_free_skill_button()
 	
 	skill_tree_window.visible = false
 	
@@ -933,14 +964,15 @@ func _restore_upgrade_button_styles() -> void:
 
 
 func _on_buy_mode_pressed() -> void:
-	_sidebar_buy_mode_idx = (_sidebar_buy_mode_idx + 1) % BUY_MODES.size()
+	var modes := _get_available_buy_modes()
+	_sidebar_buy_mode_idx = (_sidebar_buy_mode_idx + 1) % modes.size()
 	_update_upgrade_buttons()
 
 
 func _update_upgrade_buttons() -> void:
 	var gold := GameData.gold
 	var is_trinity := GameData.is_trinity_active()
-	var mode: int = BUY_MODES[_sidebar_buy_mode_idx]
+	var mode: int = _get_current_buy_mode()
 
 	if btn_buy_mode:
 		btn_buy_mode.text = "最大" if mode == -1 else str(mode)
@@ -1079,21 +1111,21 @@ func _update_upgrade_buttons() -> void:
 
 
 func _on_speed_pressed() -> void:
-	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var mode := _get_current_buy_mode()
 	var count := GameData.get_speed_upgrade_max_count() if mode == -1 else mode
 	if count > 0:
 		GameData.buy_speed_upgrade(count)
 
 
 func _on_boost_pressed() -> void:
-	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var mode := _get_current_buy_mode()
 	var count := GameData.get_boost_upgrade_max_count() if mode == -1 else mode
 	if count > 0:
 		GameData.buy_boost_upgrade(count)
 
 
 func _on_size_pressed() -> void:
-	var mode := BUY_MODES[_sidebar_buy_mode_idx]
+	var mode := _get_current_buy_mode()
 	var count := GameData.get_size_upgrade_max_count() if mode == -1 else mode
 	if count > 0:
 		GameData.buy_size_upgrade(count)
@@ -1103,11 +1135,17 @@ func _on_ascend_pressed() -> void:
 	GameData.perform_ascension()
 
 
-## Formats a number using GameData.format_num.
-## |val| >= 1: integers up to 1e10, then scientific notation.
-## |val| < 1: 2 decimal places down to 1e-2, then scientific notation.
+## Formats a number for HUD displays (integers without decimal points, or scientific notation for >= 1e10).
 func _format_number(n) -> String:
-	return GameData.format_num(float(n))
+	var val := float(n)
+	var abs_v := absf(val)
+	if abs_v < 1.0:
+		return "0"
+	if abs_v < 1e10:
+		var int_val := int(floorf(abs_v))
+		var sign_str := "-" if val < 0.0 else ""
+		return "%s%s" % [sign_str, GameData.add_commas(str(int_val))]
+	return GameData.format_num(val)
 
 
 func _on_stars_changed(new_amount: int) -> void:
@@ -1696,23 +1734,86 @@ func _close_all_subbar_windows() -> void:
 		close_reinc_ability()
 
 
+func _setup_debug_free_skill_button() -> void:
+	var header_controls = get_node_or_null("%HeaderControls")
+	if not header_controls:
+		return
+		
+	_btn_debug_free_skill = Button.new()
+	_btn_debug_free_skill.name = "DebugFreeSkillBtn"
+	_btn_debug_free_skill.custom_minimum_size = Vector2(160, 32)
+	_btn_debug_free_skill.focus_mode = Control.FOCUS_NONE
+	_btn_debug_free_skill.add_theme_font_size_override("font_size", 13)
+	_btn_debug_free_skill.tooltip_text = "テスト用: スキルツリーの全スキルをコスト無視で解放可能にします\n(ShiftまたはCtrlを押しながらスキルをクリックすることでも即時解放可能)"
+	_btn_debug_free_skill.pressed.connect(_on_debug_free_skill_button_pressed)
+	header_controls.add_child(_btn_debug_free_skill)
+	header_controls.move_child(_btn_debug_free_skill, 0)
+	
+	_update_debug_free_skill_button_style()
+	GameData.debug_free_skill_cost_changed.connect(func(_enabled): _update_debug_free_skill_button_style())
+
+
+func _on_debug_free_skill_button_pressed() -> void:
+	GameData.toggle_debug_free_skill_cost()
+
+
+func _update_debug_free_skill_button_style() -> void:
+	if not is_instance_valid(_btn_debug_free_skill):
+		return
+	var is_on := GameData.debug_free_skill_cost
+	_btn_debug_free_skill.text = "🧪 コスト無視: ON" if is_on else "🧪 コスト無視: OFF"
+	
+	var style := StyleBoxFlat.new()
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_right = 4
+	style.corner_radius_bottom_left = 4
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	
+	if is_on:
+		style.bg_color = Color(0.18, 0.45, 0.28, 0.95)
+		style.border_color = Color(0.40, 0.90, 0.55, 1.0)
+		_btn_debug_free_skill.add_theme_color_override("font_color", Color(0.95, 1.0, 0.95))
+	else:
+		style.bg_color = Color(0.18, 0.18, 0.24, 0.8)
+		style.border_color = Color(0.35, 0.35, 0.45, 0.8)
+		_btn_debug_free_skill.add_theme_color_override("font_color", Color(0.70, 0.70, 0.78))
+		
+	_btn_debug_free_skill.add_theme_stylebox_override("normal", style)
+	var hover_style := style.duplicate() as StyleBoxFlat
+	hover_style.bg_color = hover_style.bg_color.lightened(0.15)
+	_btn_debug_free_skill.add_theme_stylebox_override("hover", hover_style)
+	var pressed_style := style.duplicate() as StyleBoxFlat
+	pressed_style.bg_color = pressed_style.bg_color.darkened(0.15)
+	_btn_debug_free_skill.add_theme_stylebox_override("pressed", pressed_style)
+
+
 func _on_skill_node_pressed(node: SkillNode) -> void:
-	if not node.is_playable():
+	var is_debug_free := GameData.debug_free_skill_cost or Input.is_key_pressed(KEY_SHIFT) or Input.is_key_pressed(KEY_CTRL)
+	
+	if not is_debug_free and not node.is_playable():
 		return
 		
 	var current_lvl = GameData.get_skill_level(node.skill_id)
 	if not node.is_unlimited and current_lvl > 0:
 		return
 	
-	var cost = node.get_upgrade_cost(current_lvl)
-	if GameData.buy_skill_upgrade(node.skill_id, cost, node.is_unlimited):
+	var cost = 0.0 if is_debug_free else node.get_upgrade_cost(current_lvl)
+	if GameData.buy_skill_upgrade(node.skill_id, cost, node.is_unlimited, is_debug_free):
 		_update_tab_button_styles()
 
 
 func _on_skill_upgraded(skill_id: String, _new_level: int) -> void:
 	_update_tab_button_styles()
+	if skill_id == "buying_expand":
+		_update_upgrade_buttons()
 	if skill_id.begins_with("inventory_expand_") or skill_id == "equip_drop_unlock" or skill_id == "equip_drop_filter_unlock":
 		_update_inventory_ui()
+	if skill_tree_scroll:
+		skill_tree_scroll.update_culling()
 
 
 func _update_skill_nodes() -> void:
@@ -1984,14 +2085,14 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 	
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.8) # Slightly transparent black
-	style.content_margin_left = 15
-	style.content_margin_right = 15
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
 	style.border_width_left = 1
 	style.border_width_top = 1
 	style.border_width_right = 1
@@ -2001,7 +2102,7 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 	
 	var hbox := HBoxContainer.new()
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_theme_constant_override("separation", 10)
+	hbox.add_theme_constant_override("separation", 6)
 	pop.add_child(hbox)
 	
 	# Add texture icon if available
@@ -2010,20 +2111,28 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 		if tex:
 			var rect := TextureRect.new()
 			rect.texture = tex
-			rect.custom_minimum_size = Vector2(32, 32)
+			rect.custom_minimum_size = Vector2(24, 24)
 			rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			hbox.add_child(rect)
 			
-	var is_sold: bool = item_data.get("is_sold", false)
-	var sell_price: float = float(item_data.get("sell_price", 100.0))
+	var is_discarded: bool = item_data.get("is_discarded", false) or item_data.get("is_sold", false)
+	var discard_gold: float = float(item_data.get("discard_gold", item_data.get("sell_price", 0.0)))
+	var discard_tokens: float = float(item_data.get("discard_tokens", item_data.get("sell_tokens", 0.0)))
 	
 	var label := Label.new()
-	if is_sold:
-		label.text = "[%s] %s (Lv.%d) を手に入れた！(売却🪙+%s)" % [item_rarity, item_name, item_level, _format_number(sell_price)]
+	if is_discarded:
+		if discard_gold > 0.0 and discard_tokens > 0.0:
+			label.text = "[%s] %s (Lv.%d) を入手 (廃棄🪙+%s/💎+%s)" % [item_rarity, item_name, item_level, _format_number(discard_gold), _format_number(discard_tokens)]
+		elif discard_gold > 0.0:
+			label.text = "[%s] %s (Lv.%d) を入手 (廃棄🪙+%s)" % [item_rarity, item_name, item_level, _format_number(discard_gold)]
+		elif discard_tokens > 0.0:
+			label.text = "[%s] %s (Lv.%d) を入手 (廃棄💎+%s)" % [item_rarity, item_name, item_level, _format_number(discard_tokens)]
+		else:
+			label.text = "[%s] %s (Lv.%d) を入手 (廃棄)" % [item_rarity, item_name, item_level]
 	else:
-		label.text = "[%s] %s (Lv.%d) を手に入れた！" % [item_rarity, item_name, item_level]
-	label.add_theme_font_size_override("font_size", 20)
+		label.text = "[%s] %s (Lv.%d) を入手" % [item_rarity, item_name, item_level]
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", rarity_color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hbox.add_child(label)
@@ -2160,8 +2269,8 @@ func _update_challenge_mini_progress(cur: float, target: float, time_left: float
 	if _challenge_mini_progress:
 		_challenge_mini_progress.text = "%s %s / %s (%.0f%%)" % [
 			cur_sym,
-			GameData.format_num(cur),
-			GameData.format_num(target),
+			_format_number(cur),
+			_format_number(target),
 			pct
 		]
 
@@ -2179,7 +2288,7 @@ func _on_challenge_ended_mini(_challenge_id: String) -> void:
 
 
 # ==============================================================================
-# インベントリ複数選択・売却システム (Inventory Multi-Selection & Sell System)
+# インベントリ複数選択・廃棄システム (Inventory Multi-Selection & Discard System)
 # ==============================================================================
 
 func _ensure_sell_popup() -> void:
@@ -2440,6 +2549,20 @@ func _on_inventory_item_clicked(item_ui: InventoryItemUI, button_index: int) -> 
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F5:
+			_on_quick_save_pressed()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_F8:
+			_on_quick_load_pressed()
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_F9:
+			_on_quick_reset_pressed()
+			get_viewport().set_input_as_handled()
+			return
+
 	if event is InputEventMouseButton and not event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		InventoryItemUI.drag_select_mode = -1
 
@@ -2474,3 +2597,79 @@ func _get_selected_item_uis() -> Array[InventoryItemUI]:
 				if child.child_item_ui.is_selected:
 					result.append(child.child_item_ui)
 	return result
+
+
+# --- Quick Save / Load / Reset Handlers ---
+
+func _show_save_toast(msg: String, is_error: bool = false) -> void:
+	if not save_toast_label:
+		return
+	save_toast_label.text = msg
+	save_toast_label.modulate = Color(1.0, 0.4, 0.4, 1.0) if is_error else Color(0.4, 0.95, 0.6, 1.0)
+	if _save_toast_tween and _save_toast_tween.is_valid():
+		_save_toast_tween.kill()
+	_save_toast_tween = create_tween()
+	_save_toast_tween.tween_property(save_toast_label, "modulate:a", 1.0, 0.1)
+	_save_toast_tween.tween_interval(2.2)
+	_save_toast_tween.tween_property(save_toast_label, "modulate:a", 0.0, 0.6)
+
+
+func _on_quick_save_pressed() -> void:
+	var success := GameData.save_game()
+	if success:
+		_show_save_toast("💾 ゲームをセーブしました")
+	else:
+		_show_save_toast("❌ セーブに失敗しました", true)
+
+
+func _on_quick_load_pressed() -> void:
+	if not GameData.has_save_data():
+		_show_save_toast("⚠️ セーブデータが見つかりません", true)
+		return
+	var success := GameData.load_game()
+	if success:
+		_force_refresh_all_hud()
+		_show_save_toast("🔄 セーブデータをロードしました")
+	else:
+		_show_save_toast("❌ ロードに失敗しました", true)
+
+
+func _on_quick_reset_pressed() -> void:
+	if reset_confirm_dialog:
+		reset_confirm_dialog.popup_centered()
+	else:
+		_on_reset_confirmed()
+
+
+func _on_reset_confirmed() -> void:
+	var success := GameData.delete_save_data()
+	_force_refresh_all_hud()
+	if success:
+		_show_save_toast("🗑️ データを消去・初期化しました")
+	else:
+		_show_save_toast("🗑️ データを初期化しました")
+
+
+func _force_refresh_all_hud() -> void:
+	_update_all()
+	_update_sidebar_star_progress()
+	_update_slots_ui()
+	_update_inventory_ui()
+	_update_special_skill_custom_ui()
+	_update_skill_nodes()
+	_update_tab_button_styles()
+	_update_challenge_mini_window()
+	if _skill_tree_instance and _skill_tree_instance.has_method("refresh_all_nodes"):
+		_skill_tree_instance.refresh_all_nodes()
+	if is_instance_valid(challenge_window) and challenge_window.has_method("_update_all_ui"):
+		challenge_window._update_all_ui()
+	if is_instance_valid(blacksmith_window) and blacksmith_window.has_method("refresh_ui"):
+		blacksmith_window.refresh_ui()
+	if is_instance_valid(amplifier_window) and amplifier_window.has_method("refresh_ui"):
+		amplifier_window.refresh_ui()
+	if is_instance_valid(reinc_tree_window) and reinc_tree_window.has_method("refresh_tree"):
+		reinc_tree_window.refresh_tree()
+	if is_instance_valid(reinc_ability_window) and reinc_ability_window.has_method("refresh_abilities"):
+		reinc_ability_window.refresh_abilities()
+	if skill_tree_scroll:
+		skill_tree_scroll.update_culling()

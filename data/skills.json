@@ -1,20 +1,20 @@
 {
 	"skills": {
 		"accessory_slot_unlock_1": {
-			"base_cost": 1.0,
+			"base_cost": 400.0,
 			"cost_multiplier": 1.5,
 			"description": "装備のアクセサリー枠を一つ解放する。",
 			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
 			"is_unlimited": false,
 			"name": "アクセサリー枠解放Ⅰ",
 			"prerequisites": [
-				"equip_drop_rarity_boost_1"
+				"equip_drop_level_boost_1"
 			],
 			"x": 320.0,
 			"y": -480.0
 		},
 		"accessory_slot_unlock_2": {
-			"base_cost": 1.0,
+			"base_cost": 50000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備のアクセサリー枠を一つ解放する。",
 			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
@@ -27,7 +27,7 @@
 			"y": -800.0
 		},
 		"accessory_slot_unlock_3": {
-			"base_cost": 1.0,
+			"base_cost": 5000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備のアクセサリー枠を一つ解放する。",
 			"icon": "res://images/skill_icon/equip/accessory_slot_unlock.png",
@@ -39,10 +39,309 @@
 			"x": 320.0,
 			"y": -960.0
 		},
-		"equip_corner_enhance": {
+		"buying_expand": {
+			"base_cost": 5000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ステータス強化の購入オプションが拡張される。入手ゴールド/トークン×150倍。",
+			"icon": "res://images/skill_icon/general/buying_expand.png",
+			"is_unlimited": false,
+			"name": "購入オプション拡張",
+			"prerequisites": [
+				"equip_corner_enhance"
+			],
+			"x": 0.0,
+			"y": -960.0
+		},
+		"challange_bonus_boost_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "角ヒット時のドロップ装備の全スキルレベル+1、レアリティ係数+1。",
+			"description": "チャレンジクリア後のボーナス×1.1倍。",
+			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス強化Ⅰ",
+			"prerequisites": [
+				"challange_unlock"
+			],
+			"x": 320.0,
+			"y": 160.0
+		},
+		"challange_bonus_boost_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジクリア後のボーナス×1.1倍。",
+			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス強化Ⅱ",
+			"prerequisites": [
+				"challange_time_extend_2"
+			],
+			"x": 640.0,
+			"y": 320.0
+		},
+		"challange_bonus_boost_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジクリア後のボーナス×1.1倍。",
+			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス強化Ⅲ",
+			"prerequisites": [
+				"challange_time_extend_3"
+			],
+			"x": 960.0,
+			"y": 320.0
+		},
+		"challange_bonus_boost_4": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジクリア後のボーナス×1.1倍。",
+			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス強化Ⅳ",
+			"prerequisites": [
+				"challange_norma_onus_5"
+			],
+			"x": 1440.0,
+			"y": -160.0
+		},
+		"challange_bonus_boost_5": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジクリア後のボーナス×1.1倍。",
+			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス強化Ⅴ",
+			"prerequisites": [
+				"challange_time_extend_5"
+			],
+			"x": 1440.0,
+			"y": 160.0
+		},
+		"challange_gold_bonus": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "クリアしたチャレンジ一つにつき、入手ゴールド+10％。",
+			"icon": "res://images/skill_icon/challange/challange_gold_bonus.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス(ゴールド)",
+			"prerequisites": [
+				"challange_norma_onus_1"
+			],
+			"x": 480.0,
+			"y": 0.0
+		},
+		"challange_level_unlock_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの最大レベル+1。",
+			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
+			"is_unlimited": false,
+			"name": "チャレンジレベル解放Ⅰ",
+			"prerequisites": [
+				"challange_bonus_boost_1"
+			],
+			"x": 480.0,
+			"y": 160.0
+		},
+		"challange_level_unlock_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの最大レベル+1。",
+			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
+			"is_unlimited": false,
+			"name": "チャレンジレベル解放Ⅱ",
+			"prerequisites": [
+				"new_challange_unlock_2"
+			],
+			"x": 960.0,
+			"y": 0.0
+		},
+		"challange_level_unlock_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの最大レベル+1。",
+			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
+			"is_unlimited": false,
+			"name": "チャレンジレベル解放Ⅲ",
+			"prerequisites": [
+				"challange_time_extend_3"
+			],
+			"x": 1120.0,
+			"y": 160.0
+		},
+		"challange_max_level_bonus": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "レベル5までクリアしたチャレンジ一つにつき、入手ゴールド/トークン×2倍。",
+			"icon": "res://images/skill_icon/challange/challange_max_level_bonus.png",
+			"is_unlimited": false,
+			"name": "完全クリアボーナス",
+			"prerequisites": [
+				"new_challange_unlock_3"
+			],
+			"x": 1520.0,
+			"y": 0.0
+		},
+		"challange_norma_onus_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジのノルマ×0.8倍。",
+			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
+			"is_unlimited": false,
+			"name": "チャレンジノルマ緩和Ⅰ",
+			"prerequisites": [
+				"challange_unlock"
+			],
+			"x": 320.0,
+			"y": 0.0
+		},
+		"challange_norma_onus_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジのノルマ×0.8倍。",
+			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
+			"is_unlimited": false,
+			"name": "チャレンジノルマ緩和Ⅱ",
+			"prerequisites": [
+				"challange_norma_onus_3"
+			],
+			"x": 640.0,
+			"y": -320.0
+		},
+		"challange_norma_onus_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジのノルマ×0.8倍。",
+			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
+			"is_unlimited": false,
+			"name": "チャレンジノルマ緩和Ⅲ",
+			"prerequisites": [
+				"challange_gold_bonus"
+			],
+			"x": 640.0,
+			"y": -160.0
+		},
+		"challange_norma_onus_4": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジのノルマ×0.8倍。",
+			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
+			"is_unlimited": false,
+			"name": "チャレンジノルマ緩和Ⅳ",
+			"prerequisites": [
+				"challange_level_unlock_2"
+			],
+			"x": 960.0,
+			"y": -160.0
+		},
+		"challange_norma_onus_5": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジのノルマ×0.8倍。",
+			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
+			"is_unlimited": false,
+			"name": "チャレンジノルマ緩和Ⅴ",
+			"prerequisites": [
+				"new_challange_unlock_3"
+			],
+			"x": 1280.0,
+			"y": -160.0
+		},
+		"challange_time_extend_1": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの制限時間×1.2倍。",
+			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
+			"is_unlimited": false,
+			"name": "チャレンジ制限時間緩和Ⅰ",
+			"prerequisites": [
+				"challange_unlock"
+			],
+			"x": 320.0,
+			"y": -160.0
+		},
+		"challange_time_extend_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの制限時間×1.2倍。",
+			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
+			"is_unlimited": false,
+			"name": "チャレンジ制限時間緩和Ⅱ",
+			"prerequisites": [
+				"challange_gold_bonus"
+			],
+			"x": 640.0,
+			"y": 160.0
+		},
+		"challange_time_extend_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの制限時間×1.2倍。",
+			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
+			"is_unlimited": false,
+			"name": "チャレンジ制限時間緩和Ⅲ",
+			"prerequisites": [
+				"challange_level_unlock_2"
+			],
+			"x": 960.0,
+			"y": 160.0
+		},
+		"challange_time_extend_4": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの制限時間×1.2倍。",
+			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
+			"is_unlimited": false,
+			"name": "チャレンジ制限時間緩和Ⅳ",
+			"prerequisites": [
+				"challange_norma_onus_4"
+			],
+			"x": 1120.0,
+			"y": -160.0
+		},
+		"challange_time_extend_5": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジの制限時間×1.2倍。",
+			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
+			"is_unlimited": false,
+			"name": "チャレンジ制限時間緩和Ⅴ",
+			"prerequisites": [
+				"new_challange_unlock_3"
+			],
+			"x": 1280.0,
+			"y": 160.0
+		},
+		"challange_token_bonus": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "クリアしたチャレンジ一つにつき、入手トークン+10％。",
+			"icon": "res://images/skill_icon/challange/challange_token_bonus.png",
+			"is_unlimited": false,
+			"name": "チャレンジクリアボーナス(トークン)",
+			"prerequisites": [
+				"challange_level_unlock_2"
+			],
+			"x": 1120.0,
+			"y": 0.0
+		},
+		"challange_unlock": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジ機能が解放される。チャレンジウィンドウが解放される。",
+			"icon": "res://images/skill_icon/challange/challange_unlock.png",
+			"is_unlimited": false,
+			"name": "チャレンジ解放",
+			"prerequisites": [
+				"root_node"
+			],
+			"x": 160.0,
+			"y": 0.0
+		},
+		"equip_corner_enhance": {
+			"base_cost": 500000.0,
+			"cost_multiplier": 1.5,
+			"description": "角ヒット時のドロップ装備の全スキルレベル+1、レアリティ係数+1。入手ゴールド/トークン5倍。",
 			"icon": "res://images/skill_icon/equip/equip_corner_enhance.png",
 			"is_unlimited": false,
 			"name": "角ヒット時装備強化",
@@ -53,7 +352,7 @@
 			"y": -720.0
 		},
 		"equip_drop_filter_unlock": {
-			"base_cost": 1.0,
+			"base_cost": 50000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備のフィルターが解放される。",
 			"icon": "res://images/skill_icon/equip/equip_drop_filter.png",
@@ -66,20 +365,20 @@
 			"y": -640.0
 		},
 		"equip_drop_level_boost_1": {
-			"base_cost": 1.0,
+			"base_cost": 50.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップする装備のレベル+10。",
 			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
 			"is_unlimited": false,
 			"name": "装備レベル上昇Ⅰ",
 			"prerequisites": [
-				"equip_drop_probability_boost_1"
+				"equip_drop_rarity_boost_1"
 			],
 			"x": 160.0,
-			"y": -320.0
+			"y": -480.0
 		},
 		"equip_drop_level_boost_2": {
-			"base_cost": 1.0,
+			"base_cost": 3000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップする装備のレベル+20。",
 			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
@@ -92,7 +391,7 @@
 			"y": -640.0
 		},
 		"equip_drop_level_boost_3": {
-			"base_cost": 1.0,
+			"base_cost": 500000000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップする装備のレベル+30。",
 			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
@@ -102,12 +401,38 @@
 				"equip_drop_probability_boost_3"
 			],
 			"x": 160.0,
-			"y": -960.0
+			"y": -1120.0
+		},
+		"equip_drop_level_boost_4": {
+			"base_cost": 150000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+40。",
+			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
+			"is_unlimited": false,
+			"name": "装備レベル上昇Ⅳ",
+			"prerequisites": [
+				"get_token_when_discarding"
+			],
+			"x": 160.0,
+			"y": -1280.0
+		},
+		"equip_drop_level_boost_5": {
+			"base_cost": 50000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備のレベル+50。",
+			"icon": "res://images/skill_icon/equip/equip_drop_level_boost.png",
+			"is_unlimited": false,
+			"name": "装備レベル上昇Ⅴ",
+			"prerequisites": [
+				"equip_drop_probability_boost_5"
+			],
+			"x": 160.0,
+			"y": -1440.0
 		},
 		"equip_drop_probability_boost_1": {
-			"base_cost": 1.0,
+			"base_cost": 5.0,
 			"cost_multiplier": 1.5,
-			"description": "装備のドロップ確率が2％上昇。",
+			"description": "装備のドロップ確率+1％。",
 			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
 			"is_unlimited": false,
 			"name": "装備ドロップ確率上昇Ⅰ",
@@ -118,9 +443,9 @@
 			"y": -320.0
 		},
 		"equip_drop_probability_boost_2": {
-			"base_cost": 1.0,
+			"base_cost": 3000.0,
 			"cost_multiplier": 1.5,
-			"description": "装備のドロップ確率が5％上昇",
+			"description": "装備のドロップ確率+2％。",
 			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
 			"is_unlimited": false,
 			"name": "装備ドロップ確率上昇Ⅱ",
@@ -131,33 +456,59 @@
 			"y": -640.0
 		},
 		"equip_drop_probability_boost_3": {
-			"base_cost": 1.0,
+			"base_cost": 100000000.0,
 			"cost_multiplier": 1.5,
-			"description": "装備のドロップ確率が10％上昇",
+			"description": "装備のドロップ確率+3％。",
 			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
 			"is_unlimited": false,
 			"name": "装備ドロップ確率上昇Ⅲ",
 			"prerequisites": [
-				"equip_corner_enhance"
+				"buying_expand"
 			],
 			"x": 0.0,
-			"y": -960.0
+			"y": -1120.0
+		},
+		"equip_drop_probability_boost_4": {
+			"base_cost": 1000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ確率+4％。",
+			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
+			"is_unlimited": false,
+			"name": "装備ドロップ確率上昇Ⅳ",
+			"prerequisites": [
+				"equip_drop_rarity_boost_4"
+			],
+			"x": -320.0,
+			"y": -1280.0
+		},
+		"equip_drop_probability_boost_5": {
+			"base_cost": 10000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "装備のドロップ確率+5％。",
+			"icon": "res://images/skill_icon/equip/equip_drop_probability_boost.png",
+			"is_unlimited": false,
+			"name": "装備ドロップ確率上昇Ⅴ",
+			"prerequisites": [
+				"get_token_when_discarding"
+			],
+			"x": 0.0,
+			"y": -1440.0
 		},
 		"equip_drop_rarity_boost_1": {
-			"base_cost": 1.0,
+			"base_cost": 5.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備のレアリティ係数+1。",
 			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
 			"is_unlimited": false,
 			"name": "装備レアリティ上昇Ⅰ",
 			"prerequisites": [
-				"equip_drop_level_boost_1"
+				"equip_drop_unlock"
 			],
 			"x": 160.0,
-			"y": -480.0
+			"y": -320.0
 		},
 		"equip_drop_rarity_boost_2": {
-			"base_cost": 1.0,
+			"base_cost": 50000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備のレアリティ係数+2。",
 			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
@@ -170,7 +521,7 @@
 			"y": -640.0
 		},
 		"equip_drop_rarity_boost_3": {
-			"base_cost": 1.0,
+			"base_cost": 5000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備のレアリティ係数+3。",
 			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
@@ -179,8 +530,34 @@
 			"prerequisites": [
 				"equip_drop_level_boost_3"
 			],
-			"x": 160.0,
+			"x": 320.0,
 			"y": -1120.0
+		},
+		"equip_drop_rarity_boost_4": {
+			"base_cost": 150000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のレアリティ係数+4。",
+			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
+			"is_unlimited": false,
+			"name": "装備レアリティ上昇Ⅳ",
+			"prerequisites": [
+				"get_token_when_discarding"
+			],
+			"x": -160.0,
+			"y": -1280.0
+		},
+		"equip_drop_rarity_boost_5": {
+			"base_cost": 150000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップ装備のレアリティ係数+5。",
+			"icon": "res://images/skill_icon/equip/equip_drop_rarity_boost.png",
+			"is_unlimited": false,
+			"name": "装備レアリティ上昇Ⅴ",
+			"prerequisites": [
+				"equip_drop_level_boost_5"
+			],
+			"x": 160.0,
+			"y": -1600.0
 		},
 		"equip_drop_unlock": {
 			"base_cost": 1.0,
@@ -190,28 +567,28 @@
 			"is_unlimited": false,
 			"name": "装備ドロップ解放",
 			"prerequisites": [
-				"new_skill_1"
+				"root_node"
 			],
 			"x": 0.0,
 			"y": -160.0
 		},
 		"equip_skill_boost_1": {
-			"base_cost": 1.0,
+			"base_cost": 5.0,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備の全スキルレベル+2。",
+			"description": "ドロップする装備の全スキルレベル+1。",
 			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
 			"is_unlimited": false,
 			"name": "装備スキル強化Ⅰ",
 			"prerequisites": [
-				"inventory_expand_1"
+				"equip_drop_unlock"
 			],
 			"x": -160.0,
-			"y": -480.0
+			"y": -320.0
 		},
 		"equip_skill_boost_2": {
-			"base_cost": 1.0,
+			"base_cost": 200.0,
 			"cost_multiplier": 1.5,
-			"description": "ドロップする装備の全スキルレベル+1。",
+			"description": "ドロップする装備の全スキルレベル+2。",
 			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
 			"is_unlimited": false,
 			"name": "装備スキル強化Ⅱ",
@@ -222,7 +599,7 @@
 			"y": -480.0
 		},
 		"equip_skill_boost_3": {
-			"base_cost": 1.0,
+			"base_cost": 5000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップする装備の全スキルレベル+3。",
 			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
@@ -231,63 +608,89 @@
 			"prerequisites": [
 				"inventory_expand_3"
 			],
-			"x": -160.0,
+			"x": -320.0,
 			"y": -1120.0
 		},
+		"equip_skill_boost_4": {
+			"base_cost": 1000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備の全スキルレベル+4。",
+			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
+			"is_unlimited": false,
+			"name": "装備スキル強化Ⅳ",
+			"prerequisites": [
+				"equip_drop_level_boost_4"
+			],
+			"x": 320.0,
+			"y": -1280.0
+		},
+		"equip_skill_boost_5": {
+			"base_cost": 50000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ドロップする装備の全スキルレベル+5。",
+			"icon": "res://images/skill_icon/equip/equip_skill_boost.png",
+			"is_unlimited": false,
+			"name": "装備スキル強化Ⅴ",
+			"prerequisites": [
+				"equip_drop_probability_boost_5"
+			],
+			"x": -160.0,
+			"y": -1440.0
+		},
 		"equip_special_skill_unlock": {
-			"base_cost": 1.0,
+			"base_cost": 1000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備への特殊スキル付与が解放される。",
 			"icon": "res://images/skill_icon/equip/equip_special_skill_unlock.png",
 			"is_unlimited": false,
 			"name": "特殊スキル解放",
 			"prerequisites": [
-				"equip_drop_probability_boost_3"
+				"equip_drop_probability_boost_5"
 			],
 			"x": 0.0,
-			"y": -1120.0
+			"y": -1600.0
 		},
 		"get_gold_when_discarding": {
-			"base_cost": 1.0,
+			"base_cost": 100000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備廃棄時、ゴールド獲得(角衝突時と同じ量)。",
 			"icon": "res://images/skill_icon/equip/get_gold_when_discarding.png",
 			"is_unlimited": false,
 			"name": "廃棄時ゴールド獲得",
 			"prerequisites": [
-				"get_token_when_discarding"
+				"equip_drop_filter_unlock"
 			],
 			"x": -320.0,
-			"y": -960.0
+			"y": -800.0
 		},
 		"get_token_when_discarding": {
-			"base_cost": 1.0,
+			"base_cost": 10000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備廃棄時、トークンを獲得(角衝突時と同じ量)。",
 			"icon": "res://images/skill_icon/equip/get_token_when_discarding.png",
 			"is_unlimited": false,
 			"name": "廃棄時トークン獲得",
 			"prerequisites": [
-				"equip_drop_filter_unlock"
+				"equip_drop_probability_boost_3"
 			],
-			"x": -320.0,
-			"y": -800.0
+			"x": 0.0,
+			"y": -1280.0
 		},
 		"inventory_expand_1": {
-			"base_cost": 1.0,
+			"base_cost": 50.0,
 			"cost_multiplier": 1.5,
 			"description": "装備インベントリが10拡張。",
 			"icon": "res://images/skill_icon/equip/inventory_expand.png",
 			"is_unlimited": false,
 			"name": "インベントリ拡張Ⅰ",
 			"prerequisites": [
-				"equip_drop_probability_boost_1"
+				"equip_skill_boost_1"
 			],
 			"x": -160.0,
-			"y": -320.0
+			"y": -480.0
 		},
 		"inventory_expand_2": {
-			"base_cost": 1.0,
+			"base_cost": 50000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備インベントリが10拡張。",
 			"icon": "res://images/skill_icon/equip/inventory_expand.png",
@@ -300,7 +703,7 @@
 			"y": -800.0
 		},
 		"inventory_expand_3": {
-			"base_cost": 1.0,
+			"base_cost": 500000000.0,
 			"cost_multiplier": 1.5,
 			"description": "装備インベントリが10拡張。",
 			"icon": "res://images/skill_icon/equip/inventory_expand.png",
@@ -310,10 +713,10 @@
 				"equip_drop_probability_boost_3"
 			],
 			"x": -160.0,
-			"y": -960.0
+			"y": -1120.0
 		},
 		"mythic_unlock": {
-			"base_cost": 1.0,
+			"base_cost": 100000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "最高レアリティ[ミシック]が解放される。",
 			"icon": "res://images/skill_icon/equip/mythic_unlock.png",
@@ -323,15 +726,54 @@
 				"equip_special_skill_unlock"
 			],
 			"x": 0.0,
-			"y": -1280.0
+			"y": -1760.0
 		},
-		"new_skill_1": {
+		"new_challange_unlock_1": {
 			"base_cost": 1.0,
 			"cost_multiplier": 1.5,
-			"description": "説明を入力してください",
-			"icon": "❓",
+			"description": "チャレンジ3、4が解放される。",
+			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
 			"is_unlimited": false,
-			"name": "新しいスキル 1",
+			"name": "新チャレンジ解放Ⅰ",
+			"prerequisites": [
+				"challange_time_extend_1"
+			],
+			"x": 480.0,
+			"y": -160.0
+		},
+		"new_challange_unlock_2": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジ5、6が解放される。",
+			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
+			"is_unlimited": false,
+			"name": "新チャレンジ解放Ⅱ",
+			"prerequisites": [
+				"challange_gold_bonus"
+			],
+			"x": 720.0,
+			"y": 0.0
+		},
+		"new_challange_unlock_3": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "チャレンジ7、8が解放される。",
+			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
+			"is_unlimited": false,
+			"name": "新チャレンジ解放Ⅲ",
+			"prerequisites": [
+				"challange_token_bonus"
+			],
+			"x": 1280.0,
+			"y": 0.0
+		},
+		"root_node": {
+			"base_cost": 0.0,
+			"cost_multiplier": 1.0,
+			"description": "すべてのスキルの起点となるルートノード。",
+			"icon": "✨",
+			"is_unlimited": false,
+			"name": "原点",
 			"prerequisites": [],
 			"x": 0.0,
 			"y": 0.0

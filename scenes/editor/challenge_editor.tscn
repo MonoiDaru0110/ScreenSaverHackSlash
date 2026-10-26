@@ -1,0 +1,296 @@
+[gd_scene load_steps=2 format=3 uid="uid://cnct70vttgg4i"]
+
+[ext_resource type="Script" uid="uid://by0n03hp3yslh" path="res://scripts/editor/challenge_editor.gd" id="1_challenge_editor"]
+
+[node name="ChallengeEditor" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_challenge_editor")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.08, 0.12, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "🛠️ チャレンジ エディタ"
+
+[node name="AddChallengeBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 36)
+layout_mode = 2
+text = "➕ 新規追加"
+
+[node name="DuplicateChallengeBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "📋 複製"
+
+[node name="DeleteChallengeBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "🗑️ 削除"
+
+[node name="ReloadBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "🔄 再読込"
+
+[node name="SaveBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "💾 JSON保存"
+
+[node name="BackBtn" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+text = "✖ 閉じる"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ContentHSplit" type="HSplitContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 320
+
+[node name="ListPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentHSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel"]
+layout_mode = 2
+
+[node name="ListHeader" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "チャレンジ一覧"
+
+[node name="ChallengeList" type="ItemList" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FormScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentHSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+
+[node name="FormMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="FormVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="Sec1Title" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.8, 0.4, 1)
+theme_override_font_sizes/font_size = 16
+text = "⚙️ チャレンジ基本設定"
+
+[node name="IdRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IdRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "チャレンジID:"
+
+[node name="IdLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IdRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "例: c1, c2, ..."
+
+[node name="NameRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/NameRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "チャレンジ名称:"
+
+[node name="NameLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "例: 基礎強化無効"
+
+[node name="IconRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "アイコン(絵文字等):"
+
+[node name="IconLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "例: 🛑, 🥋, 👤, ⚛️..."
+
+[node name="DescRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/DescRow"]
+layout_mode = 2
+text = "制限・ペナルティ内容（テキスト説明）:"
+
+[node name="DescTextEdit" type="TextEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/DescRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+placeholder_text = "例: 基本強化（速度・増加・サイズ）が無効化される"
+wrap_mode = 1
+
+[node name="Sec2Separator" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Sec2HeaderHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Sec2Title" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/Sec2HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "🏆 各レベルごとの内容設定"
+
+[node name="AddLevelBtn" type="Button" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/Sec2HeaderHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+text = "➕ 新規Lvを追加"
+
+[node name="LevelsContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Sec3Separator" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Sec3Title" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.95, 0.55, 1)
+theme_override_font_sizes/font_size = 16
+text = "👁️ ゲーム内表示プレビュー"
+
+[node name="PreviewPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="PreviewVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CardPreviewHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PreviewIcon" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/CardPreviewHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "🛑"
+
+[node name="PreviewName" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/CardPreviewHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "#1: 基礎強化無効"
+
+[node name="DetailBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PreviewDetailTitle" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/DetailBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 15
+text = "#1: 基礎強化無効 (Lv.1 / 1)"
+
+[node name="PreviewDetailPenalty" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/DetailBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.45, 0.45, 1)
+theme_override_font_sizes/font_size = 13
+text = "制限: 基本強化（速度・増加・サイズ）が無効化される"
+
+[node name="PreviewDetailTarget" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/DetailBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 13
+text = "ノルマ: 制限時間 60秒 以内に 🪙 2,500 を獲得"
+
+[node name="PreviewDetailReward" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/DetailBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.95, 0.55, 1)
+theme_override_font_sizes/font_size = 13
+text = "報酬: 恒久効果: 基本ゴールド獲得量 +15%"
+
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
+text = "準備完了"

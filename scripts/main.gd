@@ -37,6 +37,9 @@ const AUDIO_POOL_SIZE: int = 4
 
 func _ready() -> void:
 	background.color = _bg_default_color
+	# 上部バーとの干渉を防ぐためプレイエリア上端を設定（バー下端66px + 余白14px）
+	play_area_border.offset_top = 80.0
+
 	# 境界線のスタイルを動的に設定
 	_border_style = StyleBoxFlat.new()
 	_border_style.bg_color = Color(0, 0, 0, 0) # 透明
@@ -104,14 +107,14 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 	var gold_direct := GameData.roll_gold_direct()
 	var gold_mult: float = gold_crit.multiplier * gold_direct.multiplier
 
+	var normal_base_gold := (20.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
+
 	if is_corner:
 		_play_sound(_sound_corner)
-		var base_gold := (50.0 + GameData.get_effective_boost_level() * 10.0) * mult * gold_skill_mult
-		var gold_amount := base_gold * gold_mult
-		if GameData.is_challenge_active("c3"):
-			gold_amount = 0.0
-		else:
-			gold_amount *= GameData.get_challenge_corner_gold_multiplier()
+		var corner_gold_res := GameData.calculate_corner_hit_gold()
+		var gold_amount: float = corner_gold_res["amount"]
+		gold_crit = corner_gold_res["crit"]
+		gold_direct = corner_gold_res["direct"]
 		
 		var token_crit := GameData.roll_token_critical()
 		var token_direct := GameData.roll_token_direct()
@@ -142,7 +145,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		_spawn_drop_label(pos + Vector2(45.0, 0.0), token_amount, "💎", token_col, true, is_token_disabled, token_crit.is_crit, token_direct.is_direct, token_crit.weight)
 		_start_shake(direction.normalized(), 15.0)
 	else:
-		var base_gold := (10.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
+		var base_gold := normal_base_gold
 		var gold_amount := base_gold * gold_mult
 
 		GameData.record_bounce(false)
@@ -323,7 +326,7 @@ func _on_over_time_timeout() -> void:
 	var gold_skill_mult := GameData._cached_gold_skill_mult * GameData._cached_gold_amp_mult
 	
 	# Base amount is 10% of normal wall bounce gold
-	var base_hit_gold := (10.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
+	var base_hit_gold := (20.0 + GameData.get_effective_boost_level()) * mult * gold_skill_mult
 	var base_over_time_gold := base_hit_gold * 0.1
 	
 	var boost_mult := GameData._cached_gold_over_time_boost_mult

@@ -132,11 +132,13 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	
 	_target_node = skill_node
 	
-	# シグナルへの接続 (購入時やトークン変動時にその場で再更新)
+	# シグナルへの接続 (購入時やトークン変動時、テストモード切替時にその場で再更新)
 	if not GameData.skill_upgraded.is_connected(_on_skill_data_changed):
 		GameData.skill_upgraded.connect(_on_skill_data_changed)
 	if not GameData.tokens_changed.is_connected(_on_tokens_changed):
 		GameData.tokens_changed.connect(_on_tokens_changed)
+	if not GameData.debug_free_skill_cost_changed.is_connected(_on_debug_free_changed):
+		GameData.debug_free_skill_cost_changed.connect(_on_debug_free_changed)
 	
 	var current_count = GameData.get_skill_level(skill_node.skill_id)
 	var is_unlocked = current_count > 0
@@ -149,7 +151,10 @@ func setup_from_node(skill_node: SkillNode) -> void:
 	
 	if skill_node.is_unlimited:
 		lvl_str = "[無制限: %d回]" % current_count if current_count > 0 else "[無制限強化]"
-		cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
+		if GameData.debug_free_skill_cost:
+			cost_str = "コスト: 💎 0 (テスト用無料)"
+		else:
+			cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
 		show_cost = true
 	else:
 		if is_max:
@@ -157,7 +162,10 @@ func setup_from_node(skill_node: SkillNode) -> void:
 			show_cost = false
 		else:
 			lvl_str = "[未解放]"
-			cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
+			if GameData.debug_free_skill_cost:
+				cost_str = "コスト: 💎 0 (テスト用無料)"
+			else:
+				cost_str = "コスト: 💎 %s" % GameData.format_num(cost)
 			show_cost = true
 	
 	var skill_name = skill_node.skill_name if not skill_node.skill_name.is_empty() else skill_node.skill_id
@@ -236,5 +244,10 @@ func _on_skill_data_changed(upgraded_skill_id: String, _new_level: int) -> void:
 
 
 func _on_tokens_changed(_new_tokens: float) -> void:
+	if _target_node:
+		call_deferred(&"setup_from_node", _target_node)
+
+
+func _on_debug_free_changed(_enabled: bool) -> void:
 	if _target_node:
 		call_deferred(&"setup_from_node", _target_node)

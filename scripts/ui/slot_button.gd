@@ -12,6 +12,7 @@ class_name SlotButton
 @onready var item_name_label: Label = get_node_or_null("%ItemNameLabel") as Label
 @onready var item_level_label: Label = get_node_or_null("%ItemLevelLabel") as Label
 var _custom_tooltip: EquipmentTooltip = null
+var _is_dragging: bool = false
 
 
 func _ready() -> void:
@@ -143,6 +144,8 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 			equipment_icon.update_item(eq)
 			
 		modulate = Color.WHITE
+		if not _is_dragging:
+			_apply_drag_modulate()
 	else:
 		base_style.border_color = Color(0.32, 0.24, 0.48, 0.9) # デフォルトの薄紫色
 		if slot_base:
@@ -158,12 +161,27 @@ func update_slot_ui(_slot_name: String, eq: Variant) -> void:
 			equipment_icon.set_show_icon_base(false)
 			
 		modulate = Color.WHITE
+		if not _is_dragging:
+			_apply_drag_modulate()
+
+
+func _apply_drag_modulate() -> void:
+	if not equipment_icon:
+		return
+	if _is_dragging:
+		equipment_icon.modulate = Color(0.35, 0.35, 0.35, 0.5)
+		if equip_info_container:
+			equip_info_container.modulate = Color(0.6, 0.6, 0.6, 0.5)
+	else:
+		equipment_icon.modulate = Color.WHITE
+		if equip_info_container:
+			equip_info_container.modulate = Color.WHITE
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAG_END:
-		if equipment_icon:
-			equipment_icon.modulate = Color.WHITE
+		_is_dragging = false
+		_apply_drag_modulate()
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
@@ -175,8 +193,8 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	if eq == null or eq.is_empty():
 		return null
 		
-	if equipment_icon:
-		equipment_icon.modulate = Color(0.35, 0.35, 0.35, 0.5)
+	_is_dragging = true
+	_apply_drag_modulate()
 	
 	set_drag_preview(_create_drag_preview(eq))
 	
@@ -229,12 +247,9 @@ func _on_gui_input(event: InputEvent) -> void:
 	if not GameData.is_slot_unlocked(slot_key):
 		return
 	if event is InputEventMouseButton and event.pressed:
-		_remove_tooltip()
 		if event.button_index == MOUSE_BUTTON_RIGHT:
+			_remove_tooltip()
 			GameData.unequip_item(slot_key)
-		elif event.button_index == MOUSE_BUTTON_LEFT:
-			if GameData.equipped_items.get(slot_key) != null:
-				GameData.unequip_item(slot_key)
 
 
 func _update_bg_color(color: Color) -> void:
@@ -245,6 +260,8 @@ func _update_bg_color(color: Color) -> void:
 
 
 func _on_mouse_entered() -> void:
+	if _is_dragging:
+		return
 	if not GameData.is_slot_unlocked(slot_key):
 		return
 	_update_bg_color(Color(1.18, 1.18, 1.18))
@@ -288,15 +305,20 @@ func _on_mouse_entered() -> void:
 
 
 func _on_mouse_exited() -> void:
-	_update_bg_color(Color.WHITE)
+	if not _is_dragging:
+		_update_bg_color(Color.WHITE)
 	_remove_tooltip()
 
 
 func _on_button_down() -> void:
+	if _is_dragging:
+		return
 	_update_bg_color(Color(0.8, 0.8, 0.8))
 
 
 func _on_button_up() -> void:
+	if _is_dragging:
+		return
 	if is_hovered():
 		_update_bg_color(Color(1.18, 1.18, 1.18))
 	else:

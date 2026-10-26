@@ -11,7 +11,8 @@ extends Control
 @onready var sidebar_icon_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/IconRow/SidebarIconEdit
 @onready var sidebar_desc_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/DescRow/SidebarDescEdit
 @onready var sidebar_unlimited_check: CheckBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/UnlimitedRow/SidebarUnlimitedCheck
-@onready var sidebar_cost_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow/SidebarCostSpin
+@onready var sidebar_cost_edit: LineEdit = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow/SidebarCostEdit
+@onready var cost_preview_label: Label = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostPreviewRow/CostPreviewLabel
 @onready var sidebar_mult_spin: SpinBox = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/MultRow/SidebarMultSpin
 @onready var prereq_list_vbox: VBoxContainer = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/PrereqScroll/PrereqListVBox
 @onready var sidebar_delete_btn: Button = $VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/SidebarDeleteBtn
@@ -50,7 +51,7 @@ func _ready() -> void:
 	sidebar_desc_edit.text_changed.connect(_on_sidebar_text_changed)
 	
 	sidebar_unlimited_check.toggled.connect(_on_sidebar_unlimited_toggled)
-	sidebar_cost_spin.value_changed.connect(_on_sidebar_value_changed)
+	sidebar_cost_edit.text_changed.connect(_on_sidebar_cost_text_changed)
 	sidebar_mult_spin.value_changed.connect(_on_sidebar_value_changed)
 	
 	sidebar_delete_btn.pressed.connect(_on_sidebar_delete_pressed)
@@ -103,7 +104,9 @@ func _on_node_selected(node: Node) -> void:
 	sidebar_icon_edit.text = node.get_meta("icon_char", "❓")
 	sidebar_desc_edit.text = node.get_meta("description", "")
 	sidebar_unlimited_check.button_pressed = node.get_meta("is_unlimited", false)
-	sidebar_cost_spin.value = node.get_meta("base_cost", 1)
+	var cost_val: float = float(node.get_meta("base_cost", 1.0))
+	sidebar_cost_edit.text = _format_cost_input_display(cost_val)
+	_update_cost_preview(cost_val)
 	sidebar_mult_spin.value = node.get_meta("cost_multiplier", 1.5)
 	
 	_update_prereq_checklist()
@@ -120,6 +123,10 @@ func _clear_sidebar() -> void:
 	_selected_node = null
 	placeholder_label.visible = true
 	editor_form.visible = false
+	if sidebar_cost_edit:
+		sidebar_cost_edit.text = ""
+	if cost_preview_label:
+		cost_preview_label.text = ""
 	for child in prereq_list_vbox.get_children():
 		child.queue_free()
 
@@ -143,11 +150,67 @@ func _on_sidebar_unlimited_toggled(pressed: bool) -> void:
 	_selected_node.set_meta("is_unlimited", pressed)
 
 
+func _on_sidebar_cost_text_changed(new_text: String) -> void:
+	if _updating_sidebar or not _selected_node:
+		return
+	var text_clean := new_text.strip_edges()
+	var val := _parse_cost_text(text_clean)
+	_selected_node.set_meta("base_cost", val)
+	_update_cost_preview(val, text_clean)
+
+
 func _on_sidebar_value_changed(_value: float) -> void:
 	if _updating_sidebar or not _selected_node:
 		return
-	_selected_node.set_meta("base_cost", float(sidebar_cost_spin.value))
 	_selected_node.set_meta("cost_multiplier", float(sidebar_mult_spin.value))
+
+
+func _parse_cost_text(text: String) -> float:
+	var s := text.strip_edges().to_lower()
+	if s.is_empty():
+		return 1.0
+	# GDScriptの to_float() は "1e5", "2.5e6", "1e+12" 等の指数表記を標準で正しくパース
+	var val := s.to_float()
+	if is_nan(val) or is_inf(val) or val <= 0.0:
+		return 1.0
+	return val
+
+
+func _format_cost_input_display(val: float) -> String:
+	if val <= 0.0:
+		return "1"
+	# 10万(1e5)以上でキリの良い数値、または巨大な数値は指数表記でシンプルに表示
+	if val >= 100000.0:
+		var exp_val := floori(log(val) / log(10.0))
+		var mantissa := val / pow(10.0, float(exp_val))
+		var m_str := "%.4f" % mantissa
+		m_str = m_str.rstrip("0").rstrip(".")
+		return "%se%d" % [m_str, exp_val]
+	elif is_equal_approx(val, roundf(val)):
+		return "%d" % int(val)
+	else:
+		var s := "%.2f" % val
+		return s.rstrip("0").rstrip(".")
+
+
+func _update_cost_preview(val: float, raw_text: String = "") -> void:
+	if not cost_preview_label:
+		return
+	
+	if not raw_text.is_empty():
+		var s := raw_text.to_lower()
+		var is_valid := true
+		for ch in s:
+			if not (ch in "0123456789.e+-"):
+				is_valid = false
+				break
+		if not is_valid or val <= 0.0 or is_nan(val) or is_inf(val):
+			cost_preview_label.text = "⚠ 数値形式が無効です (例: 100, 1e5)"
+			cost_preview_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 0.9))
+			return
+
+	cost_preview_label.add_theme_color_override("font_color", Color(0.4, 0.85, 1, 0.9))
+	cost_preview_label.text = "実数値: " + GameData.format_num(val)
 
 
 func _on_sidebar_delete_pressed() -> void:

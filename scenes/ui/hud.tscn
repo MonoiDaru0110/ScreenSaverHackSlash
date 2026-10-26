@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=38 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
@@ -13,6 +13,18 @@
 [ext_resource type="PackedScene" uid="uid://bn6hn2r3gg5m7" path="res://scenes/ui/reinc_ability_window.tscn" id="11_reinc_ability_scene"]
 [ext_resource type="PackedScene" uid="uid://cfhojkdlop3c" path="res://scenes/ui/amplifier_window.tscn" id="12_amplifier_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_filter_window.tscn" id="13_inv_filter_scene"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_save_panel"]
+bg_color = Color(0.1, 0.1, 0.16, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.28, 0.44, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_window_root"]
 
@@ -212,9 +224,9 @@ corner_radius_bottom_left = 6
 script = ExtResource("1_hud")
 
 [node name="BounceLabel" type="Label" parent="."]
-offset_left = 1240.0
+offset_left = 1180.0
 offset_top = 16.0
-offset_right = 1516.0
+offset_right = 1370.0
 offset_bottom = 42.0
 theme_override_colors/font_color = Color(0.75, 0.75, 0.8, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
@@ -225,9 +237,9 @@ text = "Bounces: 0"
 horizontal_alignment = 2
 
 [node name="CornerLabel" type="Label" parent="."]
-offset_left = 1240.0
+offset_left = 1180.0
 offset_top = 42.0
-offset_right = 1516.0
+offset_right = 1370.0
 offset_bottom = 68.0
 theme_override_colors/font_color = Color(1, 0.843, 0, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.7)
@@ -236,6 +248,83 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 18
 text = "★ Corners: 0"
 horizontal_alignment = 2
+
+[node name="SaveControlArea" type="PanelContainer" parent="."]
+offset_left = 1385.0
+offset_top = 10.0
+offset_right = 1650.0
+offset_bottom = 68.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_save_panel")
+
+[node name="Margin" type="MarginContainer" parent="SaveControlArea"]
+layout_mode = 2
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 4
+
+[node name="VBox" type="VBoxContainer" parent="SaveControlArea/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="SaveControlArea/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="QuickSaveBtn" type="Button" parent="SaveControlArea/Margin/VBox/ButtonsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 26)
+layout_mode = 2
+tooltip_text = "現在の進捗をセーブします (F5)"
+theme_override_font_sizes/font_size = 12
+text = "💾 セーブ"
+
+[node name="QuickLoadBtn" type="Button" parent="SaveControlArea/Margin/VBox/ButtonsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 26)
+layout_mode = 2
+tooltip_text = "セーブデータをロードします (F8)"
+theme_override_font_sizes/font_size = 12
+text = "🔄 ロード"
+
+[node name="QuickResetBtn" type="Button" parent="SaveControlArea/Margin/VBox/ButtonsHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 26)
+layout_mode = 2
+tooltip_text = "セーブデータを消去し初期化します (F9)"
+theme_override_font_sizes/font_size = 12
+text = "🗑️ 消去"
+
+[node name="SaveGuideLabel" type="Label" parent="SaveControlArea/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.72, 0.85, 0.8)
+theme_override_font_sizes/font_size = 11
+text = "F5: セーブ | F8: ロード | F9: 消去"
+horizontal_alignment = 1
+
+[node name="SaveToastLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 1250.0
+offset_top = 74.0
+offset_right = 1650.0
+offset_bottom = 98.0
+theme_override_colors/font_color = Color(0.4, 0.95, 0.6, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 2
+
+[node name="ResetConfirmDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "⚠️ セーブデータの消去"
+initial_position = 2
+size = Vector2i(420, 140)
+ok_button_text = "消去する"
+dialog_text = "セーブデータを完全に消去し、ゲームを初期状態にリセットしますか？
+（この操作は取り消せません）"
+cancel_button_text = "キャンセル"
 
 [node name="CornerAnnounce" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
@@ -344,9 +433,9 @@ anchors_preset = 13
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -600.0
+offset_left = -729.0
 offset_top = 124.0
-offset_right = 600.0
+offset_right = 471.0
 offset_bottom = -95.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -450,9 +539,9 @@ anchors_preset = 13
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -600.0
+offset_left = -729.0
 offset_top = 124.0
-offset_right = 600.0
+offset_right = 471.0
 offset_bottom = -95.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -679,6 +768,8 @@ layout_mode = 2
 unique_name_in_owner = true
 visible = false
 z_index = 10
+offset_left = -600.0
+offset_right = 600.0
 
 [node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
 unique_name_in_owner = true
@@ -689,6 +780,8 @@ z_index = 10
 unique_name_in_owner = true
 visible = false
 z_index = 10
+offset_left = -600.0
+offset_right = 600.0
 
 [node name="ReincTreeWindow" parent="." instance=ExtResource("10_reinc_tree_scene")]
 unique_name_in_owner = true
@@ -1101,24 +1194,26 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 20
 
-[node name="TopNavigationArea" type="VBoxContainer" parent="."]
+[node name="TopNavigationArea" type="HBoxContainer" parent="."]
 z_index = 20
-custom_minimum_size = Vector2(460, 0)
+custom_minimum_size = Vector2(754, 56)
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -359.0
+offset_left = -506.0
 offset_top = 10.0
-offset_right = 101.0
-offset_bottom = 116.0
+offset_right = 248.0
+offset_bottom = 66.0
 grow_horizontal = 2
-theme_override_constants/separation = 2
+theme_override_constants/separation = 12
+alignment = 1
 
 [node name="MainModeContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(136, 68)
+custom_minimum_size = Vector2(112, 56)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
 
 [node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/MainModeContainer"]
@@ -1134,23 +1229,24 @@ theme_override_constants/separation = 8
 
 [node name="HomeTabBtn" type="Button" parent="TopNavigationArea/MainModeContainer/MarginContainer/MainTabButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(58, 58)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 24
 text = "🏠"
 
 [node name="ReincarnationTabBtn" type="Button" parent="TopNavigationArea/MainModeContainer/MarginContainer/MainTabButtons"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(58, 58)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_font_sizes/font_size = 24
 text = "⚛️"
 
 [node name="SubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(540, 36)
+custom_minimum_size = Vector2(630, 42)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
 
 [node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/SubNavContainer"]
@@ -1168,43 +1264,44 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "🌳 スキル"
 
 [node name="EquipmentTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "🎒 装備"
 
 [node name="ChallengeTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "🏆 チャレンジ"
 
 [node name="BlacksmithTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "🔨 鍛冶"
 
 [node name="AmplifierTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "⚡ 融合"
 
 [node name="ReincarnationSubNavContainer" type="PanelContainer" parent="TopNavigationArea"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(240, 36)
+custom_minimum_size = Vector2(280, 42)
 layout_mode = 2
 size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_top_nav")
 
 [node name="MarginContainer" type="MarginContainer" parent="TopNavigationArea/ReincarnationSubNavContainer"]
@@ -1222,12 +1319,12 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "🌌 転生ツリー"
 
 [node name="ReincDummyTabBtn2" type="Button" parent="TopNavigationArea/ReincarnationSubNavContainer/MarginContainer/ReincSubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "✨ 特殊能力"

@@ -49,12 +49,36 @@ func _ensure_nodes() -> void:
 		equip_skill_label = get_node_or_null("%EquipSkillLabel") as Control
 
 
-func setup(item_data: Dictionary) -> void:
+func setup(item_data: Dictionary, badge_text: String = "") -> void:
 	_ensure_nodes()
 	
 	var item_name: String = item_data.get("name", "")
 	var item_rarity: String = item_data.get("rarity", "コモン")
 	var item_level: int = item_data.get("level", 1)
+
+	# 比較用バッジ（装備中スロット名など）の表示
+	var badge_label: Label = get_node_or_null("%BadgeLabel")
+	if badge_text != "":
+		if not badge_label and name_label:
+			var parent_box := name_label.get_parent()
+			if parent_box:
+				badge_label = Label.new()
+				badge_label.name = "BadgeLabel"
+				badge_label.unique_name_in_owner = true
+				badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				badge_label.add_theme_font_size_override("font_size", 12)
+				badge_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0, 0.95))
+				badge_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+				badge_label.add_theme_constant_override("shadow_offset_x", 1)
+				badge_label.add_theme_constant_override("shadow_offset_y", 1)
+				parent_box.add_child(badge_label)
+				parent_box.move_child(badge_label, 0)
+		if badge_label:
+			badge_label.text = "【%s】" % badge_text
+			badge_label.visible = true
+	else:
+		if badge_label:
+			badge_label.visible = false
 	
 	# レア度カラーを枠線に適用
 	var rarity_color := GameData.get_rarity_color(item_rarity)

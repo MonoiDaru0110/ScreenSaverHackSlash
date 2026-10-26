@@ -54,20 +54,24 @@ func _rebuild_skill_graph() -> void:
 		if not node.skill_id.is_empty():
 			_skill_node_map[node.skill_id] = node
 			
-	# 1. メインルートノードの特定（前提スキルが空のノード）
+	# 1. メインルートノードの特定（"root_node" または 前提スキルが空のノード）
 	for node in nodes:
-		if node.prerequisites.is_empty():
-			_main_root_ids.append(node.skill_id)
+		if node.skill_id == "root_node" or node.prerequisites.is_empty():
+			if not _main_root_ids.has(node.skill_id):
+				_main_root_ids.append(node.skill_id)
 			
-	# 2. 各ウィンドウ対応ルートノードの特定（前提スキルにメインルートノードを含むノード）
+	# 2. 各ウィンドウ対応ルートノードの特定（前提スキルにメインルートノードを含むノード、または明示的なアンロックノード）
 	for node in nodes:
-		if node.prerequisites.is_empty():
+		if _main_root_ids.has(node.skill_id):
 			continue
+		var is_window_root := false
 		for p in node.prerequisites:
 			if _main_root_ids.has(p):
-				if not _window_root_ids.has(node.skill_id):
-					_window_root_ids.append(node.skill_id)
+				is_window_root = true
 				break
+		if is_window_root or node.skill_id in ["equip_drop_unlock", "challenge_unlock", "challange_unlock", "blacksmith_unlock", "amplifier_unlock"]:
+			if not _window_root_ids.has(node.skill_id):
+				_window_root_ids.append(node.skill_id)
 				
 	# 3. 各ノードの祖先ウィンドウルートノードを探索・キャッシュ
 	for node in nodes:
@@ -221,13 +225,15 @@ func center_on_root(window: Control = null) -> void:
 	if viewport:
 		viewport.scale = Vector2.ONE
 		
-	# 前提スキル（prerequisites）がないスキルを「ルートスキル」として自動探索する（子孫から検索）
+	# "root_node" または前提スキル（prerequisites）がないスキルを「ルートスキル」として自動探索する（子孫から検索）
 	var root_node: SkillNode = null
 	var skill_nodes = _get_skill_nodes()
 	for node in skill_nodes:
-		if node.prerequisites.is_empty():
+		if node.skill_id == "root_node":
 			root_node = node
 			break
+		if node.prerequisites.is_empty() and root_node == null:
+			root_node = node
 			
 	if root_node:
 		# 1. ターゲット（ウィンドウまたは自身）のグローバル中心を求める

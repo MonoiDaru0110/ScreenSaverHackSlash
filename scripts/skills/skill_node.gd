@@ -87,6 +87,7 @@ func _ready() -> void:
 	if not Engine.is_editor_hint():
 		GameData.tokens_changed.connect(_on_tokens_changed)
 		GameData.skill_upgraded.connect(_on_skill_upgraded)
+		GameData.debug_free_skill_cost_changed.connect(_on_debug_free_cost_changed)
 		visibility_changed.connect(_on_visibility_changed)
 		
 		# マニュアルツールチップのホバー接続
@@ -256,9 +257,9 @@ func _update_ui_actual() -> void:
 	# 解放可能状態（前提スキルがすべて1回以上解放されているか）
 	var playable = is_playable()
 			
-	# トークンが足りるかどうかの判定
+	# トークンが足りるかどうかの判定 (テスト用コスト無視モードの場合は常にtrue)
 	var player_tokens = GameData.tokens
-	var is_affordable = player_tokens >= cost
+	var is_affordable = player_tokens >= cost or GameData.debug_free_skill_cost
 	
 	# 枠線の色決定:
 	# 購入済み：黄色枠
@@ -284,10 +285,10 @@ func _update_ui_actual() -> void:
 		
 	# グレーアウト判定:
 	# 前提ノードが解放されている：グレーアウト無し(現状のまま)
-	# 前提ノードが解放されていない：グレーアウトアリ
+	# 前提ノードが解放されていない：グレーアウトアリ (テスト用コスト無視時はグレーアウト解除)
 	# 購入済み：黄色枠(グレーアウト無し)
 	var should_gray_out = false
-	if not is_max and not playable:
+	if not is_max and not playable and not GameData.debug_free_skill_cost:
 		should_gray_out = true
 	
 	if should_gray_out:
@@ -347,6 +348,13 @@ func _on_tokens_changed(_new_tokens: float) -> void:
 
 
 func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
+	if is_inside_tree() and is_visible_in_tree():
+		queue_update_ui()
+	else:
+		_is_dirty = true
+
+
+func _on_debug_free_cost_changed(_enabled: bool) -> void:
 	if is_inside_tree() and is_visible_in_tree():
 		queue_update_ui()
 	else:

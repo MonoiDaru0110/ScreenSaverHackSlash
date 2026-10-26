@@ -189,12 +189,24 @@ custom_minimum_size = Vector2(85, 0)
 layout_mode = 2
 text = "初期コスト:"
 
-[node name="SidebarCostSpin" type="SpinBox" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow"]
+[node name="SidebarCostEdit" type="LineEdit" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-min_value = 1.0
-max_value = 9999.0
-value = 1.0
+placeholder_text = "ex: 100, 1e5, 2.5e6"
+
+[node name="CostPreviewRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostPreviewRow"]
+custom_minimum_size = Vector2(85, 0)
+layout_mode = 2
+
+[node name="CostPreviewLabel" type="Label" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm/CostPreviewRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.4, 0.85, 1, 0.9)
+theme_override_font_sizes/font_size = 12
+text = "実数値: 1"
 
 [node name="MultRow" type="HBoxContainer" parent="VBoxContainer/HBoxContainer2/Sidebar/SidebarVBox/ScrollContainer/PropertiesVBox/EditorForm"]
 layout_mode = 2

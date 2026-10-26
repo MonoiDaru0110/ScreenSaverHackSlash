@@ -101,10 +101,12 @@ var speed_level: int = 1
 var boost_level: int = 1
 var size_level: int = 1
 var ascension_level: int = 0
-var skill_levels: Dictionary = {} # { "skill_id": level_int }
+var skill_levels: Dictionary = {"root_node": 1} # { "skill_id": level_int }
 var auto_unlock_skill_order: Array[String] = []
 var skill_max_levels: Dictionary = {} # { "skill_id": max_level_int }
-var permanently_unlocked_skills: Dictionary = {} # { "skill_id": true }
+var skill_tree_defs: Dictionary = {} # { "skill_id": { ... } }
+var permanently_unlocked_skills: Dictionary = {"root_node": true} # { "skill_id": true }
+var debug_free_skill_cost: bool = false # テスト用: スキルツリーのコスト無視解放フラグ
 
 # --- Cumulative Skill Levels ---
 var total_gold_boost_level: int = 0
@@ -120,6 +122,7 @@ var total_token_direct_boost_level: int = 0
 var total_equip_drop_probability_boost_level: int = 0
 var total_equip_drop_rarity_boost_level: int = 0
 var total_equip_drop_level_boost_level: int = 0
+var total_equip_skill_boost_level: int = 0
 var total_accessory_slot_unlock_level: int = 0
 
 # --- Critical and Direct Hit Parameters ---
@@ -288,6 +291,7 @@ func init_skill_tree_auto_unlock_order() -> void:
 		return
 		
 	var skills: Dictionary = data["skills"]
+	skill_tree_defs = skills
 	var children_map: Dictionary = {}
 	var root_skill_id: String = ""
 	
@@ -299,22 +303,29 @@ func init_skill_tree_auto_unlock_order() -> void:
 	for skill_id: String in skills:
 		var s: Dictionary = skills[skill_id]
 		var prereqs: Array = s.get("prerequisites", [])
-		if prereqs.is_empty():
+		if skill_id == "root_node":
+			root_skill_id = "root_node"
+		elif prereqs.is_empty() and root_skill_id.is_empty():
 			root_skill_id = skill_id
-		else:
-			for p in prereqs:
-				var parent_id: String = str(p)
-				if children_map.has(parent_id):
-					(children_map[parent_id] as Array).append(skill_id)
-				else:
-					children_map[parent_id] = [skill_id]
+		
+		for p in prereqs:
+			var parent_id: String = str(p)
+			if children_map.has(parent_id):
+				(children_map[parent_id] as Array).append(skill_id)
+			else:
+				children_map[parent_id] = [skill_id]
 					
 	if root_skill_id.is_empty():
-		printerr("前提スキルが0個のルートスキルが見つかりません")
-		return
+		if skills.has("root_node"):
+			root_skill_id = "root_node"
+		else:
+			printerr("前提スキルが0個のルートスキルが見つかりません")
+			return
 
 	# 開始時のルートノードを初期解放済みに設定
-	if skill_levels.get(root_skill_id, 0) == 0:
+	skill_levels["root_node"] = 1
+	permanently_unlocked_skills["root_node"] = true
+	if not root_skill_id.is_empty():
 		skill_levels[root_skill_id] = 1
 		permanently_unlocked_skills[root_skill_id] = true
 
@@ -740,7 +751,7 @@ func is_window_unlocked(window_id: String) -> bool:
 		"equipment":
 			return get_skill_level("equip_drop_unlock") > 0
 		"challenge":
-			return get_skill_level("challenge_unlock") > 0
+			return get_skill_level("challenge_unlock") > 0 or get_skill_level("challange_unlock") > 0
 		"blacksmith":
 			return get_skill_level("blacksmith_unlock") > 0
 		"amplifier":
@@ -758,9 +769,13 @@ signal upgrades_changed()
 signal logo_spawn_requested()
 signal logo_reset_requested()
 signal skill_upgraded(skill_id: String, new_level: int)
+signal debug_free_skill_cost_changed(enabled: bool)
 signal equipment_changed()
 signal inventory_updated()
 signal reincarnation_performed()
+signal game_saved(success: bool)
+signal game_loaded(success: bool)
+signal game_reset()
 
 
 func add_gold(amount: float) -> void:
@@ -1091,8 +1106,8 @@ func _calc_base_geometric_max_count(base_init: float, ratio: float, current_leve
 
 
 func get_ascension_cost_multiplier() -> float:
-	# アセンションレベルごとに基本強化のコストが2倍
-	return pow(2.0, float(ascension_level))
+	# アセンションレベルごとに基本強化のコストが1.3倍
+	return pow(1.3, float(ascension_level))
 
 
 func get_speed_upgrade_cost(count: int = 1) -> float:
@@ -1120,8 +1135,11 @@ func get_size_upgrade_max_count() -> int:
 
 
 func get_ascension_multiplier() -> float:
-	# アセンションごとに獲得率+100% (Lv0: 1.0倍, Lv1: 2.0倍, Lv2: 3.0倍...)
-	return 1.0 + float(ascension_level) * 1.0
+	# アセンションボーナス計算式: (前回の倍率 * 1.05) + 1.0 (Lv0: 1.0, Lv1: 2.05, Lv2: 3.1525...)
+	# 一般項: 21.0 * pow(1.05, ascension_level) - 20.0
+	if ascension_level <= 0:
+		return 1.0
+	return 21.0 * pow(1.05, float(ascension_level)) - 20.0
 
 
 func get_base_upgrade_total_level() -> int:
@@ -1321,11 +1339,15 @@ func _ready() -> void:
 	init_skill_tree_auto_unlock_order()
 	apply_auto_unlocked_skills()
 	_load_equipment_skill_defs()
+	_load_challenge_defs()
 	_ensure_inventory_sizes()
 	_recalculate_all_cumulative_levels()
 	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
 	equipment_changed.connect(_on_equipment_changed_internal)
+
+	if has_save_data():
+		load_game()
 
 
 func _process(delta: float) -> void:
@@ -1379,57 +1401,103 @@ func get_inventory_count(type: String) -> int:
 
 # --- Skill Tree Equipment Bonus Calculations ---
 
+func _parse_skill_int_bonus(skill_id: String, fallback: int) -> int:
+	if not skill_tree_defs.has(skill_id):
+		return fallback
+	var desc: String = skill_tree_defs[skill_id].get("description", "")
+	var regex := RegEx.new()
+	if regex.compile("\\+(\\d+)") == OK:
+		var result := regex.search(desc)
+		if result:
+			return result.get_string(1).to_int()
+	return fallback
+
+
+func _parse_skill_percent_bonus(skill_id: String, fallback: float) -> float:
+	if not skill_tree_defs.has(skill_id):
+		return fallback
+	var desc: String = skill_tree_defs[skill_id].get("description", "")
+	var regex := RegEx.new()
+	if regex.compile("(\\d+)(?:%|％)") == OK:
+		var result := regex.search(desc)
+		if result:
+			return float(result.get_string(1)) * 0.01
+	return fallback
+
+
 func get_tree_equip_drop_probability_bonus() -> float:
 	var bonus := 0.0
-	if get_skill_level("equip_drop_probability_boost_1") > 0:
-		bonus += 0.02
-	if get_skill_level("equip_drop_probability_boost_2") > 0:
-		bonus += 0.05
-	if get_skill_level("equip_drop_probability_boost_3") > 0:
-		bonus += 0.10
+	for i in range(1, 100):
+		var s_id := "equip_drop_probability_boost_%d" % i
+		if not skill_tree_defs.has(s_id) and i > 5:
+			break
+		if get_skill_level(s_id) > 0:
+			var default_val := float(i) * 0.01
+			bonus += _parse_skill_percent_bonus(s_id, default_val)
 	return bonus
 
 
 func get_tree_equip_drop_level_bonus() -> int:
 	var bonus := 0
-	if get_skill_level("equip_drop_level_boost_1") > 0:
-		bonus += 10
-	if get_skill_level("equip_drop_level_boost_2") > 0:
-		bonus += 20
-	if get_skill_level("equip_drop_level_boost_3") > 0:
-		bonus += 30
+	for i in range(1, 100):
+		var s_id := "equip_drop_level_boost_%d" % i
+		if not skill_tree_defs.has(s_id) and i > 5:
+			break
+		if get_skill_level(s_id) > 0:
+			var default_val := i * 10
+			bonus += _parse_skill_int_bonus(s_id, default_val)
 	return bonus
 
 
 func get_total_equip_drop_rarity_boost() -> int:
 	var boost := 0
-	if get_skill_level("equip_drop_rarity_boost_1") > 0:
-		boost += 1
-	if get_skill_level("equip_drop_rarity_boost_2") > 0:
-		boost += 2
-	if get_skill_level("equip_drop_rarity_boost_3") > 0:
-		boost += 3
+	for i in range(1, 100):
+		var s_id := "equip_drop_rarity_boost_%d" % i
+		if not skill_tree_defs.has(s_id) and i > 5:
+			break
+		if get_skill_level(s_id) > 0:
+			var default_val := i
+			boost += _parse_skill_int_bonus(s_id, default_val)
 	return boost
 
 
 func get_tree_equip_skill_level_bonus() -> int:
 	var bonus := 0
-	if get_skill_level("equip_skill_boost_1") > 0:
-		bonus += 2
-	if get_skill_level("equip_skill_boost_2") > 0:
-		bonus += 1
-	if get_skill_level("equip_skill_boost_3") > 0:
-		bonus += 3
+	for i in range(1, 100):
+		var s_id := "equip_skill_boost_%d" % i
+		if not skill_tree_defs.has(s_id) and i > 5:
+			break
+		if get_skill_level(s_id) > 0:
+			var default_val := i
+			bonus += _parse_skill_int_bonus(s_id, default_val)
 	return bonus
 
 
-func get_corner_hit_gold_amount() -> float:
+func calculate_corner_hit_gold() -> Dictionary:
 	var mult := _cached_ascension_mult
 	var gold_skill_mult := _cached_gold_skill_mult * _cached_gold_amp_mult
-	var base_gold := (50.0 + float(get_effective_boost_level()) * 10.0) * mult * gold_skill_mult
+	var normal_base_gold := (20.0 + float(get_effective_boost_level())) * mult * gold_skill_mult
+	var base_gold := normal_base_gold * 100.0
+
+	var gold_crit := roll_gold_critical()
+	var gold_direct := roll_gold_direct()
+	var gold_mult: float = gold_crit.multiplier * gold_direct.multiplier
+	var gold_amount := base_gold * gold_mult
+
 	if is_challenge_active("c3"):
-		return 0.0
-	return base_gold * get_challenge_corner_gold_multiplier()
+		gold_amount = 0.0
+	else:
+		gold_amount *= get_challenge_corner_gold_multiplier()
+
+	return {
+		"amount": gold_amount,
+		"crit": gold_crit,
+		"direct": gold_direct
+	}
+
+
+func get_corner_hit_gold_amount() -> float:
+	return calculate_corner_hit_gold()["amount"]
 
 
 func get_corner_hit_token_amount() -> float:
@@ -1443,7 +1511,7 @@ func get_corner_hit_token_amount() -> float:
 
 
 func discard_equipment_rewards() -> Dictionary:
-	var res := { "gold": 100.0, "tokens": 0.0 }
+	var res := { "gold": 0.0, "tokens": 0.0 }
 	if get_skill_level("get_gold_when_discarding") > 0:
 		res["gold"] += get_corner_hit_gold_amount()
 	if get_skill_level("get_token_when_discarding") > 0:
@@ -1477,7 +1545,6 @@ func discard_inventory_item(type: String, index: int) -> bool:
 func discard_multiple_inventory_items(items_to_discard: Array) -> Dictionary:
 	_ensure_inventory_sizes()
 	var total_rewards := { "gold": 0.0, "tokens": 0.0 }
-	var single_reward := discard_equipment_rewards()
 	var discarded_count := 0
 	
 	for entry in items_to_discard:
@@ -1496,6 +1563,7 @@ func discard_multiple_inventory_items(items_to_discard: Array) -> Dictionary:
 			if it != null and it is Dictionary and it.get("id", "") == item_id:
 				arr[i] = null
 				discarded_count += 1
+				var single_reward := discard_equipment_rewards()
 				total_rewards["gold"] += single_reward["gold"]
 				total_rewards["tokens"] += single_reward["tokens"]
 				break
@@ -1525,6 +1593,7 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
 	total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
 	total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
+	total_equip_skill_boost_level = _recalculate_total_level("equip_skill_boost_")
 	total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 	_recalculate_cached_multipliers()
 
@@ -1539,10 +1608,38 @@ func _recalculate_cached_multipliers() -> void:
 	var gamble_mult := get_gamble_multiplier()
 	var switch_gold_mult := get_switch_gold_multiplier()
 	var switch_token_mult := get_switch_token_multiplier()
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_gold_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_token_mult
-	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_gold_mult
-	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_token_mult
+
+	# スキルツリーによる倍率
+	var tree_gold_mult := 1.0
+	var tree_token_mult := 1.0
+
+	# 購入オプション拡張: 入手ゴールド/トークン×150倍
+	if get_skill_level("buying_expand") > 0:
+		tree_gold_mult *= 150.0
+		tree_token_mult *= 150.0
+
+	# 角ヒット時装備強化: 入手ゴールド/トークン5倍
+	if get_skill_level("equip_corner_enhance") > 0:
+		tree_gold_mult *= 5.0
+		tree_token_mult *= 5.0
+
+	# チャレンジクリアボーナス関連スキル
+	var cleared_ch_count := get_cleared_challenge_count()
+	if get_skill_level("challange_gold_bonus") > 0 and cleared_ch_count > 0:
+		tree_gold_mult *= (1.0 + 0.1 * float(cleared_ch_count))
+	if get_skill_level("challange_token_bonus") > 0 and cleared_ch_count > 0:
+		tree_token_mult *= (1.0 + 0.1 * float(cleared_ch_count))
+	if get_skill_level("challange_max_level_bonus") > 0:
+		var max_lvl_ch_count := get_max_level_challenge_count()
+		if max_lvl_ch_count > 0:
+			var max_lvl_mult := pow(2.0, float(max_lvl_ch_count))
+			tree_gold_mult *= max_lvl_mult
+			tree_token_mult *= max_lvl_mult
+
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_gold_mult * tree_gold_mult
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_token_mult * tree_token_mult
+	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_gold_mult * tree_gold_mult
+	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_token_mult * tree_token_mult
 	_cached_ascension_mult = get_ascension_multiplier()
 	update_amplifier_cache()
 
@@ -1593,17 +1690,27 @@ func _update_cumulative_levels(skill_id: String) -> void:
 		total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
 	elif _check_and_update_cumulative(skill_id, "equip_drop_level_boost_"):
 		total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
+	elif _check_and_update_cumulative(skill_id, "equip_skill_boost_"):
+		total_equip_skill_boost_level = _recalculate_total_level("equip_skill_boost_")
 	elif _check_and_update_cumulative(skill_id, "accessory_slot_unlock_"):
 		total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 		equipment_changed.emit()
 	_recalculate_cached_multipliers()
 
 
-func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false) -> bool:
-	if tokens >= cost:
+func toggle_debug_free_skill_cost() -> bool:
+	debug_free_skill_cost = !debug_free_skill_cost
+	debug_free_skill_cost_changed.emit(debug_free_skill_cost)
+	return debug_free_skill_cost
+
+
+func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false, force_free: bool = false) -> bool:
+	var is_free := debug_free_skill_cost or force_free
+	if is_free or tokens >= cost:
 		var current_lvl = get_skill_level(skill_id)
 		if is_unlimited or current_lvl == 0:
-			tokens -= cost
+			if not is_free:
+				tokens -= cost
 			skill_levels[skill_id] = current_lvl + 1
 			
 			# Apply immediate passive effect for extra logo
@@ -1621,7 +1728,8 @@ func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false
 			elif skill_id == "equip_drop_unlock" or skill_id == "equip_drop_filter_unlock":
 				equipment_changed.emit()
 				
-			tokens_changed.emit(tokens)
+			if not is_free:
+				tokens_changed.emit(tokens)
 			skill_upgraded.emit(skill_id, skill_levels[skill_id])
 			upgrades_changed.emit() # Recalculate speeds/etc.
 			return true
@@ -2463,7 +2571,13 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 				add_gold(filter_rewards["gold"])
 			if filter_rewards["tokens"] > 0.0:
 				add_tokens(filter_rewards["tokens"])
-			return {}
+			item["is_discarded"] = true
+			item["discard_gold"] = filter_rewards["gold"]
+			item["discard_tokens"] = filter_rewards["tokens"]
+			item["is_sold"] = true
+			item["sell_price"] = filter_rewards["gold"]
+			item["sell_tokens"] = filter_rewards["tokens"]
+			return item
 
 		var type = item.get("type", "")
 		_ensure_inventory_sizes()
@@ -2488,8 +2602,12 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 				add_gold(full_rewards["gold"])
 			if full_rewards["tokens"] > 0.0:
 				add_tokens(full_rewards["tokens"])
+			item["is_discarded"] = true
+			item["discard_gold"] = full_rewards["gold"]
+			item["discard_tokens"] = full_rewards["tokens"]
 			item["is_sold"] = true
 			item["sell_price"] = full_rewards["gold"]
+			item["sell_tokens"] = full_rewards["tokens"]
 			return item
 	return {}
 
@@ -2735,68 +2853,151 @@ var challenge_current_val: float = 0.0
 var challenge_target_val: float = 0.0
 var challenge_cleared: Dictionary = {} # { "c1": true, ... }
 
-const CHALLENGE_DEFS: Dictionary = {
+var CHALLENGE_DEFS: Dictionary = {
 	"c1": {
 		"id": "c1",
-		"name": "孤独のロゴ",
-		"icon": "👤",
-		"desc": "ロゴが1個に固定される",
+		"name": "基礎強化無効",
+		"icon": "🛑",
+		"desc": "基本強化（速度・増加・サイズ）が無効化される",
 		"duration": 60.0,
 		"target_type": "gold",
-		"target_val": 100000000.0, # テスト用に1億に変更
+		"target_val": 2500.0,
 		"reward_desc": "恒久効果: 基本ゴールド獲得量 +15%"
 	},
 	"c2": {
 		"id": "c2",
-		"name": "低速の試練",
-		"icon": "🐢",
-		"desc": "ロゴの移動速度が50%に低下",
-		"duration": 60.0,
-		"target_type": "gold",
-		"target_val": 2500.0,
-		"reward_desc": "恒久効果: ロゴ基本速度 +10%"
-	},
-	"c3": {
-		"id": "c3",
-		"name": "角ヒット封印",
-		"icon": "🚫",
-		"desc": "角ヒット時のゴールド獲得量が0になる",
-		"duration": 60.0,
-		"target_type": "gold",
-		"target_val": 5000.0,
-		"reward_desc": "恒久効果: 角ヒットゴールド倍率 +25%"
-	},
-	"c4": {
-		"id": "c4",
-		"name": "無装備の道",
+		"name": "装備無効",
 		"icon": "🥋",
 		"desc": "すべての装備効果・スキルが無効化される",
 		"duration": 60.0,
 		"target_type": "gold",
-		"target_val": 10000.0,
+		"target_val": 5000.0,
 		"reward_desc": "恒久効果: 装備ドロップ率 +10%"
 	},
-	"c5": {
-		"id": "c5",
-		"name": "タイムアタック",
-		"icon": "⚡",
-		"desc": "ペナルティなし・30秒の短期決戦",
-		"duration": 30.0,
+	"c3": {
+		"id": "c3",
+		"name": "ロゴ数制限",
+		"icon": "👤",
+		"desc": "ロゴが1個に固定される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 10000.0,
+		"reward_desc": "恒久効果: ロゴ基本速度 +10%"
+	},
+	"c4": {
+		"id": "c4",
+		"name": "アセンションボーナス無効",
+		"icon": "⚛️",
+		"desc": "アセンションによる倍率ボーナスが無効化される",
+		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 25000.0,
 		"reward_desc": "恒久効果: アセンション獲得トークン +15%"
 	},
+	"c5": {
+		"id": "c5",
+		"name": "壁ヒット無効",
+		"icon": "🧱",
+		"desc": "通常の壁ヒット時の獲得が無効化される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 50000.0,
+		"reward_desc": "恒久効果: 全トークン獲得量 +15%"
+	},
 	"c6": {
 		"id": "c6",
-		"name": "トークンスプリント",
-		"icon": "💎",
-		"desc": "ゴールド獲得が0になり、トークンのみで競う",
+		"name": "角ヒット無効",
+		"icon": "📐",
+		"desc": "角ヒット時の獲得が無効化される",
 		"duration": 60.0,
-		"target_type": "token",
-		"target_val": 500.0,
-		"reward_desc": "恒久効果: 全トークン獲得量 +15%"
+		"target_type": "gold",
+		"target_val": 100000.0,
+		"reward_desc": "恒久効果: 角ヒットゴールド倍率 +25%"
+	},
+	"c7": {
+		"id": "c7",
+		"name": "角ヒット化",
+		"icon": "★",
+		"desc": "角ヒットに関する特殊ルールが適用される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 250000.0,
+		"reward_desc": "恒久効果: 角ヒット発生率ボーナス"
+	},
+	"c8": {
+		"id": "c8",
+		"name": "チャレンジボーナス無効",
+		"icon": "🏆",
+		"desc": "チャレンジクリアによる恒久ボーナスが無効化される",
+		"duration": 60.0,
+		"target_type": "gold",
+		"target_val": 500000.0,
+		"reward_desc": "恒久効果: 全獲得倍率ボーナス"
 	}
 }
+
+const CHALLENGES_PATH = "res://data/challenges.json"
+var challenge_cleared_levels: Dictionary = {} # { "c1": 1, ... }
+var active_challenge_level: int = 1
+
+
+func _load_challenge_defs() -> void:
+	if not FileAccess.file_exists(CHALLENGES_PATH):
+		return
+	var file := FileAccess.open(CHALLENGES_PATH, FileAccess.READ)
+	if not file:
+		return
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) == OK:
+		var data = json.get_data()
+		if data is Dictionary and data.has("challenges"):
+			CHALLENGE_DEFS = data["challenges"]
+			# levels 定義からレベル1のプロパティをトップレベルにも反映（互換性確保）
+			for ch_id in CHALLENGE_DEFS:
+				var ch: Dictionary = CHALLENGE_DEFS[ch_id]
+				var levels: Array = ch.get("levels", [])
+				if levels.size() > 0 and levels[0] is Dictionary:
+					var lv1: Dictionary = levels[0]
+					if not ch.has("duration"): ch["duration"] = lv1.get("duration", 60.0)
+					if not ch.has("target_type"): ch["target_type"] = lv1.get("target_type", "gold")
+					if not ch.has("target_val"): ch["target_val"] = lv1.get("target_val", 1000.0)
+					if not ch.has("reward_desc"): ch["reward_desc"] = lv1.get("reward_desc", "")
+	file.close()
+
+
+func get_challenge_cleared_level(ch_id: String) -> int:
+	if challenge_cleared_levels.has(ch_id):
+		return int(challenge_cleared_levels[ch_id])
+	return 1 if challenge_cleared.get(ch_id, false) else 0
+
+
+func get_challenge_max_level(ch_id: String) -> int:
+	var def: Dictionary = CHALLENGE_DEFS.get(ch_id, {})
+	var levels: Array = def.get("levels", [])
+	return maxi(1, levels.size())
+
+
+func get_challenge_target_level(ch_id: String) -> int:
+	var cleared_lvl := get_challenge_cleared_level(ch_id)
+	var max_lvl := get_challenge_max_level(ch_id)
+	return mini(cleared_lvl + 1, max_lvl)
+
+
+func get_challenge_level_def(ch_id: String, level: int = -1) -> Dictionary:
+	var def: Dictionary = CHALLENGE_DEFS.get(ch_id, {})
+	var levels: Array = def.get("levels", [])
+	if levels.is_empty():
+		return {
+			"level": 1,
+			"duration": def.get("duration", 60.0),
+			"target_type": def.get("target_type", "gold"),
+			"target_val": def.get("target_val", 1000.0),
+			"reward_desc": def.get("reward_desc", "")
+		}
+	if level <= 0:
+		level = get_challenge_target_level(ch_id)
+	var idx := clampi(level - 1, 0, levels.size() - 1)
+	return levels[idx]
 
 
 func is_challenge_active(challenge_id: String = "") -> bool:
@@ -2815,18 +3016,23 @@ func get_effective_logo_count() -> int:
 	return logo_count
 
 
-func start_challenge(challenge_id: String) -> bool:
+func start_challenge(challenge_id: String, target_level: int = -1) -> bool:
 	if not CHALLENGE_DEFS.has(challenge_id):
 		return false
 	if not active_challenge_id.is_empty():
 		cancel_challenge()
 
 	var def: Dictionary = CHALLENGE_DEFS[challenge_id]
+	if target_level <= 0:
+		target_level = get_challenge_target_level(challenge_id)
+	var lv_def: Dictionary = get_challenge_level_def(challenge_id, target_level)
+
 	active_challenge_id = challenge_id
-	challenge_duration = def.get("duration", 60.0)
+	active_challenge_level = target_level
+	challenge_duration = lv_def.get("duration", def.get("duration", 60.0))
 	challenge_time_left = challenge_duration
 	challenge_current_val = 0.0
-	challenge_target_val = def.get("target_val", 1000.0)
+	challenge_target_val = lv_def.get("target_val", def.get("target_val", 1000.0))
 
 	_recalculate_cached_multipliers()
 	upgrades_changed.emit()
@@ -2867,16 +3073,34 @@ func complete_challenge() -> void:
 	if active_challenge_id.is_empty():
 		return
 	var old_id := active_challenge_id
+	var cleared_lvl := active_challenge_level
 	challenge_cleared[old_id] = true
+	var prev_cleared: int = challenge_cleared_levels.get(old_id, 0)
+	if cleared_lvl > prev_cleared:
+		challenge_cleared_levels[old_id] = cleared_lvl
 	cancel_challenge()
+	_recalculate_cached_multipliers()
 	challenge_completed.emit(old_id)
+
+
+func get_cleared_challenge_count() -> int:
+	var count := 0
+	for ch_id in challenge_cleared:
+		if challenge_cleared[ch_id]:
+			count += 1
+	return count
+
+
+func get_max_level_challenge_count() -> int:
+	# 現状の全チャレンジクリア数をカウント（レベル制拡張時にも対応）
+	return get_cleared_challenge_count()
 
 
 func record_challenge_progress(currency_type: String, amount: float) -> void:
 	if active_challenge_id.is_empty():
 		return
-	var def: Dictionary = CHALLENGE_DEFS.get(active_challenge_id, {})
-	var expected_type: String = def.get("target_type", "gold")
+	var lv_def: Dictionary = get_challenge_level_def(active_challenge_id, active_challenge_level)
+	var expected_type: String = lv_def.get("target_type", "gold")
 	if currency_type != expected_type:
 		return
 
@@ -3186,3 +3410,312 @@ func buy_amp_token_pow(count: int = 1) -> bool:
 		amplifier_changed.emit()
 		return true
 	return false
+
+
+# ==============================================================================
+# セーブ＆ロード＆リセット機能 (Save / Load / Reset System)
+# ==============================================================================
+
+const SAVE_DATA_PATH = "user://save_data.json"
+
+
+func has_save_data() -> bool:
+	return FileAccess.file_exists(SAVE_DATA_PATH)
+
+
+func save_game() -> bool:
+	var save_dict: Dictionary = {
+		"version": 1,
+		"timestamp": Time.get_datetime_string_from_system(),
+		# 通貨・統計
+		"gold": gold,
+		"tokens": tokens,
+		"stars": stars,
+		"infused_tokens": infused_tokens,
+		"is_infusing_tokens": is_infusing_tokens,
+		"star_level": star_level,
+		"reincarnation_level": reincarnation_level,
+		"stars_spent_in_current_cycle": stars_spent_in_current_cycle,
+		"total_bounces": total_bounces,
+		"corner_hits": corner_hits,
+		"total_play_time": total_play_time,
+		# 基礎強化
+		"logo_count": logo_count,
+		"speed_level": speed_level,
+		"boost_level": boost_level,
+		"size_level": size_level,
+		"ascension_level": ascension_level,
+		# スキルツリー・転生スキル
+		"skill_levels": skill_levels,
+		"permanently_unlocked_skills": permanently_unlocked_skills,
+		"active_reincarnation_skills": active_reincarnation_skills,
+		"pending_reincarnation_skills": pending_reincarnation_skills,
+		"active_reincarnation_upgrades": active_reincarnation_upgrades,
+		"pending_reincarnation_upgrades": pending_reincarnation_upgrades,
+		# 特殊スキル状態
+		"accumulation_rank": accumulation_rank,
+		"accumulation_bounces_in_rank": accumulation_bounces_in_rank,
+		"trinity_sacrificed_stat": trinity_sacrificed_stat,
+		"gamble_current_slot": gamble_current_slot,
+		"gamble_current_multiplier": gamble_current_multiplier,
+		"switch_sacrificed_type": switch_sacrificed_type,
+		# 装備 & インベントリ
+		"equipped_items": equipped_items,
+		"inventories": inventories,
+		"unlocked_slots": unlocked_slots,
+		# チャレンジ
+		"challenge_cleared": challenge_cleared,
+		"challenge_cleared_levels": challenge_cleared_levels,
+		# 増幅器
+		"amp_gold_base_unlocked": amp_gold_base_unlocked,
+		"amp_gold_mult_level": amp_gold_mult_level,
+		"amp_gold_mult_b_level": amp_gold_mult_b_level,
+		"amp_gold_pow_level": amp_gold_pow_level,
+		"amp_token_base_unlocked": amp_token_base_unlocked,
+		"amp_token_mult_level": amp_token_mult_level,
+		"amp_token_mult_b_level": amp_token_mult_b_level,
+		"amp_token_pow_level": amp_token_pow_level
+	}
+
+	var json_str := JSON.stringify(save_dict, "\t")
+	var file := FileAccess.open(SAVE_DATA_PATH, FileAccess.WRITE)
+	if not file:
+		printerr("セーブデータの保存に失敗しました: ", SAVE_DATA_PATH)
+		game_saved.emit(false)
+		return false
+
+	file.store_string(json_str)
+	file.close()
+	print("セーブ完了: ", SAVE_DATA_PATH)
+	game_saved.emit(true)
+	return true
+
+
+func load_game() -> bool:
+	if not has_save_data():
+		print("セーブデータが見つかりません: ", SAVE_DATA_PATH)
+		game_loaded.emit(false)
+		return false
+
+	var file := FileAccess.open(SAVE_DATA_PATH, FileAccess.READ)
+	if not file:
+		printerr("セーブデータのオープンに失敗しました: ", SAVE_DATA_PATH)
+		game_loaded.emit(false)
+		return false
+
+	var json_str := file.get_as_text()
+	file.close()
+
+	var json := JSON.new()
+	if json.parse(json_str) != OK:
+		printerr("セーブデータのJSONパースに失敗しました: ", json.get_error_message())
+		game_loaded.emit(false)
+		return false
+
+	var data: Variant = json.get_data()
+	if not data is Dictionary:
+		printerr("セーブデータが辞書形式ではありません")
+		game_loaded.emit(false)
+		return false
+
+	# 1. 通貨・統計
+	gold = float(data.get("gold", 0.0))
+	tokens = float(data.get("tokens", 0.0))
+	stars = int(data.get("stars", 0))
+	infused_tokens = float(data.get("infused_tokens", 0.0))
+	is_infusing_tokens = bool(data.get("is_infusing_tokens", false))
+	star_level = int(data.get("star_level", 0))
+	reincarnation_level = int(data.get("reincarnation_level", 0))
+	stars_spent_in_current_cycle = int(data.get("stars_spent_in_current_cycle", 0))
+	total_bounces = int(data.get("total_bounces", 0))
+	corner_hits = int(data.get("corner_hits", 0))
+	total_play_time = float(data.get("total_play_time", 0.0))
+
+	# 2. 基礎強化
+	logo_count = maxi(1, int(data.get("logo_count", 1)))
+	speed_level = int(data.get("speed_level", 1))
+	boost_level = int(data.get("boost_level", 1))
+	size_level = int(data.get("size_level", 1))
+	ascension_level = int(data.get("ascension_level", 0))
+
+	# 3. スキルツリー・転生スキル（マスターデータと照合して安全にロード）
+	var raw_skill_levels = data.get("skill_levels", {})
+	if raw_skill_levels is Dictionary:
+		skill_levels.clear()
+		for sk_id in raw_skill_levels:
+			var lvl: int = int(raw_skill_levels[sk_id])
+			if skill_max_levels.has(sk_id):
+				lvl = clampi(lvl, 0, skill_max_levels[sk_id])
+			skill_levels[sk_id] = lvl
+		if not skill_levels.has("root_node"):
+			skill_levels["root_node"] = 1
+
+	var raw_permanently = data.get("permanently_unlocked_skills", {})
+	if raw_permanently is Dictionary:
+		permanently_unlocked_skills = raw_permanently.duplicate()
+		permanently_unlocked_skills["root_node"] = true
+
+	var raw_active_reinc_skills = data.get("active_reincarnation_skills", {})
+	if raw_active_reinc_skills is Dictionary:
+		active_reincarnation_skills = raw_active_reinc_skills.duplicate()
+		active_reincarnation_skills["tree_node_root"] = true
+
+	var raw_pending_reinc_skills = data.get("pending_reincarnation_skills", {})
+	if raw_pending_reinc_skills is Dictionary:
+		pending_reincarnation_skills = raw_pending_reinc_skills.duplicate()
+
+	var raw_active_reinc_upgrades = data.get("active_reincarnation_upgrades", {})
+	if raw_active_reinc_upgrades is Dictionary:
+		active_reincarnation_upgrades = raw_active_reinc_upgrades.duplicate()
+
+	var raw_pending_reinc_upgrades = data.get("pending_reincarnation_upgrades", {})
+	if raw_pending_reinc_upgrades is Dictionary:
+		pending_reincarnation_upgrades = raw_pending_reinc_upgrades.duplicate()
+
+	# 4. 特殊スキル
+	accumulation_rank = int(data.get("accumulation_rank", 0))
+	accumulation_bounces_in_rank = int(data.get("accumulation_bounces_in_rank", 0))
+	trinity_sacrificed_stat = str(data.get("trinity_sacrificed_stat", "none"))
+	gamble_current_slot = int(data.get("gamble_current_slot", 0))
+	gamble_current_multiplier = float(data.get("gamble_current_multiplier", 1.0))
+	switch_sacrificed_type = str(data.get("switch_sacrificed_type", "none"))
+
+	# 5. 装備 & インベントリ
+	var raw_eq = data.get("equipped_items", {})
+	if raw_eq is Dictionary:
+		equipped_items = raw_eq.duplicate(true)
+	var raw_inv = data.get("inventories", {})
+	if raw_inv is Dictionary:
+		inventories = raw_inv.duplicate(true)
+	var raw_slots = data.get("unlocked_slots", {})
+	if raw_slots is Dictionary:
+		unlocked_slots = raw_slots.duplicate(true)
+	_ensure_inventory_sizes()
+
+	# 6. チャレンジ
+	var raw_cleared = data.get("challenge_cleared", {})
+	if raw_cleared is Dictionary:
+		challenge_cleared = raw_cleared.duplicate(true)
+	var raw_cleared_lvls = data.get("challenge_cleared_levels", {})
+	if raw_cleared_lvls is Dictionary:
+		challenge_cleared_levels = raw_cleared_lvls.duplicate(true)
+
+	# 7. 増幅器
+	amp_gold_base_unlocked = bool(data.get("amp_gold_base_unlocked", false))
+	amp_gold_mult_level = int(data.get("amp_gold_mult_level", 0))
+	amp_gold_mult_b_level = int(data.get("amp_gold_mult_b_level", 0))
+	amp_gold_pow_level = int(data.get("amp_gold_pow_level", 0))
+	amp_token_base_unlocked = bool(data.get("amp_token_base_unlocked", false))
+	amp_token_mult_level = int(data.get("amp_token_mult_level", 0))
+	amp_token_mult_b_level = int(data.get("amp_token_mult_b_level", 0))
+	amp_token_pow_level = int(data.get("amp_token_pow_level", 0))
+
+	# 8. 各種キャッシュの再計算 & シグナル通知
+	_recalculate_all_cumulative_levels()
+	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
+	update_amplifier_cache()
+
+	gold_changed.emit(gold)
+	tokens_changed.emit(tokens)
+	stars_changed.emit(stars)
+	stats_changed.emit()
+	upgrades_changed.emit()
+	equipment_changed.emit()
+	inventory_updated.emit()
+	amplifier_changed.emit()
+	challenge_state_changed.emit()
+	logo_reset_requested.emit()
+
+	print("ロード完了: ", SAVE_DATA_PATH)
+	game_loaded.emit(true)
+	return true
+
+
+func delete_save_data() -> bool:
+	if has_save_data():
+		var dir := DirAccess.open("user://")
+		if dir:
+			dir.remove("save_data.json")
+	reset_all_data()
+	game_reset.emit()
+	return true
+
+
+func reset_all_data() -> void:
+	gold = 0.0
+	tokens = 0.0
+	stars = 0
+	infused_tokens = 0.0
+	is_infusing_tokens = false
+	star_level = 0
+	reincarnation_level = 0
+	stars_spent_in_current_cycle = 0
+	total_bounces = 0
+	corner_hits = 0
+	total_play_time = 0.0
+
+	logo_count = 1
+	speed_level = 1
+	boost_level = 1
+	size_level = 1
+	ascension_level = 0
+
+	skill_levels = {"root_node": 1}
+	permanently_unlocked_skills = {"root_node": true}
+	active_reincarnation_skills = {"tree_node_root": true}
+	pending_reincarnation_skills.clear()
+	active_reincarnation_upgrades.clear()
+	pending_reincarnation_upgrades.clear()
+
+	accumulation_rank = 0
+	accumulation_bounces_in_rank = 0
+	trinity_sacrificed_stat = "none"
+	gamble_current_slot = 0
+	gamble_current_multiplier = 1.0
+	switch_sacrificed_type = "none"
+
+	for slot_key in equipped_items:
+		equipped_items[slot_key] = null
+	for type in ["main", "sub", "accessory"]:
+		inventories[type] = []
+	unlocked_slots = {
+		"main": true,
+		"sub": true,
+		"accessory_1": true,
+		"accessory_2": false,
+		"accessory_3": false,
+		"accessory_4": false
+	}
+	_ensure_inventory_sizes()
+
+	challenge_cleared.clear()
+	challenge_cleared_levels.clear()
+	if not active_challenge_id.is_empty():
+		cancel_challenge()
+
+	amp_gold_base_unlocked = false
+	amp_gold_mult_level = 0
+	amp_gold_mult_b_level = 0
+	amp_gold_pow_level = 0
+	amp_token_base_unlocked = false
+	amp_token_mult_level = 0
+	amp_token_mult_b_level = 0
+	amp_token_pow_level = 0
+
+	apply_auto_unlocked_skills()
+	_recalculate_all_cumulative_levels()
+	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
+	update_amplifier_cache()
+
+	gold_changed.emit(gold)
+	tokens_changed.emit(tokens)
+	stars_changed.emit(stars)
+	stats_changed.emit()
+	upgrades_changed.emit()
+	equipment_changed.emit()
+	inventory_updated.emit()
+	amplifier_changed.emit()
+	challenge_state_changed.emit()
+	logo_reset_requested.emit()

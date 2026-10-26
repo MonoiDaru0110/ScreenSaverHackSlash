@@ -106,9 +106,9 @@ anchors_preset = 13
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -600.0
+offset_left = -729.0
 offset_top = 124.0
-offset_right = 600.0
+offset_right = 471.0
 offset_bottom = -95.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -150,6 +150,13 @@ vertical_alignment = 1
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_constants/separation = 8
+
+[node name="OpenChallengeEditorBtn" type="Button" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox/HeaderControls"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "🛠️ エディタ"
 
 [node name="CloseBtn" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("2_close_scene")]
 unique_name_in_owner = true
@@ -325,7 +332,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🚫"
+text = "🛑"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -340,7 +347,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#1: 基礎強化禁止"
+text = "#1: 基礎強化無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -406,7 +413,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🛡️"
+text = "🥋"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -421,7 +428,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#2: 装備制限"
+text = "#2: 装備無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -487,7 +494,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🧱"
+text = "👤"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -502,7 +509,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#3: 壁報酬無効"
+text = "#3: ロゴ数制限"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -568,7 +575,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🎯"
+text = "⚛️"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -583,7 +590,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#4: 角報酬無効"
+text = "#4: アセンションボーナス無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -649,7 +656,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🌲"
+text = "🧱"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -664,7 +671,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#5: スキル封印"
+text = "#5: 壁ヒット無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -730,7 +737,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "⚛️"
+text = "📐"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -745,7 +752,7 @@ grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "#6: 特殊スキル封印"
+text = "#6: 角ヒット無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -798,7 +805,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card7/Margin/Inner"]
-modulate = Color(0.5, 0.5, 0.5, 0.7)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -812,7 +818,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🔒"
+text = "★"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -825,9 +831,9 @@ anchor_bottom = 1.0
 offset_top = -36.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "準備中"
+text = "#7: 角ヒット化"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -880,7 +886,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="IconLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid/Card8/Margin/Inner"]
-modulate = Color(0.5, 0.5, 0.5, 0.7)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -894,7 +899,7 @@ offset_bottom = 12.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 34
-text = "🔒"
+text = "🏆"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -907,13 +912,14 @@ anchor_bottom = 1.0
 offset_top = -36.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 21
-text = "準備中"
+text = "#8: チャレンジボーナス無効"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="Card9" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
+visible = false
 custom_minimum_size = Vector2(205, 170)
 layout_mode = 2
 size_flags_horizontal = 3
