@@ -342,7 +342,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -350,6 +350,7 @@ theme_override_font_sizes/font_size = 21
 text = "#1: 基礎強化無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card2" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -423,7 +424,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -431,6 +432,7 @@ theme_override_font_sizes/font_size = 21
 text = "#2: 装備無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card3" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -504,7 +506,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -512,6 +514,7 @@ theme_override_font_sizes/font_size = 21
 text = "#3: ロゴ数制限"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card4" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -585,7 +588,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -593,6 +596,7 @@ theme_override_font_sizes/font_size = 21
 text = "#4: アセンションボーナス無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card5" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -666,7 +670,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -674,6 +678,7 @@ theme_override_font_sizes/font_size = 21
 text = "#5: 壁ヒット無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card6" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -747,7 +752,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -755,6 +760,7 @@ theme_override_font_sizes/font_size = 21
 text = "#6: 角ヒット無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card7" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -828,7 +834,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -836,6 +842,7 @@ theme_override_font_sizes/font_size = 21
 text = "#7: 角ヒット化"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card8" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 custom_minimum_size = Vector2(205, 170)
@@ -909,7 +916,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -917,6 +924,7 @@ theme_override_font_sizes/font_size = 21
 text = "#8: チャレンジボーナス無効"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Card9" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/LeftMargin/LeftScroll/ChallengeGrid"]
 visible = false
@@ -992,7 +1000,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
+offset_top = -54.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
@@ -1000,6 +1008,7 @@ theme_override_font_sizes/font_size = 21
 text = "準備中"
 horizontal_alignment = 1
 vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="VSep" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox"]
 custom_minimum_size = Vector2(2, 0)
@@ -1027,6 +1036,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 16
 
 [node name="DetailHeader" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -1035,16 +1045,10 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 26
-text = "#1: 基礎強化禁止"
-
-[node name="DetailStatusBadge" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailHeader"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
-theme_override_font_sizes/font_size = 16
-text = "未達成"
+theme_override_font_sizes/font_size = 28
+text = "#1 基礎強化禁止"
 vertical_alignment = 1
+clip_text = true
 
 [node name="RightSep" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
 custom_minimum_size = Vector2(0, 2)
@@ -1063,15 +1067,15 @@ theme_override_constants/separation = 6
 
 [node name="PenaltyHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/PenaltySection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.98, 0.42, 0.28, 1)
+theme_override_font_sizes/font_size = 20
 text = "ペナルティ"
 
 [node name="DetailPenaltyLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/PenaltySection"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.98, 0.42, 0.28, 1)
+theme_override_font_sizes/font_size = 24
 text = "ペナルティ内容"
 autowrap_mode = 3
 
@@ -1081,15 +1085,15 @@ theme_override_constants/separation = 6
 
 [node name="TargetHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.95, 0.52, 1)
+theme_override_font_sizes/font_size = 20
 text = "目標"
 
 [node name="DetailTargetLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.95, 0.52, 1)
+theme_override_font_sizes/font_size = 24
 text = "目標内容"
 autowrap_mode = 3
 
@@ -1099,15 +1103,15 @@ theme_override_constants/separation = 6
 
 [node name="RewardHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.52, 0.95, 0.62, 1)
+theme_override_font_sizes/font_size = 20
 text = "報酬"
 
 [node name="DetailRewardLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.52, 0.95, 0.62, 1)
+theme_override_font_sizes/font_size = 24
 text = "報酬内容"
 autowrap_mode = 3
 

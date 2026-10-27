@@ -1,16 +1,66 @@
 {
 	"challenges": {
 		"c1": {
-			"desc": "基本強化（サイズ、速度、通貨増加）が無効化される",
+			"desc": "すべての装備効果・スキルが無効化される",
+			"duration": 60.0,
+			"icon": "🥋",
+			"id": "c1",
+			"levels": [
+				{
+					"duration": 60.0,
+					"level": 1,
+					"memo": "初期レベル",
+					"reward_desc": "装備ドロップ率 +10%",
+					"target_type": "gold",
+					"target_val": 5000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 10000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 20000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 40000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 80000.0
+				}
+			],
+			"name": "装備無効",
+			"target_val": 5000.0
+		},
+		"c2": {
+			"desc": "基本強化（速度・増加・サイズ）が無効化される",
 			"duration": 30.0,
 			"icon": "🛑",
-			"id": "c1",
+			"id": "c2",
 			"levels": [
 				{
 					"duration": 30.0,
 					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 基本ゴールド獲得量 +15%",
+					"reward_desc": "基本ゴールド獲得量 +15%",
 					"target_type": "gold",
 					"target_val": 10000000000.0
 				},
@@ -18,7 +68,7 @@
 					"duration": 60.0,
 					"level": 2,
 					"memo": "",
-					"reward_desc": "恒久効果: Lv.2 ボーナス効果",
+					"reward_desc": "Lv.2 ボーナス効果",
 					"target_type": "gold",
 					"target_val": 5000.0
 				},
@@ -26,7 +76,7 @@
 					"duration": 60.0,
 					"level": 3,
 					"memo": "",
-					"reward_desc": "恒久効果: Lv.3 ボーナス効果",
+					"reward_desc": "Lv.3 ボーナス効果",
 					"target_type": "gold",
 					"target_val": 10000.0
 				},
@@ -34,7 +84,7 @@
 					"duration": 60.0,
 					"level": 4,
 					"memo": "",
-					"reward_desc": "恒久効果: Lv.4 ボーナス効果",
+					"reward_desc": "Lv.4 ボーナス効果",
 					"target_type": "gold",
 					"target_val": 20000.0
 				},
@@ -42,7 +92,7 @@
 					"duration": 60.0,
 					"level": 5,
 					"memo": "",
-					"reward_desc": "恒久効果: Lv.5 ボーナス効果",
+					"reward_desc": "Lv.5 ボーナス効果",
 					"target_type": "gold",
 					"target_val": 40000.0
 				}
@@ -50,117 +100,307 @@
 			"name": "基礎強化無効",
 			"target_val": 10000000000.0
 		},
-		"c2": {
-			"desc": "すべての装備効果・スキルが無効化される",
-			"icon": "🥋",
-			"id": "c2",
-			"levels": [
-				{
-					"duration": 60.0,
-					"level": 1.0,
-					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 装備ドロップ率 +10%",
-					"target_type": "gold",
-					"target_val": 5000.0
-				}
-			],
-			"name": "装備無効"
-		},
 		"c3": {
 			"desc": "ロゴが1個に固定される",
+			"duration": 60.0,
 			"icon": "👤",
 			"id": "c3",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: ロゴ基本速度 +10%",
+					"reward_desc": "ロゴ基本速度 +10%",
 					"target_type": "gold",
 					"target_val": 10000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 20000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 40000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 80000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 160000.0
 				}
 			],
-			"name": "ロゴ数制限"
+			"name": "ロゴ数制限",
+			"reward_desc": "ロゴ基本速度 +10%",
+			"target_type": "gold",
+			"target_val": 10000.0
 		},
 		"c4": {
 			"desc": "アセンションによる倍率ボーナスが無効化される",
+			"duration": 60.0,
 			"icon": "⚛️",
 			"id": "c4",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: アセンション獲得トークン +15%",
+					"reward_desc": "アセンション獲得トークン +15%",
 					"target_type": "gold",
 					"target_val": 25000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 50000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 100000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 200000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 400000.0
 				}
 			],
-			"name": "アセンションボーナス無効"
+			"name": "アセンションボーナス無効",
+			"target_val": 25000.0
 		},
 		"c5": {
-			"desc": "通常の壁ヒット時の獲得が無効化される",
-			"icon": "🧱",
+			"desc": "クリティカルヒットが発生しなくなる",
+			"duration": 60.0,
+			"icon": "⚡",
 			"id": "c5",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 全トークン獲得量 +15%",
+					"reward_desc": "クリティカル倍率 +15%",
 					"target_type": "gold",
 					"target_val": 50000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 100000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 200000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 400000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 800000.0
 				}
 			],
-			"name": "壁ヒット無効"
+			"name": "クリティカル無効",
+			"target_val": 50000.0
 		},
 		"c6": {
-			"desc": "角ヒット時の獲得が無効化される",
-			"icon": "📐",
+			"desc": "ダイレクトヒットが発生しなくなる",
+			"duration": 60.0,
+			"icon": "🎯",
 			"id": "c6",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 角ヒットゴールド倍率 +25%",
+					"reward_desc": "ダイレクトヒット倍率 +15%",
 					"target_type": "gold",
 					"target_val": 100000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 200000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 400000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 800000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 1600000.0
 				}
 			],
-			"name": "角ヒット無効"
+			"name": "ダイレクトヒット無効",
+			"target_val": 100000.0
 		},
 		"c7": {
-			"desc": "角ヒットに関する特殊ルールが適用される",
-			"icon": "★",
+			"desc": "角ヒット時の獲得・ボーナスが無効化される",
+			"duration": 60.0,
+			"icon": "📐",
 			"id": "c7",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 角ヒット発生率ボーナス",
+					"reward_desc": "角ヒットゴールド倍率 +25%",
 					"target_type": "gold",
 					"target_val": 250000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 500000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 1000000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 2000000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 4000000.0
 				}
 			],
-			"name": "角ヒット化"
+			"name": "角ヒット無効",
+			"target_val": 250000.0
 		},
 		"c8": {
 			"desc": "チャレンジクリアによる恒久ボーナスが無効化される",
+			"duration": 60.0,
 			"icon": "🏆",
 			"id": "c8",
 			"levels": [
 				{
 					"duration": 60.0,
-					"level": 1.0,
+					"level": 1,
 					"memo": "初期レベル",
-					"reward_desc": "恒久効果: 全獲得倍率ボーナス",
+					"reward_desc": "全トークン獲得量 +15%",
 					"target_type": "gold",
 					"target_val": 500000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 2,
+					"memo": "",
+					"reward_desc": "Lv.2 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 1000000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 3,
+					"memo": "",
+					"reward_desc": "Lv.3 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 2000000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 4,
+					"memo": "",
+					"reward_desc": "Lv.4 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 4000000.0
+				},
+				{
+					"duration": 60.0,
+					"level": 5,
+					"memo": "",
+					"reward_desc": "Lv.5 達成ボーナス",
+					"target_type": "gold",
+					"target_val": 8000000.0
 				}
 			],
-			"name": "チャレンジボーナス無効"
+			"name": "チャレンジボーナス無効",
+			"target_val": 500000.0
 		}
 	}
 }

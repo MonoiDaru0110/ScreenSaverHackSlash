@@ -404,6 +404,8 @@ func get_special_skill_active_level(skill_id: String) -> int:
 
 func get_special_skill_total_level(skill_id: String) -> int:
 	var total_lvl := get_special_skill_active_level(skill_id)
+	if is_challenge_active("c1"):
+		return total_lvl
 	for slot_key in equipped_items:
 		if not is_slot_unlocked(slot_key):
 			continue
@@ -488,6 +490,8 @@ func set_trinity_sacrificed_stat(stat: String) -> void:
 
 
 func get_effective_size_level() -> int:
+	if is_challenge_active("c2"):
+		return 1
 	if not is_trinity_active():
 		return size_level
 	if trinity_sacrificed_stat == "size":
@@ -496,6 +500,8 @@ func get_effective_size_level() -> int:
 
 
 func get_effective_speed_level() -> int:
+	if is_challenge_active("c2"):
+		return 1
 	if not is_trinity_active():
 		return speed_level
 	if trinity_sacrificed_stat == "speed":
@@ -504,6 +510,8 @@ func get_effective_speed_level() -> int:
 
 
 func get_effective_boost_level() -> int:
+	if is_challenge_active("c2"):
+		return 1
 	if not is_trinity_active():
 		return boost_level
 	if trinity_sacrificed_stat == "boost":
@@ -706,12 +714,14 @@ func _recalculate_equipped_skill_levels() -> void:
 
 
 func get_equipped_skill_total_val(skill_id: String) -> float:
-	if is_challenge_active("c4"):
+	if is_challenge_active("c1"):
 		return 0.0
 	return _cached_equipped_skill_totals.get(skill_id, 0.0)
 
 
 func get_equipped_saving_cost_multiplier() -> float:
+	if is_challenge_active("c1"):
+		return 1.0
 	var lvl: int = equipped_skill_levels.get("gold_cost", 0) + equipped_skill_levels.get("saving", 0)
 	if lvl <= 0:
 		return 1.0
@@ -720,6 +730,8 @@ func get_equipped_saving_cost_multiplier() -> float:
 
 
 func get_equipped_token_saving_cost_multiplier() -> float:
+	if is_challenge_active("c1"):
+		return 1.0
 	var lvl: int = equipped_skill_levels.get("token_cost", 0) + equipped_skill_levels.get("token_saving", 0)
 	if lvl <= 0:
 		return 1.0
@@ -751,7 +763,7 @@ func is_window_unlocked(window_id: String) -> bool:
 		"equipment":
 			return get_skill_level("equip_drop_unlock") > 0
 		"challenge":
-			return get_skill_level("challenge_unlock") > 0 or get_skill_level("challange_unlock") > 0
+			return is_challenge_unlocked()
 		"blacksmith":
 			return get_skill_level("blacksmith_unlock") > 0
 		"amplifier":
@@ -779,8 +791,6 @@ signal game_reset()
 
 
 func add_gold(amount: float) -> void:
-	if is_challenge_active("c6"):
-		return
 	var final_amount := amount * get_challenge_gold_multiplier()
 	gold += final_amount
 	gold_changed.emit(gold)
@@ -1135,6 +1145,8 @@ func get_size_upgrade_max_count() -> int:
 
 
 func get_ascension_multiplier() -> float:
+	if is_challenge_active("c4"):
+		return 1.0
 	# アセンションボーナス計算式: (前回の倍率 * 1.05) + 1.0 (Lv0: 1.0, Lv1: 2.05, Lv2: 3.1525...)
 	# 一般項: 21.0 * pow(1.05, ascension_level) - 20.0
 	if ascension_level <= 0:
@@ -1282,6 +1294,8 @@ func get_token_direct_hit_parameter() -> float:
 
 
 func calculate_crit_result(crit_factor: float) -> Dictionary:
+	if is_challenge_active("c5"):
+		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 	var equip_crit_rate := get_equipped_skill_total_val("crit_rate")
 	var equip_crit_yield := get_equipped_skill_total_val("crit_yield")
 	var chance_percent := 5.0 * crit_factor + equip_crit_rate
@@ -1299,7 +1313,7 @@ func calculate_crit_result(crit_factor: float) -> Dictionary:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 		
 	var base_crit_bonus := 0.05 * crit_factor + equip_crit_yield * 0.01
-	var mult := 1.0 + float(weight) * base_crit_bonus
+	var mult := (1.0 + float(weight) * base_crit_bonus) * get_challenge_crit_multiplier()
 	return {"multiplier": mult, "is_crit": true, "weight": weight}
 
 
@@ -1312,6 +1326,8 @@ func roll_token_critical() -> Dictionary:
 
 
 func calculate_direct_result(direct_factor: float) -> Dictionary:
+	if is_challenge_active("c6"):
+		return {"multiplier": 1.0, "is_direct": false}
 	var equip_direct_rate := get_equipped_skill_total_val("direct_rate")
 	var equip_direct_yield := get_equipped_skill_total_val("direct_yield")
 	var chance_percent := minf(100.0, 5.0 * direct_factor + equip_direct_rate)
@@ -1323,7 +1339,7 @@ func calculate_direct_result(direct_factor: float) -> Dictionary:
 		return {"multiplier": 1.0, "is_direct": false}
 		
 	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0) + equip_direct_yield * 0.01
-	var mult := 1.0 + base_direct_bonus
+	var mult := (1.0 + base_direct_bonus) * get_challenge_direct_multiplier()
 	return {"multiplier": mult, "is_direct": true}
 
 
@@ -1484,7 +1500,7 @@ func calculate_corner_hit_gold() -> Dictionary:
 	var gold_mult: float = gold_crit.multiplier * gold_direct.multiplier
 	var gold_amount := base_gold * gold_mult
 
-	if is_challenge_active("c3"):
+	if is_challenge_active("c7"):
 		gold_amount = 0.0
 	else:
 		gold_amount *= get_challenge_corner_gold_multiplier()
@@ -1501,6 +1517,8 @@ func get_corner_hit_gold_amount() -> float:
 
 
 func get_corner_hit_token_amount() -> float:
+	if is_challenge_active("c7"):
+		return 0.0
 	var mult := _cached_ascension_mult
 	var token_skill_mult := _cached_token_skill_mult * _cached_token_amp_mult
 	var base_tokens := float(get_effective_boost_level()) * mult * token_skill_mult
@@ -1624,12 +1642,12 @@ func _recalculate_cached_multipliers() -> void:
 		tree_token_mult *= 5.0
 
 	# チャレンジクリアボーナス関連スキル
-	var cleared_ch_count := get_cleared_challenge_count()
+	var cleared_ch_count := 0 if is_challenge_active("c8") else get_cleared_challenge_count()
 	if get_skill_level("challange_gold_bonus") > 0 and cleared_ch_count > 0:
 		tree_gold_mult *= (1.0 + 0.1 * float(cleared_ch_count))
 	if get_skill_level("challange_token_bonus") > 0 and cleared_ch_count > 0:
 		tree_token_mult *= (1.0 + 0.1 * float(cleared_ch_count))
-	if get_skill_level("challange_max_level_bonus") > 0:
+	if get_skill_level("challange_max_level_bonus") > 0 and not is_challenge_active("c8"):
 		var max_lvl_ch_count := get_max_level_challenge_count()
 		if max_lvl_ch_count > 0:
 			var max_lvl_mult := pow(2.0, float(max_lvl_ch_count))
@@ -2555,6 +2573,7 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	# 分数関数(反比例)漸近収束モデル: P(L) = 1.0 - (1.0 - P_base) / (1.0 + 0.03 * L)
 	var base_drop_chance := 0.15 if is_corner else 0.02
 	base_drop_chance += get_tree_equip_drop_probability_bonus()
+	base_drop_chance += get_challenge_drop_rate_bonus()
 	var drop_chance := 1.0 - (1.0 - base_drop_chance) / (1.0 + 0.03 * L)
 	# 装備スキル「装備ドロップ率」ボーナス (+1.2n%)
 	var equip_drop_rate_bonus := get_equipped_skill_total_val("drop_rate") * 0.01
@@ -2856,23 +2875,23 @@ var challenge_cleared: Dictionary = {} # { "c1": true, ... }
 var CHALLENGE_DEFS: Dictionary = {
 	"c1": {
 		"id": "c1",
-		"name": "基礎強化無効",
-		"icon": "🛑",
-		"desc": "基本強化（速度・増加・サイズ）が無効化される",
-		"duration": 60.0,
-		"target_type": "gold",
-		"target_val": 2500.0,
-		"reward_desc": "恒久効果: 基本ゴールド獲得量 +15%"
-	},
-	"c2": {
-		"id": "c2",
 		"name": "装備無効",
 		"icon": "🥋",
 		"desc": "すべての装備効果・スキルが無効化される",
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 5000.0,
-		"reward_desc": "恒久効果: 装備ドロップ率 +10%"
+		"reward_desc": "装備ドロップ率 +10%"
+	},
+	"c2": {
+		"id": "c2",
+		"name": "基礎強化無効",
+		"icon": "🛑",
+		"desc": "基本強化（速度・増加・サイズ）が無効化される",
+		"duration": 30.0,
+		"target_type": "gold",
+		"target_val": 2500.0,
+		"reward_desc": "基本ゴールド獲得量 +15%"
 	},
 	"c3": {
 		"id": "c3",
@@ -2882,7 +2901,7 @@ var CHALLENGE_DEFS: Dictionary = {
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 10000.0,
-		"reward_desc": "恒久効果: ロゴ基本速度 +10%"
+		"reward_desc": "ロゴ基本速度 +10%"
 	},
 	"c4": {
 		"id": "c4",
@@ -2892,37 +2911,37 @@ var CHALLENGE_DEFS: Dictionary = {
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 25000.0,
-		"reward_desc": "恒久効果: アセンション獲得トークン +15%"
+		"reward_desc": "アセンション獲得トークン +15%"
 	},
 	"c5": {
 		"id": "c5",
-		"name": "壁ヒット無効",
-		"icon": "🧱",
-		"desc": "通常の壁ヒット時の獲得が無効化される",
+		"name": "クリティカル無効",
+		"icon": "⚡",
+		"desc": "クリティカルヒットが発生しなくなる",
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 50000.0,
-		"reward_desc": "恒久効果: 全トークン獲得量 +15%"
+		"reward_desc": "クリティカル倍率 +15%"
 	},
 	"c6": {
 		"id": "c6",
-		"name": "角ヒット無効",
-		"icon": "📐",
-		"desc": "角ヒット時の獲得が無効化される",
+		"name": "ダイレクトヒット無効",
+		"icon": "🎯",
+		"desc": "ダイレクトヒットが発生しなくなる",
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 100000.0,
-		"reward_desc": "恒久効果: 角ヒットゴールド倍率 +25%"
+		"reward_desc": "ダイレクトヒット倍率 +15%"
 	},
 	"c7": {
 		"id": "c7",
-		"name": "角ヒット化",
-		"icon": "★",
-		"desc": "角ヒットに関する特殊ルールが適用される",
+		"name": "角ヒット無効",
+		"icon": "📐",
+		"desc": "角ヒット時の獲得・ボーナスが無効化される",
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 250000.0,
-		"reward_desc": "恒久効果: 角ヒット発生率ボーナス"
+		"reward_desc": "角ヒットゴールド倍率 +25%"
 	},
 	"c8": {
 		"id": "c8",
@@ -2932,7 +2951,7 @@ var CHALLENGE_DEFS: Dictionary = {
 		"duration": 60.0,
 		"target_type": "gold",
 		"target_val": 500000.0,
-		"reward_desc": "恒久効果: 全獲得倍率ボーナス"
+		"reward_desc": "全トークン獲得量 +15%"
 	}
 }
 
@@ -2965,16 +2984,69 @@ func _load_challenge_defs() -> void:
 	file.close()
 
 
+func is_challenge_unlocked() -> bool:
+	return get_skill_level("challenge_unlock") > 0 or get_skill_level("challange_unlock") > 0
+
+
+func is_challenge_item_unlocked(ch_id: String) -> bool:
+	if not is_challenge_unlocked():
+		return false
+
+	match ch_id:
+		"c1", "c2":
+			return true # 初期解放（チャレンジ1, 2）
+		"c3", "c4":
+			return get_skill_level("new_challange_unlock_1") > 0 or get_skill_level("new_challenge_unlock_1") > 0
+		"c5", "c6":
+			return get_skill_level("new_challange_unlock_2") > 0 or get_skill_level("new_challenge_unlock_2") > 0
+		"c7", "c8":
+			return get_skill_level("new_challange_unlock_3") > 0 or get_skill_level("new_challenge_unlock_3") > 0
+		_:
+			return true
+
+
+func get_challenge_level_cap() -> int:
+	var cap := 2 # 初期値は1と2のみ解放
+	if get_skill_level("challange_level_unlock_1") > 0:
+		cap += 1 # Lv.3解放
+	if get_skill_level("challange_level_unlock_2") > 0:
+		cap += 1 # Lv.4解放
+	if get_skill_level("challange_level_unlock_3") > 0:
+		cap += 1 # Lv.5解放
+	return cap
+
+
+func get_challenge_time_multiplier() -> float:
+	var mult := 1.0
+	for i in range(1, 6):
+		if get_skill_level("challange_time_extend_%d" % i) > 0:
+			mult *= 1.2
+	return mult
+
+
+func get_challenge_norma_multiplier() -> float:
+	var mult := 1.0
+	for i in range(1, 6):
+		if get_skill_level("challange_norma_onus_%d" % i) > 0:
+			mult *= 0.8
+	return mult
+
+
 func get_challenge_cleared_level(ch_id: String) -> int:
 	if challenge_cleared_levels.has(ch_id):
 		return int(challenge_cleared_levels[ch_id])
 	return 1 if challenge_cleared.get(ch_id, false) else 0
 
 
-func get_challenge_max_level(ch_id: String) -> int:
+func get_challenge_def_max_level(ch_id: String) -> int:
 	var def: Dictionary = CHALLENGE_DEFS.get(ch_id, {})
 	var levels: Array = def.get("levels", [])
 	return maxi(1, levels.size())
+
+
+func get_challenge_max_level(ch_id: String) -> int:
+	var def_max := get_challenge_def_max_level(ch_id)
+	return mini(def_max, get_challenge_level_cap())
 
 
 func get_challenge_target_level(ch_id: String) -> int:
@@ -3000,6 +3072,18 @@ func get_challenge_level_def(ch_id: String, level: int = -1) -> Dictionary:
 	return levels[idx]
 
 
+func get_challenge_effective_duration(ch_id: String, level: int = -1) -> float:
+	var lv_def := get_challenge_level_def(ch_id, level)
+	var base_dur: float = float(lv_def.get("duration", 60.0))
+	return base_dur * get_challenge_time_multiplier()
+
+
+func get_challenge_effective_target_val(ch_id: String, level: int = -1) -> float:
+	var lv_def := get_challenge_level_def(ch_id, level)
+	var base_val: float = float(lv_def.get("target_val", 1000.0))
+	return base_val * get_challenge_norma_multiplier()
+
+
 func is_challenge_active(challenge_id: String = "") -> bool:
 	if challenge_id.is_empty():
 		return not active_challenge_id.is_empty()
@@ -3011,12 +3095,16 @@ func is_challenge_cleared(challenge_id: String) -> bool:
 
 
 func get_effective_logo_count() -> int:
-	if is_challenge_active("c1"):
+	if is_challenge_active("c3"):
 		return 1
 	return logo_count
 
 
 func start_challenge(challenge_id: String, target_level: int = -1) -> bool:
+	if not is_challenge_unlocked():
+		return false
+	if not is_challenge_item_unlocked(challenge_id):
+		return false
 	if not CHALLENGE_DEFS.has(challenge_id):
 		return false
 	if not active_challenge_id.is_empty():
@@ -3025,18 +3113,19 @@ func start_challenge(challenge_id: String, target_level: int = -1) -> bool:
 	var def: Dictionary = CHALLENGE_DEFS[challenge_id]
 	if target_level <= 0:
 		target_level = get_challenge_target_level(challenge_id)
-	var lv_def: Dictionary = get_challenge_level_def(challenge_id, target_level)
+	var max_allowed := get_challenge_max_level(challenge_id)
+	target_level = clampi(target_level, 1, max_allowed)
 
 	active_challenge_id = challenge_id
 	active_challenge_level = target_level
-	challenge_duration = lv_def.get("duration", def.get("duration", 60.0))
+	challenge_duration = get_challenge_effective_duration(challenge_id, target_level)
 	challenge_time_left = challenge_duration
 	challenge_current_val = 0.0
-	challenge_target_val = lv_def.get("target_val", def.get("target_val", 1000.0))
+	challenge_target_val = get_challenge_effective_target_val(challenge_id, target_level)
 
 	_recalculate_cached_multipliers()
 	upgrades_changed.emit()
-	if challenge_id == "c1":
+	if challenge_id == "c3":
 		logo_reset_requested.emit()
 
 	challenge_started.emit(challenge_id)
@@ -3055,7 +3144,7 @@ func cancel_challenge() -> void:
 
 	_recalculate_cached_multipliers()
 	upgrades_changed.emit()
-	if old_id == "c1":
+	if old_id == "c3":
 		logo_reset_requested.emit()
 
 	challenge_state_changed.emit()
@@ -3114,43 +3203,69 @@ func record_challenge_progress(currency_type: String, amount: float) -> void:
 # --- チャレンジクリア恒久パッシブ効果 ---
 
 func get_challenge_gold_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
 	var mult: float = 1.0
-	if is_challenge_cleared("c1"):
-		mult *= 1.15 # C1: 基本ゴールド +15%
+	if is_challenge_cleared("c2"):
+		mult *= 1.15 # c2クリア: 基本ゴールド +15%
 	return mult
 
 
 func get_challenge_speed_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
 	var mult: float = 1.0
-	if is_challenge_active("c2"):
-		mult *= 0.5 # C2挑戦中: 速度半減
-	if is_challenge_cleared("c2"):
-		mult *= 1.10 # C2クリア後: 速度 +10%
+	if is_challenge_cleared("c3"):
+		mult *= 1.10 # c3クリア: 速度 +10%
 	return mult
 
 
 func get_challenge_corner_gold_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
 	var mult: float = 1.0
-	if is_challenge_cleared("c3"):
-		mult *= 1.25 # C3クリア後: 角ヒットゴールド +25%
+	if is_challenge_cleared("c7"):
+		mult *= 1.25 # c7クリア: 角ヒットゴールド +25%
 	return mult
 
 
 func get_challenge_drop_rate_bonus() -> float:
-	if is_challenge_cleared("c4"):
-		return 0.10 # C4クリア後: ドロップ率 +10%
+	if is_challenge_active("c8"):
+		return 0.0
+	if is_challenge_cleared("c1"):
+		return 0.10 # c1クリア: ドロップ率 +10%
 	return 0.0
 
 
 func get_challenge_ascension_token_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
+	if is_challenge_cleared("c4"):
+		return 1.15 # c4クリア: アセンショントークン +15%
+	return 1.0
+
+
+func get_challenge_crit_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
 	if is_challenge_cleared("c5"):
-		return 1.15 # C5クリア後: アセンショントークン +15%
+		return 1.15 # c5クリア: クリティカル倍率 +15%
+	return 1.0
+
+
+func get_challenge_direct_multiplier() -> float:
+	if is_challenge_active("c8"):
+		return 1.0
+	if is_challenge_cleared("c6"):
+		return 1.15 # c6クリア: ダイレクトヒット倍率 +15%
 	return 1.0
 
 
 func get_challenge_token_multiplier() -> float:
-	if is_challenge_cleared("c6"):
-		return 1.15 # C6クリア後: トークン獲得量 +15%
+	if is_challenge_active("c8"):
+		return 1.0
+	if is_challenge_cleared("c8"):
+		return 1.15 # c8クリア: トークン獲得量 +15%
 	return 1.0
 
 

@@ -19,7 +19,6 @@ var _selected_challenge_id: String = "c1"
 
 # Right Detail Panel references
 @onready var _detail_title_name: Label = %DetailTitleName
-@onready var _detail_status_badge: Label = %DetailStatusBadge
 @onready var _detail_desc_box: VBoxContainer = %DetailDescBox
 @onready var _detail_penalty_label: Label = %DetailPenaltyLabel
 @onready var _detail_target_label: Label = %DetailTargetLabel
@@ -38,6 +37,7 @@ func _ready() -> void:
 	GameData.challenge_completed.connect(_on_challenge_completed)
 	GameData.challenge_failed.connect(_on_challenge_failed)
 	GameData.challenge_state_changed.connect(_update_all_ui)
+	GameData.skill_upgraded.connect(func(_id, _lvl): _update_all_ui())
 
 	_update_all_ui()
 
@@ -88,8 +88,14 @@ func _setup_challenge_ui() -> void:
 			icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		if name_lbl:
 			var num_str := ch_id.replace("c", "")
-			name_lbl.text = "#%s: %s" % [num_str, def.get("name", "")]
+			name_lbl.text = "#%s %s" % [num_str, def.get("name", "")]
 			name_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+			name_lbl.offset_top = -54.0
+			name_lbl.offset_bottom = -2.0
+			name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			name_lbl.add_theme_font_size_override("font_size", 21)
+			name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 		btn.pressed.connect(func(): _select_challenge(ch_id))
 
@@ -169,13 +175,35 @@ func _update_list_item(ch_id: String) -> void:
 	var btn: Button = item["button"]
 	var mini_badge: Label = item["status_mini"]
 	var badge_panel: PanelContainer = item.get("badge_panel")
+	var icon_lbl: Label = item.get("icon_lbl")
+	var name_lbl: Label = item.get("name_lbl")
+	var def: Dictionary = item.get("def", {})
 
+	var is_unlocked := GameData.is_challenge_item_unlocked(ch_id)
 	var is_selected := (ch_id == _selected_challenge_id)
-	var is_cleared: bool = GameData.is_challenge_cleared(ch_id)
-	var is_active: bool = GameData.is_challenge_active(ch_id)
+	var is_cleared: bool = GameData.is_challenge_cleared(ch_id) if is_unlocked else false
+	var is_active: bool = GameData.is_challenge_active(ch_id) if is_unlocked else false
+
+	var num_str := ch_id.replace("c", "")
+	if not is_unlocked:
+		if icon_lbl:
+			icon_lbl.text = "🔒"
+			icon_lbl.modulate = Color(0.65, 0.65, 0.70, 0.8)
+		if name_lbl:
+			name_lbl.text = "#%s ？？？？？" % num_str
+			name_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
+	else:
+		if icon_lbl:
+			icon_lbl.text = def.get("icon", "⚔️")
+			icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		if name_lbl:
+			name_lbl.text = "#%s %s" % [num_str, def.get("name", "")]
+			name_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 
 	if badge_panel and mini_badge:
-		if is_active:
+		if not is_unlocked:
+			badge_panel.visible = false
+		elif is_active:
 			badge_panel.visible = true
 			mini_badge.text = "⚔️"
 			mini_badge.add_theme_font_size_override("font_size", 20)
@@ -212,8 +240,14 @@ func _update_list_item(ch_id: String) -> void:
 			badge_panel.visible = false
 
 	# スキルツリーウィンドウのスクロール背景色 Color(0.15, 0.15, 0.24) を適用
-	var bg_col: Color = Color(0.15, 0.15, 0.24, 1.0)
-	var border_col: Color = Color(0.88, 0.68, 0.14, 1.0) if is_selected else Color(0.35, 0.28, 0.10, 0.8)
+	var bg_col: Color = Color(0.12, 0.12, 0.18, 1.0) if not is_unlocked else Color(0.15, 0.15, 0.24, 1.0)
+	var border_col: Color
+	if is_selected:
+		border_col = Color(0.88, 0.68, 0.14, 1.0)
+	elif not is_unlocked:
+		border_col = Color(0.24, 0.24, 0.32, 0.6)
+	else:
+		border_col = Color(0.35, 0.28, 0.10, 0.8)
 
 	_apply_item_style(btn, bg_col, border_col, is_selected)
 
@@ -257,77 +291,117 @@ func _update_detail_panel() -> void:
 
 	var ch_id: String = _selected_challenge_id
 	var is_dummy: bool = def.get("is_dummy", false)
-	var is_cleared: bool = GameData.is_challenge_cleared(ch_id) if not is_dummy else false
-	var is_current_active: bool = GameData.is_challenge_active(ch_id) if not is_dummy else false
+	var is_unlocked := GameData.is_challenge_item_unlocked(ch_id) if not is_dummy else false
+	var is_cleared: bool = GameData.is_challenge_cleared(ch_id) if (not is_dummy and is_unlocked) else false
+	var is_current_active: bool = GameData.is_challenge_active(ch_id) if (not is_dummy and is_unlocked) else false
 
-	var target_lvl := GameData.get_challenge_target_level(ch_id)
+	var def_max := GameData.get_challenge_def_max_level(ch_id)
 	var max_lvl := GameData.get_challenge_max_level(ch_id)
 	var cleared_lvl := GameData.get_challenge_cleared_level(ch_id)
+	var target_lvl := GameData.get_challenge_target_level(ch_id)
 	var lv_def: Dictionary = GameData.get_challenge_level_def(ch_id, target_lvl)
+	var num_str := ch_id.replace("c", "")
 
 	# タイトル設定
+	var title_text := ""
 	if is_dummy:
-		_detail_title_name.text = def.get("name", "？？？？？")
+		title_text = def.get("name", "？？？？？")
+	elif not is_unlocked:
+		title_text = "#%s ？？？？？" % num_str
 	else:
-		var num_str := ch_id.replace("c", "")
-		if max_lvl > 1:
-			_detail_title_name.text = "#%s: %s (Lv.%d / %d)" % [num_str, def.get("name", ""), target_lvl, max_lvl]
+		if def_max > 1:
+			title_text = "#%s %s(Lv%d/%d)" % [num_str, def.get("name", ""), cleared_lvl, max_lvl]
 		else:
-			_detail_title_name.text = "#%s: %s" % [num_str, def.get("name", "")]
+			title_text = "#%s %s" % [num_str, def.get("name", "")]
+	_detail_title_name.text = title_text
 
-	# 状態バッジ
-	if is_dummy:
-		_detail_status_badge.text = "【 準備中 】"
-		_detail_status_badge.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
-	elif is_current_active:
-		_detail_status_badge.text = "【 挑戦中 (Lv.%d) 】" % GameData.active_challenge_level
-		_detail_status_badge.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2, 1.0))
-	elif cleared_lvl >= max_lvl:
-		_detail_status_badge.text = "✔ ALL CLEAR!"
-		_detail_status_badge.add_theme_color_override("font_color", Color(0.4, 0.95, 0.55, 1.0))
-	elif cleared_lvl > 0:
-		_detail_status_badge.text = "CLEAR (Lv.%d達成)" % cleared_lvl
-		_detail_status_badge.add_theme_color_override("font_color", Color(0.4, 0.95, 0.55, 1.0))
+	# 利用可能幅（約405px）に収まる最大のフォントサイズを動的に計算（最大28px、最小18px）
+	# 短いタイトルも程よい大きさ（28px）に抑え、長いタイトルも横幅内に収まる
+	var max_avail_w := 405.0
+	var font := _detail_title_name.get_theme_font("font")
+	if not font:
+		font = ThemeDB.fallback_font
+	var chosen_size := 28
+	if font:
+		for sz in range(28, 17, -1):
+			var text_w := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, sz).x
+			if text_w <= max_avail_w:
+				chosen_size = sz
+				break
+			chosen_size = sz
 	else:
-		_detail_status_badge.text = "未達成"
-		_detail_status_badge.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7, 1.0))
+		var char_len := title_text.length()
+		if char_len > 24:
+			chosen_size = 18
+		elif char_len > 20:
+			chosen_size = 20
+		elif char_len > 16:
+			chosen_size = 22
+		elif char_len > 12:
+			chosen_size = 25
+		else:
+			chosen_size = 28
+	_detail_title_name.add_theme_font_size_override("font_size", chosen_size)
 
 	# 制限内容
-	_detail_penalty_label.text = def.get("desc", "")
+	if not is_unlocked and not is_dummy:
+		var unlock_hint := ""
+		match ch_id:
+			"c3", "c4": unlock_hint = "スキルツリーの「新チャレンジ解放Ⅰ」を習得すると解放されます。"
+			"c5", "c6": unlock_hint = "スキルツリーの「新チャレンジ解放Ⅱ」を習得すると解放されます。"
+			"c7", "c8": unlock_hint = "スキルツリーの「新チャレンジ解放Ⅲ」を習得すると解放されます。"
+			_: unlock_hint = "スキルツリーで新チャレンジ解放スキルを習得すると解放されます。"
+		_detail_penalty_label.text = unlock_hint
+		_detail_penalty_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
+	else:
+		_detail_penalty_label.text = def.get("desc", "")
+		_detail_penalty_label.add_theme_color_override("font_color", Color(0.98, 0.42, 0.28, 1.0)) # オレンジが勝った赤
+	_detail_penalty_label.add_theme_font_size_override("font_size", 24)
 
 	var target_currency := "🪙" if lv_def.get("target_type", "gold") == "gold" else "💎"
 
-	# 達成ノルマ
+	# 達成ノルマ（目標コスト / 制限時間[s]形式、例: 🪙5000 / 60[s]）
 	if is_dummy:
 		_detail_target_label.text = "現在準備中です。解放をお楽しみに！"
+		_detail_target_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
+	elif not is_unlocked:
+		_detail_target_label.text = "？？？？？"
+		_detail_target_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
 	else:
-		var target_str := GameData.format_num(float(lv_def.get("target_val", 0.0)))
-		var duration_str := "%d秒" % int(lv_def.get("duration", 60.0))
-		_detail_target_label.text = "制限時間 %s 以内に %s %s を獲得" % [duration_str, target_currency, target_str]
+		var eff_target_val := GameData.get_challenge_effective_target_val(ch_id, target_lvl)
+		var eff_duration := GameData.get_challenge_effective_duration(ch_id, target_lvl)
+		var target_str := GameData.format_num(eff_target_val)
+		var duration_num_str := "%.1f" % eff_duration if fmod(eff_duration, 1.0) != 0.0 else "%d" % int(eff_duration)
+		_detail_target_label.text = "%s%s / %s[s]" % [target_currency, target_str, duration_num_str]
+		_detail_target_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.52, 1.0)) # 薄い黄色
+	_detail_target_label.add_theme_font_size_override("font_size", 24)
 
 	# 報酬内容
-	var levels: Array = def.get("levels", [])
-	if levels.size() > 1:
-		var reward_lines: Array[String] = []
-		for i in levels.size():
-			var lv_item: Dictionary = levels[i]
-			var lv_num: int = int(lv_item.get("level", i + 1))
-			var r_text: String = lv_item.get("reward_desc", "")
-			var status_tag := ""
-			if cleared_lvl >= lv_num:
-				status_tag = " [達成済 ✔]"
-			elif target_lvl == lv_num:
-				status_tag = " [次の目標 🎯]"
-			reward_lines.append("Lv.%d: %s%s" % [lv_num, r_text, status_tag])
-		_detail_reward_label.text = "\n".join(reward_lines)
+	# 未クリアのレベルが残っている（cleared_lvl < max_lvl）：次のレベルクリア時の報酬を表記
+	# 未クリアのレベルが残っていない（cleared_lvl >= max_lvl）：現在のレベルクリア時の報酬を表記
+	if not is_unlocked and not is_dummy:
+		_detail_reward_label.text = "？？？？？"
+		_detail_reward_label.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
 	else:
-		_detail_reward_label.text = lv_def.get("reward_desc", def.get("reward_desc", ""))
+		var has_uncleared_levels := (cleared_lvl < max_lvl)
+		var display_reward_lvl: int
+		if has_uncleared_levels:
+			display_reward_lvl = cleared_lvl + 1
+		else:
+			display_reward_lvl = maxi(1, cleared_lvl)
+
+		var reward_lv_def := GameData.get_challenge_level_def(ch_id, display_reward_lvl)
+		var r_text: String = reward_lv_def.get("reward_desc", def.get("reward_desc", ""))
+		var clean_r_text := r_text.replace("恒久効果: ", "").replace("恒久効果：", "").replace("恒久効果", "").strip_edges()
+		_detail_reward_label.text = clean_r_text
+		_detail_reward_label.add_theme_color_override("font_color", Color(0.52, 0.95, 0.62, 1.0)) # 薄い緑
+	_detail_reward_label.add_theme_font_size_override("font_size", 24)
 
 	# アクションボタン
 	_detail_action_btn.text = ""
-	if is_dummy:
+	if is_dummy or not GameData.is_challenge_unlocked() or not is_unlocked:
 		if _detail_action_btn_label:
-			_detail_action_btn_label.text = "準備中"
+			_detail_action_btn_label.text = "準備中" if is_dummy else "未解放"
 		_detail_action_btn.disabled = true
 		_apply_btn_style(_detail_action_btn, Color(0.2, 0.2, 0.25, 0.6), Color(0.35, 0.35, 0.4, 0.5), Color(0.55, 0.55, 0.6, 0.8))
 	elif is_current_active:
@@ -335,9 +409,14 @@ func _update_detail_panel() -> void:
 			_detail_action_btn_label.text = "挑戦を中止"
 		_detail_action_btn.disabled = false
 		_apply_btn_style(_detail_action_btn, Color(0.55, 0.16, 0.16, 1.0), Color(0.85, 0.30, 0.30, 1.0), Color(1.0, 0.92, 0.92, 1.0))
+	elif cleared_lvl >= max_lvl:
+		if _detail_action_btn_label:
+			_detail_action_btn_label.text = "再挑戦する (Lv.%d)" % target_lvl
+		_detail_action_btn.disabled = false
+		_apply_btn_style(_detail_action_btn, Color(0.88, 0.68, 0.14, 1.0), Color(1.0, 0.85, 0.35, 1.0), Color(1.0, 1.0, 1.0, 1.0))
 	elif is_cleared:
 		if _detail_action_btn_label:
-			_detail_action_btn_label.text = "再挑戦する"
+			_detail_action_btn_label.text = "挑戦する (Lv.%d)" % target_lvl
 		_detail_action_btn.disabled = false
 		_apply_btn_style(_detail_action_btn, Color(0.88, 0.68, 0.14, 1.0), Color(1.0, 0.85, 0.35, 1.0), Color(1.0, 1.0, 1.0, 1.0))
 	else:
