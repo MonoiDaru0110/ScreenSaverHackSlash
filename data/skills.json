@@ -60,10 +60,10 @@
 			"is_unlimited": false,
 			"name": "チャレンジクリアボーナス強化Ⅰ",
 			"prerequisites": [
-				"challange_unlock"
+				"challange_time_extend_1"
 			],
-			"x": 320.0,
-			"y": 160.0
+			"x": 480.0,
+			"y": -160.0
 		},
 		"challange_bonus_boost_2": {
 			"base_cost": 1.0,
@@ -118,27 +118,27 @@
 			"y": 160.0
 		},
 		"challange_gold_bonus": {
-			"base_cost": 1.0,
+			"base_cost": 1000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "クリアしたチャレンジ一つにつき、入手ゴールド +10％。",
 			"icon": "res://images/skill_icon/challange/challange_gold_bonus.png",
 			"is_unlimited": false,
 			"name": "チャレンジクリアボーナス(ゴールド)",
 			"prerequisites": [
-				"challange_norma_onus_1"
+				"new_challange_unlock_1"
 			],
 			"x": 480.0,
 			"y": 0.0
 		},
 		"challange_level_unlock_1": {
-			"base_cost": 1.0,
+			"base_cost": 500000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジの最大レベル +1。",
 			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
 			"is_unlimited": false,
 			"name": "チャレンジレベル解放Ⅰ",
 			"prerequisites": [
-				"challange_bonus_boost_1"
+				"challange_norma_onus_1"
 			],
 			"x": 480.0,
 			"y": 160.0
@@ -193,7 +193,7 @@
 				"challange_unlock"
 			],
 			"x": 320.0,
-			"y": 0.0
+			"y": 160.0
 		},
 		"challange_norma_onus_2": {
 			"base_cost": 1.0,
@@ -729,17 +729,17 @@
 			"y": -1760.0
 		},
 		"new_challange_unlock_1": {
-			"base_cost": 1.0,
+			"base_cost": 10000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジ3、4が解放される。",
 			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
 			"is_unlimited": false,
 			"name": "新チャレンジ解放Ⅰ",
 			"prerequisites": [
-				"challange_time_extend_1"
+				"challange_unlock"
 			],
-			"x": 480.0,
-			"y": -160.0
+			"x": 320.0,
+			"y": 0.0
 		},
 		"new_challange_unlock_2": {
 			"base_cost": 1.0,

@@ -387,7 +387,7 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
+theme_override_colors/font_color = Color(0.55, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "挑戦中: #1"
 
@@ -768,8 +768,7 @@ layout_mode = 2
 unique_name_in_owner = true
 visible = false
 z_index = 10
-offset_left = -600.0
-offset_right = 600.0
+separator_color = Color(0, 0, 0, 1)
 
 [node name="BlacksmithWindow" parent="." instance=ExtResource("9_blacksmith_scene")]
 unique_name_in_owner = true
@@ -780,8 +779,6 @@ z_index = 10
 unique_name_in_owner = true
 visible = false
 z_index = 10
-offset_left = -600.0
-offset_right = 600.0
 
 [node name="ReincTreeWindow" parent="." instance=ExtResource("10_reinc_tree_scene")]
 unique_name_in_owner = true
@@ -1021,12 +1018,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+theme_override_constants/separation = 4
 alignment = 1
 
 [node name="TitleLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "アセンション"
+horizontal_alignment = 1
+
+[node name="DiffLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+
+[node name="ProgressLabel" type="Label" parent="Sidebar/SidebarLayout/TopSection/MarginContainer/UpgradeList/UpgradeButton4/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 
 [node name="Separator1" type="ColorRect" parent="Sidebar/SidebarLayout"]

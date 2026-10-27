@@ -107,6 +107,24 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
+[node name="OrderHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MoveUpBtn" type="Button" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel/VBox/OrderHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "▲ 上へ移動"
+
+[node name="MoveDownBtn" type="Button" parent="MarginContainer/VBoxContainer/ContentHSplit/ListPanel/VBox/OrderHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "▼ 下へ移動"
+
 [node name="FormScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentHSplit"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -145,6 +163,29 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "例: c1, c2, ..."
+editable = false
+
+[node name="OrderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/OrderRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "チャレンジ順序 (No.):"
+
+[node name="OrderSpinBox" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/OrderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+min_value = 1.0
+value = 1.0
+
+[node name="OrderHelpLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/OrderRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "※順序変更に伴いナンバリング(c1, c2...)が連動更新されます"
 
 [node name="NameRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
 layout_mode = 2
@@ -162,17 +203,30 @@ placeholder_text = "例: 基礎強化無効"
 
 [node name="IconRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
 custom_minimum_size = Vector2(130, 0)
 layout_mode = 2
-text = "アイコン(絵文字等):"
+text = "アイコン(画像/絵文字):"
 
 [node name="IconLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-placeholder_text = "例: 🛑, 🥋, 👤, ⚛️..."
+placeholder_text = "例: res://assets/... または 絵文字 🛑, 🥋..."
+
+[node name="SelectIconBtn" type="Button" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "📁 画像選択"
+
+[node name="ClearIconBtn" type="Button" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/IconRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 0)
+layout_mode = 2
+text = "✕"
 
 [node name="DescRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
 layout_mode = 2
@@ -246,6 +300,14 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "🛑"
 
+[node name="PreviewIconTexture" type="TextureRect" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/CardPreviewHBox"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
 [node name="PreviewName" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/PreviewPanel/Margin/PreviewVBox/CardPreviewHBox"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -294,3 +356,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.8, 0.8, 0.9, 1)
 text = "準備完了"
+
+[node name="IconFileDialog" type="FileDialog" parent="."]
+unique_name_in_owner = true
+title = "Open a File"
+initial_position = 2
+size = Vector2i(700, 500)
+ok_button_text = "Open"
+file_mode = 0
+filters = PackedStringArray("*.png, *.jpg, *.jpeg, *.webp, *.svg ; 画像ファイル")

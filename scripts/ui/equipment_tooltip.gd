@@ -49,7 +49,7 @@ func _ensure_nodes() -> void:
 		equip_skill_label = get_node_or_null("%EquipSkillLabel") as Control
 
 
-func setup(item_data: Dictionary, badge_text: String = "") -> void:
+func setup(item_data: Dictionary, badge_text: String = "", bonus_skill_level: int = -1) -> void:
 	_ensure_nodes()
 	
 	var item_name: String = item_data.get("name", "")
@@ -103,6 +103,24 @@ func setup(item_data: Dictionary, badge_text: String = "") -> void:
 	if level_label:
 		level_label.text = "Lv.%d" % item_level
 		
+	# 装備中ボーナスレベルの判定
+	var is_equipped := false
+	var it_id: String = item_data.get("id", "")
+	if not it_id.is_empty() and GameData.is_item_equipped(it_id) != "":
+		is_equipped = true
+	elif badge_text.find("装備中") != -1:
+		is_equipped = true
+
+	var bonus_lvl := 0
+	if bonus_skill_level >= 0:
+		bonus_lvl = bonus_skill_level
+	elif is_equipped and not GameData.is_equip_disabled_challenge_active():
+		bonus_lvl = GameData.get_c1_equipment_skill_bonus()
+
+	var bonus_tag := ""
+	if bonus_lvl > 0:
+		bonus_tag = "[color=#73f273](+%d)[/color]" % bonus_lvl
+
 	# スキル説明の構築（通常スキルは深い青、特殊スキルは特殊スキルの紫）
 	var item_equip_skills = item_data.get("equip_skill", [])
 	var normal_lines := PackedStringArray()
@@ -115,11 +133,36 @@ func setup(item_data: Dictionary, badge_text: String = "") -> void:
 		var sk_lvl: int = skill.get("level", 1)
 		var is_spec: bool = skill.get("is_special", false)
 		var raw_desc: String = skill.get("desc", "")
-		
+		var effective_lvl := sk_lvl + bonus_lvl
+		var display_desc := raw_desc
+
+		# ボーナスが適用されている場合、効果テキストを実効レベルで再生成
+		if bonus_lvl > 0:
+			var sk_id: String = skill.get("id", "")
+			if sk_id.is_empty():
+				if is_spec:
+					for k in GameData.special_skill_defs:
+						if GameData.special_skill_defs[k].get("name", "") == sk_name:
+							sk_id = k
+							break
+				else:
+					for k in GameData.equipment_skill_defs:
+						if GameData.equipment_skill_defs[k].get("name", "") == sk_name:
+							sk_id = k
+							break
+			if not sk_id.is_empty():
+				display_desc = GameData.format_equipment_skill_desc(sk_id, effective_lvl, is_spec)
+
 		if is_spec:
-			special_lines.append("[color=%s]・%s +%d: %s[/color]" % [special_color_hex, sk_name, sk_lvl, raw_desc])
+			if bonus_lvl > 0:
+				special_lines.append("[color=%s]・%s [Lv. %d%s]: %s[/color]" % [special_color_hex, sk_name, sk_lvl, bonus_tag, display_desc])
+			else:
+				special_lines.append("[color=%s]・%s [Lv. %d]: %s[/color]" % [special_color_hex, sk_name, sk_lvl, display_desc])
 		else:
-			normal_lines.append("[color=%s]・%s [Lv.%d][/color]" % [normal_color_hex, raw_desc, sk_lvl])
+			if bonus_lvl > 0:
+				normal_lines.append("[color=%s]・%s [Lv. %d%s][/color]" % [normal_color_hex, display_desc, sk_lvl, bonus_tag])
+			else:
+				normal_lines.append("[color=%s]・%s [Lv. %d][/color]" % [normal_color_hex, display_desc, sk_lvl])
 			
 	if normal_lines.is_empty():
 		normal_lines.append("[color=#58557a]・なし[/color]")

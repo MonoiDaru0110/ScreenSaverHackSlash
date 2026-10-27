@@ -75,8 +75,6 @@ var _buy_mode_indices: Dictionary = {
 
 
 func _ready() -> void:
-	header_color = Color(0.18, 0.52, 0.92, 1.0)
-	separator_color = Color(0.35, 0.75, 1.0, 1.0)
 	super._ready()
 
 	# ボーナスボタン押下シグナル接続

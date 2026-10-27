@@ -82,15 +82,125 @@ func _setup_challenge_ui() -> void:
 		var status_mini := btn.get_node_or_null("Margin/Inner/BadgePanel/StatusMini") as Label
 		var icon_lbl := btn.get_node_or_null("Margin/Inner/IconLabel") as Label
 		var name_lbl := btn.get_node_or_null("Margin/Inner/NameLabel") as Label
+		var inner := btn.get_node_or_null("Margin/Inner") as Control
+
+		# 落ち影用テクスチャ（ソフトで薄いぼかし影のため複数レイヤーを背面に配置）
+		var shadow_offsets: Array[Vector2] = [
+			Vector2(2.0, 3.0),
+			Vector2(4.0, 3.0),
+			Vector2(2.0, 5.0),
+			Vector2(4.0, 5.0),
+			Vector2(3.0, 4.0),
+		]
+		var shadow_alphas: Array[float] = [0.05, 0.05, 0.05, 0.05, 0.06]
+		var shadow_textures: Array[TextureRect] = []
+
+		for s_idx in range(shadow_offsets.size()):
+			var s_name := "ShadowTexture_%d" % s_idx
+			var s_node := btn.get_node_or_null("Margin/Inner/" + s_name) as TextureRect
+			if not s_node and inner:
+				s_node = TextureRect.new()
+				s_node.name = s_name
+				inner.add_child(s_node)
+			if s_node:
+				s_node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				s_node.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				s_node.custom_minimum_size = Vector2(110, 110)
+				s_node.size = Vector2(110, 110)
+				s_node.anchor_left = 0.5
+				s_node.anchor_right = 0.5
+				s_node.anchor_top = 0.0
+				s_node.anchor_bottom = 0.0
+				var off := shadow_offsets[s_idx]
+				s_node.offset_left = -55.0 + off.x
+				s_node.offset_right = 55.0 + off.x
+				s_node.offset_top = 2.0 + off.y
+				s_node.offset_bottom = 112.0 + off.y
+				s_node.grow_horizontal = Control.GROW_DIRECTION_BOTH
+				s_node.grow_vertical = Control.GROW_DIRECTION_END
+				s_node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				s_node.modulate = Color(0.0, 0.0, 0.0, shadow_alphas[s_idx])
+				s_node.visible = false
+				shadow_textures.append(s_node)
+
+		# 以前の古い ShadowTexture / ProgressBadge があれば非表示化
+		var old_shadow := btn.get_node_or_null("Margin/Inner/ShadowTexture") as TextureRect
+		if old_shadow:
+			old_shadow.visible = false
+		var old_badge := btn.get_node_or_null("Margin/Inner/ProgressBadge") as Control
+		if old_badge:
+			old_badge.visible = false
+
+		var icon_tex := btn.get_node_or_null("Margin/Inner/IconTexture") as TextureRect
+		if not icon_tex and inner:
+			icon_tex = TextureRect.new()
+			icon_tex.name = "IconTexture"
+			inner.add_child(icon_tex)
+
+		# 描画順序を完全に保証: shadow_textures（奥）→ icon_tex（手前）
+		for st in shadow_textures:
+			inner.move_child(st, inner.get_child_count() - 1)
+		if icon_tex:
+			inner.move_child(icon_tex, inner.get_child_count() - 1)
+
+		# 左上のクリア状況テキスト (n/m) - タイトルと同様にテキストをそのまま配置
+		var progress_label := btn.get_node_or_null("Margin/Inner/ProgressTextLabel") as Label
+		if not progress_label and inner:
+			progress_label = Label.new()
+			progress_label.name = "ProgressTextLabel"
+			inner.add_child(progress_label)
+
+		if progress_label:
+			progress_label.anchor_left = 0.0
+			progress_label.anchor_top = 0.0
+			progress_label.anchor_right = 0.0
+			progress_label.anchor_bottom = 0.0
+			progress_label.offset_left = 5.0
+			progress_label.offset_top = 3.0
+			progress_label.add_theme_font_size_override("font_size", 21)
+			progress_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+			progress_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.65))
+			progress_label.add_theme_constant_override("shadow_offset_x", 2)
+			progress_label.add_theme_constant_override("shadow_offset_y", 2)
+			progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			progress_label.visible = false
+			inner.move_child(progress_label, inner.get_child_count() - 1)
+
+		if icon_tex:
+			icon_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_tex.custom_minimum_size = Vector2(110, 110)
+			icon_tex.size = Vector2(110, 110)
+			icon_tex.anchor_left = 0.5
+			icon_tex.anchor_right = 0.5
+			icon_tex.anchor_top = 0.0
+			icon_tex.anchor_bottom = 0.0
+			icon_tex.offset_left = -55.0
+			icon_tex.offset_right = 55.0
+			icon_tex.offset_top = 2.0
+			icon_tex.offset_bottom = 112.0
+			icon_tex.grow_horizontal = Control.GROW_DIRECTION_BOTH
+			icon_tex.grow_vertical = Control.GROW_DIRECTION_END
+			icon_tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon_tex.visible = false
 
 		if icon_lbl:
 			icon_lbl.text = def.get("icon", "⚔️")
 			icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			icon_lbl.add_theme_font_size_override("font_size", 54)
+			icon_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.35))
+			icon_lbl.add_theme_constant_override("shadow_offset_x", 2)
+			icon_lbl.add_theme_constant_override("shadow_offset_y", 3)
+			icon_lbl.offset_top = -66.0
+			icon_lbl.offset_bottom = 6.0
 		if name_lbl:
 			var num_str := ch_id.replace("c", "")
 			name_lbl.text = "#%s %s" % [num_str, def.get("name", "")]
 			name_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-			name_lbl.offset_top = -54.0
+			name_lbl.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.6))
+			name_lbl.add_theme_constant_override("shadow_offset_x", 1)
+			name_lbl.add_theme_constant_override("shadow_offset_y", 1)
+			name_lbl.offset_top = -46.0
 			name_lbl.offset_bottom = -2.0
 			name_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -103,6 +213,9 @@ func _setup_challenge_ui() -> void:
 			"button": btn,
 			"name_lbl": name_lbl,
 			"icon_lbl": icon_lbl,
+			"icon_tex": icon_tex,
+			"shadow_textures": shadow_textures,
+			"progress_label": progress_label,
 			"status_mini": status_mini,
 			"badge_panel": badge_panel,
 			"def": def
@@ -168,6 +281,17 @@ func _update_active_progress_ui(cur: float, target: float, time_left: float) -> 
 		]
 
 
+static func _load_icon_texture(path_or_str: String) -> Texture2D:
+	var s := path_or_str.strip_edges()
+	if s.is_empty():
+		return null
+	if (s.begins_with("res://") or s.begins_with("user://")) and ResourceLoader.exists(s):
+		var res := load(s)
+		if res is Texture2D:
+			return res
+	return null
+
+
 func _update_list_item(ch_id: String) -> void:
 	if not _list_item_nodes.has(ch_id):
 		return
@@ -176,26 +300,64 @@ func _update_list_item(ch_id: String) -> void:
 	var mini_badge: Label = item["status_mini"]
 	var badge_panel: PanelContainer = item.get("badge_panel")
 	var icon_lbl: Label = item.get("icon_lbl")
+	var icon_tex: TextureRect = item.get("icon_tex")
+	var shadow_textures: Array = item.get("shadow_textures", [])
+	var progress_label: Label = item.get("progress_label")
 	var name_lbl: Label = item.get("name_lbl")
 	var def: Dictionary = item.get("def", {})
 
 	var is_unlocked := GameData.is_challenge_item_unlocked(ch_id)
 	var is_selected := (ch_id == _selected_challenge_id)
-	var is_cleared: bool = GameData.is_challenge_cleared(ch_id) if is_unlocked else false
+	var def_max: int = GameData.get_challenge_def_max_level(ch_id)
+	var max_lvl: int = GameData.get_challenge_max_level(ch_id)
+	var cleared_lvl: int = GameData.get_challenge_cleared_level(ch_id)
+	var is_max_cleared: bool = (cleared_lvl >= def_max) if is_unlocked else false
 	var is_active: bool = GameData.is_challenge_active(ch_id) if is_unlocked else false
 
 	var num_str := ch_id.replace("c", "")
 	if not is_unlocked:
+		if progress_label:
+			progress_label.visible = false
+		for st in shadow_textures:
+			st.visible = false
+		if icon_tex:
+			icon_tex.visible = false
 		if icon_lbl:
+			icon_lbl.visible = true
 			icon_lbl.text = "🔒"
 			icon_lbl.modulate = Color(0.65, 0.65, 0.70, 0.8)
 		if name_lbl:
 			name_lbl.text = "#%s ？？？？？" % num_str
 			name_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.70, 0.8))
 	else:
-		if icon_lbl:
-			icon_lbl.text = def.get("icon", "⚔️")
-			icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		if progress_label:
+			progress_label.visible = true
+			progress_label.text = "%d/%d" % [cleared_lvl, max_lvl]
+			if cleared_lvl >= max_lvl:
+				progress_label.add_theme_color_override("font_color", Color(0.45, 0.95, 0.45, 1.0))
+			else:
+				progress_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+
+		var icon_val: String = str(def.get("icon", "⚔️"))
+		var tex := _load_icon_texture(icon_val)
+		if tex:
+			for st in shadow_textures:
+				st.texture = tex
+				st.visible = true
+			if icon_tex:
+				icon_tex.texture = tex
+				icon_tex.visible = true
+			if icon_lbl:
+				icon_lbl.visible = false
+		else:
+			for st in shadow_textures:
+				st.visible = false
+			if icon_tex:
+				icon_tex.visible = false
+			if icon_lbl:
+				icon_lbl.text = icon_val
+				icon_lbl.modulate = Color(1.0, 1.0, 1.0, 1.0)
+				icon_lbl.visible = true
 		if name_lbl:
 			name_lbl.text = "#%s %s" % [num_str, def.get("name", "")]
 			name_lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
@@ -208,18 +370,18 @@ func _update_list_item(ch_id: String) -> void:
 			mini_badge.text = "⚔️"
 			mini_badge.add_theme_font_size_override("font_size", 20)
 			var active_style := StyleBoxFlat.new()
-			active_style.bg_color = Color(0.72, 0.52, 0.10, 1.0) # ゴールド
+			active_style.bg_color = Color(0.18, 0.48, 0.85, 1.0) # 鮮やかなブルー
 			active_style.border_width_left = 1
 			active_style.border_width_top = 1
 			active_style.border_width_right = 1
 			active_style.border_width_bottom = 1
-			active_style.border_color = Color(0.95, 0.85, 0.40, 1.0)
+			active_style.border_color = Color(0.5, 0.82, 1.0, 1.0)
 			active_style.corner_radius_top_left = 4
 			active_style.corner_radius_top_right = 6
 			active_style.corner_radius_bottom_right = 4
 			active_style.corner_radius_bottom_left = 4
 			badge_panel.add_theme_stylebox_override("panel", active_style)
-		elif is_cleared:
+		elif is_max_cleared:
 			badge_panel.visible = true
 			mini_badge.text = "✓"
 			mini_badge.add_theme_font_size_override("font_size", 26)
@@ -239,15 +401,15 @@ func _update_list_item(ch_id: String) -> void:
 		else:
 			badge_panel.visible = false
 
-	# スキルツリーウィンドウのスクロール背景色 Color(0.15, 0.15, 0.24) を適用
-	var bg_col: Color = Color(0.12, 0.12, 0.18, 1.0) if not is_unlocked else Color(0.15, 0.15, 0.24, 1.0)
+	# スチールブルー調のカード背景 Color(0.26, 0.44, 0.66) を適用（少し明るく彩度を高めた青）
+	var bg_col: Color = Color(0.12, 0.15, 0.22, 1.0) if not is_unlocked else Color(0.26, 0.44, 0.66, 1.0)
 	var border_col: Color
 	if is_selected:
-		border_col = Color(0.88, 0.68, 0.14, 1.0)
+		border_col = Color(0.55, 0.85, 1.0, 1.0)
 	elif not is_unlocked:
-		border_col = Color(0.24, 0.24, 0.32, 0.6)
+		border_col = Color(0.18, 0.24, 0.32, 0.6)
 	else:
-		border_col = Color(0.35, 0.28, 0.10, 0.8)
+		border_col = Color(0.16, 0.28, 0.44, 1.0)
 
 	_apply_item_style(btn, bg_col, border_col, is_selected)
 
@@ -310,7 +472,7 @@ func _update_detail_panel() -> void:
 		title_text = "#%s ？？？？？" % num_str
 	else:
 		if def_max > 1:
-			title_text = "#%s %s(Lv%d/%d)" % [num_str, def.get("name", ""), cleared_lvl, max_lvl]
+			title_text = "#%s %s(Lv%d/%d)" % [num_str, def.get("name", ""), target_lvl, max_lvl]
 		else:
 			title_text = "#%s %s" % [num_str, def.get("name", "")]
 	_detail_title_name.text = title_text
@@ -373,7 +535,7 @@ func _update_detail_panel() -> void:
 		var target_str := GameData.format_num(eff_target_val)
 		var duration_num_str := "%.1f" % eff_duration if fmod(eff_duration, 1.0) != 0.0 else "%d" % int(eff_duration)
 		_detail_target_label.text = "%s%s / %s[s]" % [target_currency, target_str, duration_num_str]
-		_detail_target_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.52, 1.0)) # 薄い黄色
+		_detail_target_label.add_theme_color_override("font_color", Color(0.88, 0.94, 1.0, 1.0)) # 薄い水色
 	_detail_target_label.add_theme_font_size_override("font_size", 24)
 
 	# 報酬内容
@@ -394,7 +556,7 @@ func _update_detail_panel() -> void:
 		var r_text: String = reward_lv_def.get("reward_desc", def.get("reward_desc", ""))
 		var clean_r_text := r_text.replace("恒久効果: ", "").replace("恒久効果：", "").replace("恒久効果", "").strip_edges()
 		_detail_reward_label.text = clean_r_text
-		_detail_reward_label.add_theme_color_override("font_color", Color(0.52, 0.95, 0.62, 1.0)) # 薄い緑
+		_detail_reward_label.add_theme_color_override("font_color", Color(0.40, 0.92, 0.60, 1.0)) # 明るいミントグリーン
 	_detail_reward_label.add_theme_font_size_override("font_size", 24)
 
 	# アクションボタン
@@ -411,19 +573,19 @@ func _update_detail_panel() -> void:
 		_apply_btn_style(_detail_action_btn, Color(0.55, 0.16, 0.16, 1.0), Color(0.85, 0.30, 0.30, 1.0), Color(1.0, 0.92, 0.92, 1.0))
 	elif cleared_lvl >= max_lvl:
 		if _detail_action_btn_label:
-			_detail_action_btn_label.text = "再挑戦する (Lv.%d)" % target_lvl
-		_detail_action_btn.disabled = false
-		_apply_btn_style(_detail_action_btn, Color(0.88, 0.68, 0.14, 1.0), Color(1.0, 0.85, 0.35, 1.0), Color(1.0, 1.0, 1.0, 1.0))
+			_detail_action_btn_label.text = "クリア済み"
+		_detail_action_btn.disabled = true
+		_apply_btn_style(_detail_action_btn, Color(0.15, 0.22, 0.32, 0.7), Color(0.25, 0.35, 0.48, 0.6), Color(0.6, 0.7, 0.8, 0.7))
 	elif is_cleared:
 		if _detail_action_btn_label:
 			_detail_action_btn_label.text = "挑戦する (Lv.%d)" % target_lvl
 		_detail_action_btn.disabled = false
-		_apply_btn_style(_detail_action_btn, Color(0.88, 0.68, 0.14, 1.0), Color(1.0, 0.85, 0.35, 1.0), Color(1.0, 1.0, 1.0, 1.0))
+		_apply_btn_style(_detail_action_btn, Color(0.18, 0.42, 0.78, 1.0), Color(0.35, 0.65, 0.98, 1.0), Color(1.0, 1.0, 1.0, 1.0))
 	else:
 		if _detail_action_btn_label:
 			_detail_action_btn_label.text = "挑戦する"
 		_detail_action_btn.disabled = false
-		_apply_btn_style(_detail_action_btn, Color(0.88, 0.68, 0.14, 1.0), Color(1.0, 0.85, 0.35, 1.0), Color(1.0, 1.0, 1.0, 1.0))
+		_apply_btn_style(_detail_action_btn, Color(0.18, 0.42, 0.78, 1.0), Color(0.35, 0.65, 0.98, 1.0), Color(1.0, 1.0, 1.0, 1.0))
 
 
 func _apply_btn_style(btn: Button, bg_col: Color, border_col: Color, text_col: Color = Color(0.95, 0.95, 0.98, 1.0)) -> void:
@@ -444,12 +606,12 @@ func _apply_btn_style(btn: Button, bg_col: Color, border_col: Color, text_col: C
 	st_normal.set_corner_radius_all(6)
 
 	var st_hover := st_normal.duplicate() as StyleBoxFlat
-	st_hover.bg_color = bg_col.lightened(0.15)
-	st_hover.border_color = border_col.lightened(0.15)
+	st_hover.bg_color = bg_col.darkened(0.15)
+	st_hover.border_color = border_col.darkened(0.08)
 
 	var st_pressed := st_normal.duplicate() as StyleBoxFlat
-	st_pressed.bg_color = bg_col.darkened(0.15)
-	st_pressed.border_color = border_col
+	st_pressed.bg_color = bg_col.darkened(0.25)
+	st_pressed.border_color = border_col.darkened(0.15)
 
 	var st_disabled := st_normal.duplicate() as StyleBoxFlat
 	st_disabled.bg_color = bg_col.darkened(0.35)
@@ -470,6 +632,10 @@ func _on_detail_action_pressed() -> void:
 	if GameData.is_challenge_active(_selected_challenge_id):
 		GameData.cancel_challenge()
 	else:
+		var max_lvl: int = GameData.get_challenge_max_level(_selected_challenge_id)
+		var cleared_lvl: int = GameData.get_challenge_cleared_level(_selected_challenge_id)
+		if cleared_lvl >= max_lvl:
+			return
 		GameData.start_challenge(_selected_challenge_id)
 
 

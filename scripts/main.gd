@@ -116,18 +116,10 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 		gold_crit = corner_gold_res["crit"]
 		gold_direct = corner_gold_res["direct"]
 		
-		var token_crit := GameData.roll_token_critical()
-		var token_direct := GameData.roll_token_direct()
-		var token_mult: float = token_crit.multiplier * token_direct.multiplier
-
-		# Apply token_boost_n skill (1.1^n multiplier where n is total level of all token_boost_n)
-		var token_skill_mult := GameData._cached_token_skill_mult * GameData._cached_token_amp_mult
-		var base_tokens := float(GameData.get_effective_boost_level()) * mult * token_skill_mult
-		# Apply token_luck skill (30% chance for +1 token per level)
-		var token_luck_level := GameData.get_skill_level("token_luck")
-		if token_luck_level > 0 and randf() < token_luck_level * 0.3:
-			base_tokens += 1.0
-		var token_amount := base_tokens * token_mult
+		var corner_token_res := GameData.calculate_corner_hit_token()
+		var token_amount: float = corner_token_res["amount"]
+		var token_crit: Dictionary = corner_token_res["crit"]
+		var token_direct: Dictionary = corner_token_res["direct"]
 
 		GameData.record_bounce(true)
 		GameData.add_gold(gold_amount)

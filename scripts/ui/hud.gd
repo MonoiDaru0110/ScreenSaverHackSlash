@@ -138,6 +138,7 @@ var _discard_pop_tween: Tween = null
 @onready var _challenge_mini_time: Label = %ChallengeMiniTime
 @onready var _challenge_mini_bar: ProgressBar = %ChallengeMiniBar
 @onready var _challenge_mini_progress: Label = %ChallengeMiniProgress
+var _chain_cross_overlay: ChainCrossOverlay = null
 
 # パフォーマンス最適化: デバッグ表示 & ステータス更新スロットリング
 @onready var _debug_label: Label = %DebugLabel
@@ -148,16 +149,18 @@ var _was_trinity_active: bool = false
 var _last_drop_pop_ticks: int = 0
 
 # パフォーマンス最適化: ボタン子ラベルのキャッシュ
-var _lbl_title_size: Label
-var _lbl_diff_size: Label
-var _lbl_cost_size: Label
-var _lbl_title_speed: Label
-var _lbl_diff_speed: Label
-var _lbl_cost_speed: Label
-var _lbl_title_boost: Label
-var _lbl_diff_boost: Label
-var _lbl_cost_boost: Label
-var _lbl_title_ascend: Label
+@onready var _lbl_title_size: Label = btn_size.get_node_or_null("Content/TitleHBox/TitleLabel") if btn_size else null
+@onready var _lbl_diff_size: Label = btn_size.get_node_or_null("Content/TitleHBox/DiffLabel") if btn_size else null
+@onready var _lbl_cost_size: Label = btn_size.get_node_or_null("Content/CostLabel") if btn_size else null
+@onready var _lbl_title_speed: Label = btn_speed.get_node_or_null("Content/TitleHBox/TitleLabel") if btn_speed else null
+@onready var _lbl_diff_speed: Label = btn_speed.get_node_or_null("Content/TitleHBox/DiffLabel") if btn_speed else null
+@onready var _lbl_cost_speed: Label = btn_speed.get_node_or_null("Content/CostLabel") if btn_speed else null
+@onready var _lbl_title_boost: Label = btn_boost.get_node_or_null("Content/TitleHBox/TitleLabel") if btn_boost else null
+@onready var _lbl_diff_boost: Label = btn_boost.get_node_or_null("Content/TitleHBox/DiffLabel") if btn_boost else null
+@onready var _lbl_cost_boost: Label = btn_boost.get_node_or_null("Content/CostLabel") if btn_boost else null
+@onready var _lbl_title_ascend: Label = btn_ascend.get_node_or_null("Content/TitleLabel") if btn_ascend else null
+@onready var _lbl_diff_ascend: Label = btn_ascend.get_node_or_null("Content/DiffLabel") if btn_ascend else null
+@onready var _lbl_progress_ascend: Label = btn_ascend.get_node_or_null("Content/ProgressLabel") if btn_ascend else null
 
 
 func _ready() -> void:
@@ -239,6 +242,12 @@ func _ready() -> void:
 
 	if btn_ascend:
 		btn_ascend.add_theme_stylebox_override("focus", style_focus)
+		_default_upgrade_btn_styles[btn_ascend] = {
+			"normal": btn_ascend.get_theme_stylebox("normal"),
+			"hover": btn_ascend.get_theme_stylebox("hover"),
+			"pressed": btn_ascend.get_theme_stylebox("pressed"),
+			"disabled": btn_ascend.get_theme_stylebox("disabled")
+		}
 
 	# Main Tab button styles setup (ホーム / 転生)
 	# Inactive: base dark charcoal/navy
@@ -603,14 +612,17 @@ func _ready() -> void:
 		window_dimmer.modulate.a = 0.0
 		window_dimmer.gui_input.connect(_on_window_dimmer_gui_input)
 
-	# チャレンジ進行中ミニウィンドウのセットアップ (メイン画面右下・通貨欄の左)
+	# チャレンジ進行中ミニウィンドウ & 装備無効化オーバーレイのセットアップ
 	_setup_challenge_mini_window()
+	_setup_chain_cross_overlay()
 	GameData.challenge_started.connect(_on_challenge_started_mini)
 	GameData.challenge_progress_updated.connect(_on_challenge_progress_updated_mini)
 	GameData.challenge_completed.connect(_on_challenge_ended_mini)
 	GameData.challenge_failed.connect(_on_challenge_ended_mini)
 	GameData.challenge_state_changed.connect(_update_challenge_mini_window)
+	GameData.challenge_state_changed.connect(_update_chain_cross_overlay)
 	_update_challenge_mini_window()
+	_update_chain_cross_overlay()
 	
 	# アップグレードボタン更新スロットリングタイマーの初期化 (0.2秒間隔 = 5回/秒)
 	_upgrade_update_timer = Timer.new()
@@ -629,17 +641,7 @@ func _ready() -> void:
 	# Initialize equipment grid frames and adjust separation spacing
 	_setup_grid_frames()
 	
-	# ボタン子ラベルのキャッシュ
-	_lbl_title_size = btn_size.get_node("Content/TitleHBox/TitleLabel")
-	_lbl_diff_size = btn_size.get_node("Content/TitleHBox/DiffLabel")
-	_lbl_cost_size = btn_size.get_node("Content/CostLabel")
-	_lbl_title_speed = btn_speed.get_node("Content/TitleHBox/TitleLabel")
-	_lbl_diff_speed = btn_speed.get_node("Content/TitleHBox/DiffLabel")
-	_lbl_cost_speed = btn_speed.get_node("Content/CostLabel")
-	_lbl_title_boost = btn_boost.get_node("Content/TitleHBox/TitleLabel")
-	_lbl_diff_boost = btn_boost.get_node("Content/TitleHBox/DiffLabel")
-	_lbl_cost_boost = btn_boost.get_node("Content/CostLabel")
-	_lbl_title_ascend = btn_ascend.get_node("Content/TitleLabel")
+
 	
 	close_inventory()
 	_update_all()
@@ -876,7 +878,10 @@ func _update_all() -> void:
 
 
 func _process(_delta: float) -> void:
-	if GameData.is_trinity_active():
+	var is_c2 := GameData.is_base_stat_disabled_challenge_active()
+	var is_c4 := GameData.is_ascension_disabled_challenge_active()
+	var is_trinity := GameData.is_trinity_active()
+	if is_c2 or is_trinity or is_c4:
 		_was_trinity_active = true
 		_apply_trinity_button_styles()
 	elif _was_trinity_active:
@@ -899,6 +904,8 @@ func _on_trinity_changed() -> void:
 
 
 func _apply_trinity_button_styles() -> void:
+	var is_c2 := GameData.is_base_stat_disabled_challenge_active()
+	var is_c4 := GameData.is_ascension_disabled_challenge_active()
 	var active_stat := GameData.trinity_sacrificed_stat
 	var time := Time.get_ticks_msec() * 0.001
 	var pulse := 0.8 + 0.2 * sin(time * 3.5)
@@ -918,7 +925,7 @@ func _apply_trinity_button_styles() -> void:
 	for entry in stat_btns:
 		var stat_id: String = entry["stat"]
 		var btn: Button = entry["btn"]
-		var is_sacrificed := (active_stat == stat_id)
+		var is_sacrificed := is_c2 or (active_stat == stat_id)
 		var defaults: Dictionary = _default_upgrade_btn_styles.get(btn, {})
 
 		var states := ["normal", "hover", "pressed", "disabled"]
@@ -951,15 +958,40 @@ func _apply_trinity_button_styles() -> void:
 
 			btn.add_theme_stylebox_override(state_name, style)
 
+	if btn_ascend:
+		var defaults_ascend: Dictionary = _default_upgrade_btn_styles.get(btn_ascend, {})
+		var states := ["normal", "hover", "pressed", "disabled"]
+		if is_c4:
+			for state_name in states:
+				var def_style = defaults_ascend.get(state_name, null)
+				var style := StyleBoxFlat.new()
+				style.corner_radius_top_left = 3
+				style.corner_radius_top_right = 3
+				style.corner_radius_bottom_right = 3
+				style.corner_radius_bottom_left = 3
+				if def_style is StyleBoxFlat:
+					style.bg_color = def_style.bg_color
+				else:
+					style.bg_color = Color(0.24, 0.14, 0.42, 1)
+				style.border_color = red_border_hover if state_name == "hover" else red_border
+				style.border_width_left = 2
+				style.border_width_top = 2
+				style.border_width_right = 2
+				style.border_width_bottom = 2
+				btn_ascend.add_theme_stylebox_override(state_name, style)
+		elif not defaults_ascend.is_empty():
+			for state_name in states:
+				if defaults_ascend.has(state_name) and defaults_ascend[state_name]:
+					btn_ascend.add_theme_stylebox_override(state_name, defaults_ascend[state_name])
+
 
 func _restore_upgrade_button_styles() -> void:
-	for btn in [btn_size, btn_speed, btn_boost]:
+	for btn in [btn_size, btn_speed, btn_boost, btn_ascend]:
 		if _default_upgrade_btn_styles.has(btn):
 			var defaults: Dictionary = _default_upgrade_btn_styles[btn]
-			btn.add_theme_stylebox_override("normal", defaults["normal"])
-			btn.add_theme_stylebox_override("hover", defaults["hover"])
-			btn.add_theme_stylebox_override("pressed", defaults["pressed"])
-			btn.add_theme_stylebox_override("disabled", defaults["disabled"])
+			for state_name in ["normal", "hover", "pressed", "disabled"]:
+				if defaults.has(state_name) and defaults[state_name]:
+					btn.add_theme_stylebox_override(state_name, defaults[state_name])
 
 
 
@@ -970,6 +1002,8 @@ func _on_buy_mode_pressed() -> void:
 
 
 func _update_upgrade_buttons() -> void:
+	if not _lbl_cost_size or not _lbl_cost_speed or not _lbl_cost_boost:
+		return
 	var gold := GameData.gold
 	var is_trinity := GameData.is_trinity_active()
 	var mode: int = _get_current_buy_mode()
@@ -1000,19 +1034,17 @@ func _update_upgrade_buttons() -> void:
 	_lbl_title_size.add_theme_color_override("font_color", Color.WHITE if size_ok else Color(1, 1, 1, 0.4))
 	_lbl_cost_size.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if size_ok else Color.RED)
 
-	var size_diff := GameData.get_trinity_stat_diff("size")
-	if is_trinity:
-		if GameData.trinity_sacrificed_stat == "size":
-			_lbl_diff_size.visible = true
-			_lbl_diff_size.text = "[無効]"
-			_lbl_diff_size.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
-		elif size_diff > 0:
-			_lbl_diff_size.visible = true
-			_lbl_diff_size.text = "[%+d]" % size_diff
-			_lbl_diff_size.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
-		else:
-			_lbl_diff_size.visible = false
-			_lbl_diff_size.text = ""
+	var is_c2 := GameData.is_base_stat_disabled_challenge_active()
+
+	var size_diff := GameData.get_base_upgrade_stat_diff("size")
+	if is_c2 or (is_trinity and GameData.trinity_sacrificed_stat == "size"):
+		_lbl_diff_size.visible = true
+		_lbl_diff_size.text = "[無効]"
+		_lbl_diff_size.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+	elif size_diff > 0:
+		_lbl_diff_size.visible = true
+		_lbl_diff_size.text = "[%+d]" % size_diff
+		_lbl_diff_size.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
 	else:
 		_lbl_diff_size.visible = false
 		_lbl_diff_size.text = ""
@@ -1040,19 +1072,15 @@ func _update_upgrade_buttons() -> void:
 	_lbl_title_speed.add_theme_color_override("font_color", Color.WHITE if speed_ok else Color(1, 1, 1, 0.4))
 	_lbl_cost_speed.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if speed_ok else Color.RED)
 
-	var speed_diff := GameData.get_trinity_stat_diff("speed")
-	if is_trinity:
-		if GameData.trinity_sacrificed_stat == "speed":
-			_lbl_diff_speed.visible = true
-			_lbl_diff_speed.text = "[無効]"
-			_lbl_diff_speed.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
-		elif speed_diff > 0:
-			_lbl_diff_speed.visible = true
-			_lbl_diff_speed.text = "[%+d]" % speed_diff
-			_lbl_diff_speed.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
-		else:
-			_lbl_diff_speed.visible = false
-			_lbl_diff_speed.text = ""
+	var speed_diff := GameData.get_base_upgrade_stat_diff("speed")
+	if is_c2 or (is_trinity and GameData.trinity_sacrificed_stat == "speed"):
+		_lbl_diff_speed.visible = true
+		_lbl_diff_speed.text = "[無効]"
+		_lbl_diff_speed.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+	elif speed_diff > 0:
+		_lbl_diff_speed.visible = true
+		_lbl_diff_speed.text = "[%+d]" % speed_diff
+		_lbl_diff_speed.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
 	else:
 		_lbl_diff_speed.visible = false
 		_lbl_diff_speed.text = ""
@@ -1080,19 +1108,15 @@ func _update_upgrade_buttons() -> void:
 	_lbl_title_boost.add_theme_color_override("font_color", Color.WHITE if boost_ok else Color(1, 1, 1, 0.4))
 	_lbl_cost_boost.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85) if boost_ok else Color.RED)
 
-	var boost_diff := GameData.get_trinity_stat_diff("boost")
-	if is_trinity:
-		if GameData.trinity_sacrificed_stat == "boost":
-			_lbl_diff_boost.visible = true
-			_lbl_diff_boost.text = "[無効]"
-			_lbl_diff_boost.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
-		elif boost_diff > 0:
-			_lbl_diff_boost.visible = true
-			_lbl_diff_boost.text = "[%+d]" % boost_diff
-			_lbl_diff_boost.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
-		else:
-			_lbl_diff_boost.visible = false
-			_lbl_diff_boost.text = ""
+	var boost_diff := GameData.get_base_upgrade_stat_diff("boost")
+	if is_c2 or (is_trinity and GameData.trinity_sacrificed_stat == "boost"):
+		_lbl_diff_boost.visible = true
+		_lbl_diff_boost.text = "[無効]"
+		_lbl_diff_boost.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+	elif boost_diff > 0:
+		_lbl_diff_boost.visible = true
+		_lbl_diff_boost.text = "[%+d]" % boost_diff
+		_lbl_diff_boost.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
 	else:
 		_lbl_diff_boost.visible = false
 		_lbl_diff_boost.text = ""
@@ -1101,13 +1125,37 @@ func _update_upgrade_buttons() -> void:
 	var total_base_lvl := GameData.get_base_upgrade_total_level()
 	var ascend_ok := GameData.can_ascend()
 	btn_ascend.disabled = !ascend_ok
-	_lbl_title_ascend.text = "アセンション  Lv. %d  (%d/100)" % [GameData.ascension_level, mini(100, total_base_lvl)]
-	_lbl_title_ascend.add_theme_color_override("font_color", Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4))
+	var title_col := Color.WHITE if ascend_ok else Color(1, 1, 1, 0.4)
+
+	if _lbl_progress_ascend:
+		_lbl_title_ascend.text = "アセンション  Lv. %d" % GameData.ascension_level
+		_lbl_title_ascend.add_theme_color_override("font_color", title_col)
+		_lbl_progress_ascend.text = "(%d/100)" % mini(100, total_base_lvl)
+		_lbl_progress_ascend.add_theme_color_override("font_color", title_col)
+	else:
+		_lbl_title_ascend.text = "アセンション  Lv. %d  (%d/100)" % [GameData.ascension_level, mini(100, total_base_lvl)]
+		_lbl_title_ascend.add_theme_color_override("font_color", title_col)
+
 	var remaining := GameData.get_ascension_logos_next_remaining()
 	if remaining == 1:
 		btn_ascend.tooltip_text = "ロゴ追加まであと 1 回（今回でロゴ+1！）"
 	else:
 		btn_ascend.tooltip_text = "ロゴ追加まであと %d 回" % remaining
+
+	if _lbl_diff_ascend:
+		var is_c4 := GameData.is_c4_active()
+		var ascend_diff := GameData.get_ascension_stat_diff()
+		if is_c4:
+			_lbl_diff_ascend.visible = true
+			_lbl_diff_ascend.text = "[無効]"
+			_lbl_diff_ascend.add_theme_color_override("font_color", Color(0.95, 0.25, 0.25, 1.0)) # 無効化: 赤色
+		elif ascend_diff > 0:
+			_lbl_diff_ascend.visible = true
+			_lbl_diff_ascend.text = "[%+d]" % ascend_diff
+			_lbl_diff_ascend.add_theme_color_override("font_color", Color(1.0, 0.88, 0.25, 1.0)) # 強化: 黄色
+		else:
+			_lbl_diff_ascend.visible = false
+			_lbl_diff_ascend.text = ""
 
 
 func _on_speed_pressed() -> void:
@@ -2223,24 +2271,37 @@ func _setup_challenge_mini_window() -> void:
 		return
 
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.12, 0.10, 0.05, 0.92) # 落ち着いたダークアンバー背景
+	panel_style.bg_color = Color(0.1, 0.12, 0.18, 0.95) # チャレンジウィンドウと同調するダークネイビー背景
 	panel_style.border_width_left = 2
 	panel_style.border_width_top = 2
 	panel_style.border_width_right = 2
 	panel_style.border_width_bottom = 2
-	panel_style.border_color = Color(0.88, 0.68, 0.14, 0.9) # 上部バーと同調するゴールド枠
+	panel_style.border_color = Color(0.22, 0.45, 0.78, 0.9) # チャレンジウィンドウと同調するブルー枠線
 	panel_style.set_corner_radius_all(6)
+	panel_style.shadow_color = Color(0, 0, 0, 0.5)
+	panel_style.shadow_size = 6
+	panel_style.shadow_offset = Vector2(0, 2)
 	_challenge_mini_panel.add_theme_stylebox_override("panel", panel_style)
 
 	if _challenge_mini_bar:
 		var bar_bg := StyleBoxFlat.new()
-		bar_bg.bg_color = Color(0.08, 0.06, 0.03, 0.9)
+		bar_bg.bg_color = Color(0.06, 0.08, 0.14, 0.9)
+		bar_bg.border_width_left = 1
+		bar_bg.border_width_top = 1
+		bar_bg.border_width_right = 1
+		bar_bg.border_width_bottom = 1
+		bar_bg.border_color = Color(0.2, 0.32, 0.5, 0.7)
 		bar_bg.set_corner_radius_all(3)
 		var bar_fill := StyleBoxFlat.new()
-		bar_fill.bg_color = Color(0.88, 0.68, 0.14, 1.0)
+		bar_fill.bg_color = Color(0.35, 0.6, 0.88, 1.0) # チャレンジウィンドウと同調するシアンブルーバー
 		bar_fill.set_corner_radius_all(3)
 		_challenge_mini_bar.add_theme_stylebox_override("background", bar_bg)
 		_challenge_mini_bar.add_theme_stylebox_override("fill", bar_fill)
+
+	if _challenge_mini_title:
+		_challenge_mini_title.add_theme_color_override("font_color", Color(0.55, 0.8, 1.0, 1.0))
+	if _challenge_mini_progress:
+		_challenge_mini_progress.add_theme_color_override("font_color", Color(0.88, 0.92, 0.98, 1.0))
 
 
 func _update_challenge_mini_window() -> void:
@@ -2253,6 +2314,7 @@ func _update_challenge_mini_window() -> void:
 		var num_str := GameData.active_challenge_id.replace("c", "")
 		_challenge_mini_title.text = "挑戦中: #%s %s" % [num_str, def.get("name", "")]
 		_update_challenge_mini_progress(GameData.challenge_current_val, GameData.challenge_target_val, GameData.challenge_time_left)
+	_update_upgrade_buttons()
 
 
 func _update_challenge_mini_progress(cur: float, target: float, time_left: float) -> void:
@@ -2277,6 +2339,8 @@ func _update_challenge_mini_progress(cur: float, target: float, time_left: float
 
 func _on_challenge_started_mini(_challenge_id: String) -> void:
 	_update_challenge_mini_window()
+	_update_chain_cross_overlay()
+	_update_upgrade_buttons()
 
 
 func _on_challenge_progress_updated_mini(cur: float, target: float, time_left: float) -> void:
@@ -2285,6 +2349,37 @@ func _on_challenge_progress_updated_mini(cur: float, target: float, time_left: f
 
 func _on_challenge_ended_mini(_challenge_id: String) -> void:
 	_update_challenge_mini_window()
+	_update_chain_cross_overlay()
+	_update_upgrade_buttons()
+
+
+# --- チャレンジ #1 装備無効化 鎖✕マークオーバーレイ ---
+
+func _setup_chain_cross_overlay() -> void:
+	if not grid_equipment:
+		return
+	var tab_content := grid_equipment.get_parent()
+	if not tab_content:
+		return
+
+	if not _chain_cross_overlay:
+		_chain_cross_overlay = ChainCrossOverlay.new()
+		_chain_cross_overlay.name = "ChainCrossOverlay"
+		_chain_cross_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_chain_cross_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_chain_cross_overlay.z_index = 10
+		tab_content.add_child(_chain_cross_overlay)
+
+	_update_chain_cross_overlay()
+
+
+func _update_chain_cross_overlay() -> void:
+	if not _chain_cross_overlay:
+		return
+	var is_c1 := GameData.is_equip_disabled_challenge_active()
+	_chain_cross_overlay.visible = is_c1
+	if is_c1:
+		_chain_cross_overlay.queue_redraw()
 
 
 # ==============================================================================
@@ -2659,6 +2754,7 @@ func _force_refresh_all_hud() -> void:
 	_update_skill_nodes()
 	_update_tab_button_styles()
 	_update_challenge_mini_window()
+	_update_chain_cross_overlay()
 	if _skill_tree_instance and _skill_tree_instance.has_method("refresh_all_nodes"):
 		_skill_tree_instance.refresh_all_nodes()
 	if is_instance_valid(challenge_window) and challenge_window.has_method("_update_all_ui"):

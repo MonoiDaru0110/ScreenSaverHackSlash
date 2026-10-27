@@ -4,6 +4,8 @@ const SAVE_PATH = "res://data/challenges.json"
 
 # UI ノード参照
 @onready var challenge_list: ItemList = %ChallengeList
+@onready var move_up_btn: Button = %MoveUpBtn
+@onready var move_down_btn: Button = %MoveDownBtn
 @onready var add_challenge_btn: Button = %AddChallengeBtn
 @onready var duplicate_challenge_btn: Button = %DuplicateChallengeBtn
 @onready var delete_challenge_btn: Button = %DeleteChallengeBtn
@@ -14,8 +16,12 @@ const SAVE_PATH = "res://data/challenges.json"
 
 # 基本情報
 @onready var id_edit: LineEdit = %IdLineEdit
+@onready var order_spin_box: SpinBox = %OrderSpinBox
 @onready var name_edit: LineEdit = %NameLineEdit
 @onready var icon_edit: LineEdit = %IconLineEdit
+@onready var select_icon_btn: Button = %SelectIconBtn
+@onready var clear_icon_btn: Button = %ClearIconBtn
+@onready var icon_file_dialog: FileDialog = %IconFileDialog
 @onready var desc_edit: TextEdit = %DescTextEdit
 
 # レベル一覧管理コンテナ
@@ -25,24 +31,30 @@ const SAVE_PATH = "res://data/challenges.json"
 
 # プレビュー
 @onready var preview_icon: Label = %PreviewIcon
+@onready var preview_icon_texture: TextureRect = %PreviewIconTexture
 @onready var preview_name: Label = %PreviewName
 @onready var preview_detail_title: Label = %PreviewDetailTitle
 @onready var preview_detail_penalty: Label = %PreviewDetailPenalty
 @onready var preview_detail_target: Label = %PreviewDetailTarget
 @onready var preview_detail_reward: Label = %PreviewDetailReward
 
+var _challenges_list: Array[Dictionary] = [] # 順序を保持する配列: [ { "id": "c1", ... }, ... ]
 var _challenges_data: Dictionary = {} # { "c1": { "id": "c1", "name": ..., "levels": [...] } }
 var _selected_id: String = ""
 var _updating_form: bool = false
 
 
 func _ready() -> void:
+	if challenge_list:
+		challenge_list.fixed_icon_size = Vector2i(24, 24)
 	_connect_signals()
 	load_data()
 
 
 func _connect_signals() -> void:
 	if challenge_list: challenge_list.item_selected.connect(_on_challenge_selected)
+	if move_up_btn: move_up_btn.pressed.connect(_on_move_up_pressed)
+	if move_down_btn: move_down_btn.pressed.connect(_on_move_down_pressed)
 	if add_challenge_btn: add_challenge_btn.pressed.connect(_on_add_challenge_pressed)
 	if duplicate_challenge_btn: duplicate_challenge_btn.pressed.connect(_on_duplicate_challenge_pressed)
 	if delete_challenge_btn: delete_challenge_btn.pressed.connect(_on_delete_challenge_pressed)
@@ -50,12 +62,29 @@ func _connect_signals() -> void:
 	if reload_btn: reload_btn.pressed.connect(load_data)
 	if back_btn: back_btn.pressed.connect(_on_back_pressed)
 
+	if order_spin_box: order_spin_box.value_changed.connect(_on_order_spin_changed)
 	if id_edit: id_edit.text_changed.connect(_on_general_form_changed)
 	if name_edit: name_edit.text_changed.connect(_on_general_form_changed)
 	if icon_edit: icon_edit.text_changed.connect(_on_general_form_changed)
+	if select_icon_btn: select_icon_btn.pressed.connect(_on_select_icon_pressed)
+	if clear_icon_btn: clear_icon_btn.pressed.connect(_on_clear_icon_pressed)
+	if icon_file_dialog: icon_file_dialog.file_selected.connect(_on_icon_file_selected)
 	if desc_edit: desc_edit.text_changed.connect(_on_general_form_changed)
 
 	if add_level_btn: add_level_btn.pressed.connect(_on_add_level_pressed)
+
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.ctrl_pressed or event.alt_pressed:
+			if event.keycode == KEY_UP:
+				_on_move_up_pressed()
+				get_viewport().set_input_as_handled()
+			elif event.keycode == KEY_DOWN:
+				_on_move_down_pressed()
+				get_viewport().set_input_as_handled()
 
 
 func load_data() -> void:
@@ -65,6 +94,7 @@ func load_data() -> void:
 		if GameData and not GameData.CHALLENGE_DEFS.is_empty():
 			_challenges_data = GameData.CHALLENGE_DEFS.duplicate(true)
 			_ensure_all_levels_structure()
+			_build_list_from_data()
 			status_label.text = "GameDataからデータを初期化しました。"
 			_refresh_challenge_list()
 			return
@@ -89,10 +119,95 @@ func load_data() -> void:
 	if data is Dictionary and data.has("challenges"):
 		_challenges_data = data["challenges"].duplicate(true)
 		_ensure_all_levels_structure()
-		status_label.text = "データを読み込みました (%d件)" % _challenges_data.size()
+		_build_list_from_data()
+		status_label.text = "データを読み込みました (%d件)" % _challenges_list.size()
 		_refresh_challenge_list()
 	else:
 		status_label.text = "不正なJSON形式です。"
+
+
+func _build_list_from_data() -> void:
+	_challenges_list.clear()
+	var keys := _challenges_data.keys()
+	keys.sort_custom(func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0)
+	for k in keys:
+		var item: Dictionary = _challenges_data[k]
+		_challenges_list.append(item)
+	_sync_data_from_list()
+
+
+func _sync_data_from_list() -> void:
+	_challenges_data.clear()
+	for i in range(_challenges_list.size()):
+		var ch: Dictionary = _challenges_list[i]
+		var ch_id: String = ch.get("id", "c%d" % (i + 1))
+		_challenges_data[ch_id] = ch
+
+
+func _renumber_challenges(new_selected_index: int = -1) -> void:
+	for i in range(_challenges_list.size()):
+		var ch: Dictionary = _challenges_list[i]
+		var new_id: String = "c%d" % (i + 1)
+		ch["id"] = new_id
+
+	if new_selected_index >= 0 and new_selected_index < _challenges_list.size():
+		_selected_id = _challenges_list[new_selected_index].get("id", "")
+	elif not _challenges_list.is_empty():
+		_selected_id = _challenges_list[0].get("id", "")
+	else:
+		_selected_id = ""
+
+	_sync_data_from_list()
+
+
+func _get_selected_index() -> int:
+	if _selected_id.is_empty():
+		return -1
+	for i in range(_challenges_list.size()):
+		if _challenges_list[i].get("id", "") == _selected_id:
+			return i
+	return -1
+
+
+func _on_move_up_pressed() -> void:
+	var idx := _get_selected_index()
+	if idx <= 0:
+		return
+	var item: Dictionary = _challenges_list[idx]
+	_challenges_list[idx] = _challenges_list[idx - 1]
+	_challenges_list[idx - 1] = item
+	_renumber_challenges(idx - 1)
+	status_label.text = "『%s』を #%d に移動しました (ID: %s)" % [item.get("name", ""), idx, _selected_id]
+	_refresh_challenge_list()
+
+
+func _on_move_down_pressed() -> void:
+	var idx := _get_selected_index()
+	if idx < 0 or idx >= _challenges_list.size() - 1:
+		return
+	var item: Dictionary = _challenges_list[idx]
+	_challenges_list[idx] = _challenges_list[idx + 1]
+	_challenges_list[idx + 1] = item
+	_renumber_challenges(idx + 1)
+	status_label.text = "『%s』を #%d に移動しました (ID: %s)" % [item.get("name", ""), idx + 2, _selected_id]
+	_refresh_challenge_list()
+
+
+func _on_order_spin_changed(new_val: float) -> void:
+	if _updating_form:
+		return
+	var target_no := int(new_val)
+	var target_idx := target_no - 1
+	var cur_idx := _get_selected_index()
+	if cur_idx == -1 or cur_idx == target_idx:
+		return
+	target_idx = clampi(target_idx, 0, _challenges_list.size() - 1)
+	var item: Dictionary = _challenges_list[cur_idx]
+	_challenges_list.remove_at(cur_idx)
+	_challenges_list.insert(target_idx, item)
+	_renumber_challenges(target_idx)
+	status_label.text = "『%s』を #%d に移動しました (ID: %s)" % [item.get("name", ""), target_idx + 1, _selected_id]
+	_refresh_challenge_list()
 
 
 func _ensure_all_levels_structure() -> void:
@@ -101,29 +216,44 @@ func _ensure_all_levels_structure() -> void:
 		if not ch.has("levels") or not ch["levels"] is Array or ch["levels"].is_empty():
 			var default_lv: Dictionary = {
 				"level": 1,
-				"duration": float(ch.get("duration", 60.0)),
+				"duration": float(ch.get("duration", 30.0)),
 				"target_type": str(ch.get("target_type", "gold")),
 				"target_val": float(ch.get("target_val", 2500.0)),
 				"reward_desc": str(ch.get("reward_desc", "")),
+				"reward_val": float(ch.get("reward_val", 0.0)),
 				"memo": "初期レベル"
 			}
 			ch["levels"] = [default_lv]
 
 
+func _load_icon_texture(path_or_str: String) -> Texture2D:
+	var s := path_or_str.strip_edges()
+	if s.is_empty():
+		return null
+	if (s.begins_with("res://") or s.begins_with("user://")) and ResourceLoader.exists(s):
+		var res := load(s)
+		if res is Texture2D:
+			return res
+	return null
+
+
 func _refresh_challenge_list() -> void:
 	challenge_list.clear()
-	var keys := _challenges_data.keys()
-	keys.sort_custom(func(a: String, b: String) -> bool: return a.naturalnocasecmp_to(b) < 0)
-
 	var target_index := -1
-	for i in keys.size():
-		var key = keys[i]
-		var item: Dictionary = _challenges_data[key]
+	for i in range(_challenges_list.size()):
+		var item: Dictionary = _challenges_list[i]
+		var key: String = item.get("id", "c%d" % (i + 1))
 		var icon_str: String = item.get("icon", "⚔️")
 		var name_str: String = item.get("name", key)
 		var lv_count: int = item.get("levels", []).size()
-		var label_str := "%s %s: %s (全%d段階)" % [icon_str, key, name_str, lv_count]
-		challenge_list.add_item(label_str)
+		var num_str := str(i + 1)
+		var tex := _load_icon_texture(icon_str)
+		if tex:
+			var label_str := "#%s: %s (全%d段階)" % [num_str, name_str, lv_count]
+			challenge_list.add_item(label_str, tex)
+		else:
+			var label_str := "%s #%s: %s (全%d段階)" % [icon_str, num_str, name_str, lv_count]
+			challenge_list.add_item(label_str)
 		challenge_list.set_item_metadata(i, key)
 		if key == _selected_id:
 			target_index = i
@@ -131,9 +261,9 @@ func _refresh_challenge_list() -> void:
 	if target_index != -1:
 		challenge_list.select(target_index)
 		_fill_form(_selected_id)
-	elif keys.size() > 0:
+	elif _challenges_list.size() > 0:
 		challenge_list.select(0)
-		_selected_id = keys[0]
+		_selected_id = _challenges_list[0].get("id", "c1")
 		_fill_form(_selected_id)
 	else:
 		_selected_id = ""
@@ -150,6 +280,16 @@ func _fill_form(ch_id: String) -> void:
 	name_edit.text = item.get("name", "")
 	icon_edit.text = item.get("icon", "")
 	desc_edit.text = item.get("desc", "")
+
+	var cur_idx := _get_selected_index()
+	if order_spin_box:
+		order_spin_box.max_value = maxi(1, _challenges_list.size())
+		order_spin_box.value = cur_idx + 1
+
+	if move_up_btn:
+		move_up_btn.disabled = (cur_idx <= 0)
+	if move_down_btn:
+		move_down_btn.disabled = (cur_idx < 0 or cur_idx >= _challenges_list.size() - 1)
 
 	_refresh_levels_ui()
 	_updating_form = false
@@ -302,22 +442,41 @@ func _refresh_levels_ui() -> void:
 		quota_hbox.add_child(val_edit)
 		quota_hbox.add_child(prev_lbl)
 
-		# 3. クリア報酬説明テキスト行（各レベルごとに直接編集可能）
+		# 3. クリア報酬設定（説明テキスト & 累積効果数値）
 		var reward_vbox := VBoxContainer.new()
 		reward_vbox.add_theme_constant_override("separation", 4)
 		card_vbox.add_child(reward_vbox)
 
 		var reward_head_hbox := HBoxContainer.new()
+		reward_head_hbox.add_theme_constant_override("separation", 8)
 		reward_vbox.add_child(reward_head_hbox)
 
 		var reward_lbl := Label.new()
-		reward_lbl.text = "🎁 クリア報酬説明テキスト (Lv.%d 達成時):" % lv_num
+		reward_lbl.text = "🎁 クリア報酬 (Lv.%d 達成時):" % lv_num
 		reward_lbl.add_theme_color_override("font_color", Color(0.45, 0.95, 0.55, 1.0))
 		reward_head_hbox.add_child(reward_lbl)
 
+		var val_head_lbl := Label.new()
+		val_head_lbl.text = "累積ボーナス値:"
+		val_head_lbl.add_theme_color_override("font_color", Color(0.55, 0.9, 0.65, 1.0))
+		reward_head_hbox.add_child(val_head_lbl)
+
+		var reward_val_spin := SpinBox.new()
+		reward_val_spin.min_value = 0.0
+		reward_val_spin.max_value = 999999.0
+		reward_val_spin.step = 0.1
+		reward_val_spin.value = float(lv.get("reward_val", 0.0))
+		reward_val_spin.custom_minimum_size = Vector2(90, 0)
+		reward_val_spin.value_changed.connect(func(new_val: float):
+			lv["reward_val"] = new_val
+			if lv_idx == 0: ch["reward_val"] = new_val
+			_update_preview()
+		)
+		reward_head_hbox.add_child(reward_val_spin)
+
 		var reward_edit := LineEdit.new()
 		reward_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		reward_edit.placeholder_text = "例: 恒久効果: 基本ゴールド獲得量 +%d%%" % (15 * lv_num)
+		reward_edit.placeholder_text = "例: 装備スキルレベル +%d" % lv_num
 		reward_edit.text = str(lv.get("reward_desc", ""))
 		reward_edit.text_changed.connect(func(new_txt: String):
 			lv["reward_desc"] = new_txt.strip_edges()
@@ -367,86 +526,71 @@ func _on_challenge_selected(index: int) -> void:
 
 
 func _on_general_form_changed(_text: String = "") -> void:
-	if _updating_form or _selected_id.is_empty() or not _challenges_data.has(_selected_id):
+	if _updating_form or _selected_id.is_empty():
+		return
+	var idx := _get_selected_index()
+	if idx == -1:
 		return
 
-	var new_id := id_edit.text.strip_edges()
-	if new_id.is_empty():
-		return
-
-	var ch: Dictionary = _challenges_data[_selected_id]
-	if new_id != _selected_id:
-		if _challenges_data.has(new_id):
-			status_label.text = "⚠️ ID '%s' はすでに存在します。" % new_id
-			return
-		_challenges_data.erase(_selected_id)
-		_selected_id = new_id
-		ch["id"] = new_id
-
+	var ch: Dictionary = _challenges_list[idx]
 	ch["name"] = name_edit.text.strip_edges()
 	ch["icon"] = icon_edit.text.strip_edges()
 	ch["desc"] = desc_edit.text.strip_edges()
+	_challenges_list[idx] = ch
 	_challenges_data[_selected_id] = ch
 
-	status_label.text = "チャレンジ情報を更新 (%s)" % _selected_id
+	status_label.text = "チャレンジ情報を更新 (#%d %s)" % [idx + 1, _selected_id]
 	_update_list_item_text()
 	_update_preview()
 
 
 func _on_add_challenge_pressed() -> void:
-	var n := 1
-	var new_id := "c%d" % n
-	while _challenges_data.has(new_id):
-		n += 1
-		new_id = "c%d" % n
-
-	_challenges_data[new_id] = {
+	var next_num := _challenges_list.size() + 1
+	var new_id := "c%d" % next_num
+	var new_ch: Dictionary = {
 		"id": new_id,
-		"name": "新規チャレンジ %d" % n,
+		"name": "新規チャレンジ %d" % next_num,
 		"icon": "⚔️",
 		"desc": "チャレンジの制限ルールを入力してください",
 		"levels": [
 			{
 				"level": 1,
-				"duration": 60.0,
+				"duration": 30.0,
 				"target_type": "gold",
-				"target_val": 5000.0 * n,
-				"reward_desc": "恒久効果: ボーナス獲得量 +%d%%" % (10 * n),
+				"target_val": 5000.0 * next_num,
+				"reward_desc": "恒久効果: ボーナス獲得量 +%d%%" % (10 * next_num),
 				"memo": "初期レベル"
 			}
 		]
 	}
-	_selected_id = new_id
-	status_label.text = "新規チャレンジを追加しました: %s" % new_id
+	_challenges_list.append(new_ch)
+	_renumber_challenges(_challenges_list.size() - 1)
+	status_label.text = "新規チャレンジを追加しました: #%d (%s)" % [next_num, new_id]
 	_refresh_challenge_list()
 
 
 func _on_duplicate_challenge_pressed() -> void:
-	if _selected_id.is_empty() or not _challenges_data.has(_selected_id):
+	var idx := _get_selected_index()
+	if idx == -1:
 		return
-	var src: Dictionary = _challenges_data[_selected_id].duplicate(true)
-	var n := 1
-	var new_id := "%s_copy%d" % [_selected_id, n]
-	while _challenges_data.has(new_id):
-		n += 1
-		new_id = "%s_copy%d" % [_selected_id, n]
-
-	src["id"] = new_id
+	var src: Dictionary = _challenges_list[idx].duplicate(true)
 	src["name"] = "%s (コピー)" % src.get("name", "")
-	_challenges_data[new_id] = src
-	_selected_id = new_id
-	status_label.text = "チャレンジを複製しました: %s" % new_id
+	_challenges_list.insert(idx + 1, src)
+	_renumber_challenges(idx + 1)
+	status_label.text = "チャレンジを複製しました: %s" % _selected_id
 	_refresh_challenge_list()
 
 
 func _on_delete_challenge_pressed() -> void:
-	if _selected_id.is_empty() or not _challenges_data.has(_selected_id):
+	var idx := _get_selected_index()
+	if idx == -1:
 		status_label.text = "削除するチャレンジが選択されていません。"
 		return
-
-	_challenges_data.erase(_selected_id)
-	status_label.text = "チャレンジ '%s' を削除しました。" % _selected_id
-	_selected_id = ""
+	var deleted_name: String = _challenges_list[idx].get("name", _selected_id)
+	_challenges_list.remove_at(idx)
+	var new_select_idx := clampi(idx, 0, _challenges_list.size() - 1)
+	_renumber_challenges(new_select_idx)
+	status_label.text = "チャレンジ '%s' を削除し、ナンバリングを再整理しました。" % deleted_name
 	_refresh_challenge_list()
 
 
@@ -458,7 +602,7 @@ func _on_add_level_pressed() -> void:
 	var last_lv: Dictionary = levels.back() if not levels.is_empty() else {}
 	var next_num := levels.size() + 1
 	var last_val: float = float(last_lv.get("target_val", 2500.0))
-	var last_dur: float = float(last_lv.get("duration", 60.0))
+	var last_dur: float = float(last_lv.get("duration", 30.0))
 	var last_type: String = str(last_lv.get("target_type", "gold"))
 
 	var new_lv := {
@@ -494,7 +638,7 @@ func _on_delete_specific_level(idx: int) -> void:
 		# トップレベル互換更新
 		if levels.size() > 0:
 			var lv1: Dictionary = levels[0]
-			ch["duration"] = lv1.get("duration", 60.0)
+			ch["duration"] = lv1.get("duration", 30.0)
 			ch["target_type"] = lv1.get("target_type", "gold")
 			ch["target_val"] = lv1.get("target_val", 1000.0)
 			ch["reward_desc"] = lv1.get("reward_desc", "")
@@ -506,7 +650,13 @@ func _on_delete_specific_level(idx: int) -> void:
 
 
 func _on_save_pressed() -> void:
-	var data := {"challenges": _challenges_data}
+	_sync_data_from_list()
+	var ordered_challenges: Dictionary = {}
+	for ch in _challenges_list:
+		var ch_id: String = ch.get("id", "")
+		ordered_challenges[ch_id] = ch
+
+	var data := {"challenges": ordered_challenges}
 	var json_string := JSON.stringify(data, "\t")
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -519,7 +669,7 @@ func _on_save_pressed() -> void:
 
 	# GameData singleton に即時反映
 	if GameData:
-		GameData.CHALLENGE_DEFS = _challenges_data.duplicate(true)
+		GameData.CHALLENGE_DEFS = ordered_challenges.duplicate(true)
 		for ch_id in GameData.CHALLENGE_DEFS:
 			var ch: Dictionary = GameData.CHALLENGE_DEFS[ch_id]
 			var levels: Array = ch.get("levels", [])
@@ -529,8 +679,32 @@ func _on_save_pressed() -> void:
 				ch["target_type"] = lv1.get("target_type", "gold")
 				ch["target_val"] = lv1.get("target_val", 1000.0)
 				ch["reward_desc"] = lv1.get("reward_desc", "")
+		GameData.challenge_state_changed.emit()
 
-	status_label.text = "💾 %s に保存し、ゲームデータに反映しました！" % SAVE_PATH
+	status_label.text = "💾 %s に保存し、ゲームデータに反映しました！(全%d件)" % [SAVE_PATH, _challenges_list.size()]
+
+
+func _on_select_icon_pressed() -> void:
+	if not icon_file_dialog:
+		return
+	var cur_path: String = icon_edit.text.strip_edges() if icon_edit else ""
+	if cur_path.begins_with("res://") and ResourceLoader.exists(cur_path):
+		icon_file_dialog.current_path = cur_path
+	else:
+		icon_file_dialog.current_dir = "res://"
+	icon_file_dialog.popup_centered(Vector2i(700, 500))
+
+
+func _on_clear_icon_pressed() -> void:
+	if icon_edit:
+		icon_edit.text = ""
+		_on_general_form_changed("")
+
+
+func _on_icon_file_selected(path: String) -> void:
+	if icon_edit:
+		icon_edit.text = path
+		_on_general_form_changed(path)
 
 
 func _on_back_pressed() -> void:
@@ -542,19 +716,33 @@ func _on_back_pressed() -> void:
 
 func _update_list_item_text() -> void:
 	var selected_items := challenge_list.get_selected_items()
-	if selected_items.size() > 0 and _challenges_data.has(_selected_id):
-		var ch: Dictionary = _challenges_data[_selected_id]
+	var idx := _get_selected_index()
+	if selected_items.size() > 0 and idx != -1:
+		var ch: Dictionary = _challenges_list[idx]
 		var icon_str: String = ch.get("icon", "⚔️")
 		var name_str: String = ch.get("name", _selected_id)
 		var lv_count: int = ch.get("levels", []).size()
-		var label_str := "%s %s: %s (全%d段階)" % [icon_str, _selected_id, name_str, lv_count]
-		challenge_list.set_item_text(selected_items[0], label_str)
+		var list_idx: int = selected_items[0]
+		var num_str := str(idx + 1)
+		var tex := _load_icon_texture(icon_str)
+		if tex:
+			var label_str := "#%s: %s (全%d段階)" % [num_str, name_str, lv_count]
+			challenge_list.set_item_text(list_idx, label_str)
+			challenge_list.set_item_icon(list_idx, tex)
+		else:
+			var label_str := "%s #%s: %s (全%d段階)" % [icon_str, num_str, name_str, lv_count]
+			challenge_list.set_item_text(list_idx, label_str)
+			challenge_list.set_item_icon(list_idx, null)
 
 
 func _update_preview() -> void:
 	if _selected_id.is_empty() or not _challenges_data.has(_selected_id):
 		if preview_name: preview_name.text = "選択なし"
-		if preview_icon: preview_icon.text = "⚔️"
+		if preview_icon:
+			preview_icon.text = "⚔️"
+			preview_icon.visible = true
+		if preview_icon_texture:
+			preview_icon_texture.visible = false
 		if preview_detail_title: preview_detail_title.text = "チャレンジ名"
 		if preview_detail_penalty: preview_detail_penalty.text = "制限内容"
 		if preview_detail_target: preview_detail_target.text = "達成ノルマ"
@@ -566,9 +754,23 @@ func _update_preview() -> void:
 	var icon_str: String = ch.get("icon", "⚔️")
 	var name_str: String = ch.get("name", "")
 	var desc_str: String = ch.get("desc", "")
-	var num_str := _selected_id.replace("c", "")
+	var cur_idx := _get_selected_index()
+	var num_str := str(cur_idx + 1) if cur_idx >= 0 else _selected_id.replace("c", "")
 
-	if preview_icon: preview_icon.text = icon_str
+	var tex := _load_icon_texture(icon_str)
+	if tex:
+		if preview_icon_texture:
+			preview_icon_texture.texture = tex
+			preview_icon_texture.visible = true
+		if preview_icon:
+			preview_icon.visible = false
+	else:
+		if preview_icon_texture:
+			preview_icon_texture.visible = false
+		if preview_icon:
+			preview_icon.text = icon_str
+			preview_icon.visible = true
+
 	if preview_name: preview_name.text = "#%s: %s" % [num_str, name_str]
 
 	var max_lvl: int = levels.size()

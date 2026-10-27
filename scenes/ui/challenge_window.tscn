@@ -6,29 +6,41 @@
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
-bg_color = Color(0.88, 0.68, 0.14, 1)
+bg_color = Color(0.18, 0.42, 0.78, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
-bg_color = Color(0.12, 0.1, 0.05, 1)
+bg_color = Color(0.1, 0.12, 0.18, 1)
+border_width_left = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.22, 0.42, 0.72, 0.85)
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.7)
+shadow_size = 18
+shadow_offset = Vector2(0, 8)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
-bg_color = Color(0.16, 0.13, 0.05, 0.95)
+bg_color = Color(0.12, 0.16, 0.24, 0.95)
 border_width_bottom = 2
-border_color = Color(0.88, 0.68, 0.14, 0.8)
+border_color = Color(0.22, 0.42, 0.72, 0.8)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
-bg_color = Color(0.08, 0.06, 0.03, 0.9)
+bg_color = Color(0.06, 0.08, 0.14, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.32, 0.5, 0.7)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
-bg_color = Color(0.88, 0.68, 0.14, 1)
+bg_color = Color(0.35, 0.6, 0.88, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_right = 4
@@ -37,16 +49,19 @@ corner_radius_bottom_left = 4
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_focus"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_selected"]
-bg_color = Color(0.15, 0.15, 0.24, 1)
+bg_color = Color(0.26, 0.44, 0.66, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.88, 0.68, 0.14, 1)
+border_color = Color(0.55, 0.85, 1, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+shadow_color = Color(0.2, 0.5, 0.9, 0.35)
+shadow_size = 6
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
 bg_color = Color(0.32, 0.72, 0.18, 1)
@@ -61,40 +76,45 @@ corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_normal"]
-bg_color = Color(0.15, 0.15, 0.24, 1)
+bg_color = Color(0.26, 0.44, 0.66, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(0.35, 0.28, 0.1, 0.8)
+border_color = Color(0.16, 0.28, 0.44, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 4
+shadow_offset = Vector2(0, 2)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_right_bg"]
-bg_color = Color(0.15, 0.15, 0.24, 1)
+bg_color = Color(0.18, 0.27, 0.4, 1)
+border_width_left = 1
+border_color = Color(0.28, 0.45, 0.7, 0.75)
 corner_radius_bottom_right = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn_hover"]
-bg_color = Color(0.95, 0.76, 0.24, 1)
+bg_color = Color(0.15, 0.36, 0.66, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(1, 0.9, 0.5, 1)
+border_color = Color(0.32, 0.6, 0.9, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_action_btn_normal"]
-bg_color = Color(0.88, 0.68, 0.14, 1)
+bg_color = Color(0.18, 0.42, 0.78, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(1, 0.85, 0.35, 1)
+border_color = Color(0.35, 0.65, 0.98, 1)
 corner_radius_top_left = 6
 corner_radius_top_right = 6
 corner_radius_bottom_right = 6
@@ -115,8 +135,8 @@ grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
 script = ExtResource("1_challenge_script")
 window_title = "チャレンジ"
-header_color = Color(0.88, 0.68, 0.14, 1)
-separator_color = Color(1, 0.88, 0.36, 1)
+header_color = Color(0.18, 0.42, 0.78, 1)
+separator_color = Color(0.22, 0.42, 0.72, 0.8)
 
 [node name="WindowVBox" type="VBoxContainer" parent="."]
 layout_mode = 2
@@ -165,7 +185,7 @@ layout_mode = 2
 [node name="Separator" type="ColorRect" parent="WindowVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(1, 0.88, 0.36, 1)
+color = Color(0.22, 0.42, 0.72, 0.8)
 
 [node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
 layout_mode = 2
@@ -210,7 +230,7 @@ theme_override_constants/separation = 16
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.88, 0.36, 1)
+theme_override_colors/font_color = Color(0.55, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "進行中のチャレンジ: なし"
 
@@ -1014,7 +1034,7 @@ autowrap_mode = 2
 custom_minimum_size = Vector2(2, 0)
 layout_mode = 2
 size_flags_vertical = 3
-color = Color(0.88, 0.68, 0.14, 0.55)
+color = Color(0.22, 0.42, 0.72, 0.8)
 
 [node name="RightBgPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox"]
 layout_mode = 2
@@ -1053,7 +1073,7 @@ clip_text = true
 [node name="RightSep" type="ColorRect" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.6, 0.48, 0.18, 0.6)
+color = Color(0.28, 0.45, 0.7, 0.75)
 
 [node name="DetailDescBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox"]
 unique_name_in_owner = true
@@ -1085,14 +1105,14 @@ theme_override_constants/separation = 6
 
 [node name="TargetHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.95, 0.52, 1)
+theme_override_colors/font_color = Color(0.6, 0.75, 0.92, 1)
 theme_override_font_sizes/font_size = 20
 text = "目標"
 
 [node name="DetailTargetLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/TargetSection"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.95, 0.52, 1)
+theme_override_colors/font_color = Color(0.88, 0.94, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "目標内容"
 autowrap_mode = 3
@@ -1103,14 +1123,14 @@ theme_override_constants/separation = 6
 
 [node name="RewardHead" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.52, 0.95, 0.62, 1)
+theme_override_colors/font_color = Color(0.48, 0.68, 0.92, 1)
 theme_override_font_sizes/font_size = 20
 text = "報酬"
 
 [node name="DetailRewardLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentContainer/ColumnsHBox/RightBgPanel/RightMargin/RightVBox/DetailDescBox/RewardSection"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.52, 0.95, 0.62, 1)
+theme_override_colors/font_color = Color(0.4, 0.92, 0.6, 1)
 theme_override_font_sizes/font_size = 24
 text = "報酬内容"
 autowrap_mode = 3
