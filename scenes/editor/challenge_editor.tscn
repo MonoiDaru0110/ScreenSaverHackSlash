@@ -242,6 +242,50 @@ layout_mode = 2
 placeholder_text = "例: 基本強化（速度・増加・サイズ）が無効化される"
 wrap_mode = 1
 
+[node name="RewardTemplateRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="RewardTemplateHBox" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTemplateRow"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTemplateRow/RewardTemplateHBox"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+text = "クリア報酬説明文テンプレート:"
+
+[node name="HelpLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTemplateRow/RewardTemplateHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "※ {val} または %s が各難易度の累積ボーナス値に置換されます"
+
+[node name="RewardTemplateLineEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTemplateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "例: 装備スキルレベル +{val} / 基礎強化レベル x{val} / クリティカル確率 +{val}%"
+
+[node name="RewardTypeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTypeRow"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+text = "ボーナス種別 (計算方式):"
+
+[node name="RewardTypeOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTypeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
+[node name="RewardTypeHelp" type="Label" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox/RewardTypeRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "※ チャレンジボーナス無効クリア時の効果量増幅方式（加算:+ab, 乗算:1+a(b-1)）"
+
 [node name="Sec2Separator" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentHSplit/FormScroll/FormMargin/FormVBox"]
 layout_mode = 2
 

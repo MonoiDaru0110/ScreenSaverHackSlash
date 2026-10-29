@@ -23,6 +23,8 @@ const SAVE_PATH = "res://data/challenges.json"
 @onready var clear_icon_btn: Button = %ClearIconBtn
 @onready var icon_file_dialog: FileDialog = %IconFileDialog
 @onready var desc_edit: TextEdit = %DescTextEdit
+@onready var reward_template_edit: LineEdit = get_node_or_null("%RewardTemplateLineEdit") as LineEdit
+@onready var reward_type_opt: OptionButton = get_node_or_null("%RewardTypeOption") as OptionButton
 
 # レベル一覧管理コンテナ
 @onready var sec2_title: Label = %Sec2Title
@@ -44,9 +46,37 @@ var _selected_id: String = ""
 var _updating_form: bool = false
 
 
+func _format_reward_desc(template: String, val: float) -> String:
+	if GameData:
+		return GameData.format_challenge_reward_desc(template, val)
+	if template.is_empty():
+		return ""
+	var val_str: String
+	if is_equal_approx(val, round(val)):
+		val_str = str(int(round(val)))
+	else:
+		val_str = str(val)
+	if "{val}" in template:
+		return template.replace("{val}", val_str)
+	elif "%s" in template:
+		return template.replace("%s", val_str)
+	elif "%d" in template:
+		return template % int(round(val))
+	elif "%.1f" in template or "%.2f" in template or "%f" in template:
+		return template % val
+	return template + " " + val_str
+
+
 func _ready() -> void:
 	if challenge_list:
 		challenge_list.fixed_icon_size = Vector2i(24, 24)
+	if reward_type_opt:
+		reward_type_opt.clear()
+		reward_type_opt.add_item("➕ 加算系 (+b)", 0)
+		reward_type_opt.set_item_metadata(0, "add")
+		reward_type_opt.add_item("✖️ 乗算系 (xb)", 1)
+		reward_type_opt.set_item_metadata(1, "mult")
+		reward_type_opt.item_selected.connect(_on_reward_type_selected)
 	_connect_signals()
 	load_data()
 
@@ -70,6 +100,7 @@ func _connect_signals() -> void:
 	if clear_icon_btn: clear_icon_btn.pressed.connect(_on_clear_icon_pressed)
 	if icon_file_dialog: icon_file_dialog.file_selected.connect(_on_icon_file_selected)
 	if desc_edit: desc_edit.text_changed.connect(_on_general_form_changed)
+	if reward_template_edit: reward_template_edit.text_changed.connect(_on_general_form_changed)
 
 	if add_level_btn: add_level_btn.pressed.connect(_on_add_level_pressed)
 
@@ -280,6 +311,11 @@ func _fill_form(ch_id: String) -> void:
 	name_edit.text = item.get("name", "")
 	icon_edit.text = item.get("icon", "")
 	desc_edit.text = item.get("desc", "")
+	if reward_template_edit:
+		reward_template_edit.text = item.get("reward_template", "")
+	if reward_type_opt:
+		var r_type: String = item.get("reward_type", "add")
+		reward_type_opt.select(1 if r_type == "mult" else 0)
 
 	var cur_idx := _get_selected_index()
 	if order_spin_box:
@@ -309,10 +345,11 @@ func _refresh_levels_ui() -> void:
 	if levels.is_empty():
 		levels.append({
 			"level": 1,
-			"duration": 60.0,
+			"duration": 30.0,
 			"target_type": "gold",
 			"target_val": 2500.0,
 			"reward_desc": "恒久効果: 基本ゴールド獲得量 +15%",
+			"reward_val": 15.0,
 			"memo": "初期レベル"
 		})
 		ch["levels"] = levels
@@ -442,14 +479,10 @@ func _refresh_levels_ui() -> void:
 		quota_hbox.add_child(val_edit)
 		quota_hbox.add_child(prev_lbl)
 
-		# 3. クリア報酬設定（説明テキスト & 累積効果数値）
-		var reward_vbox := VBoxContainer.new()
-		reward_vbox.add_theme_constant_override("separation", 4)
-		card_vbox.add_child(reward_vbox)
-
+		# 3. クリア報酬設定（累積ボーナス値入力 & 動的生成プレビュー）
 		var reward_head_hbox := HBoxContainer.new()
 		reward_head_hbox.add_theme_constant_override("separation", 8)
-		reward_vbox.add_child(reward_head_hbox)
+		card_vbox.add_child(reward_head_hbox)
 
 		var reward_lbl := Label.new()
 		reward_lbl.text = "🎁 クリア報酬 (Lv.%d 達成時):" % lv_num
@@ -464,26 +497,35 @@ func _refresh_levels_ui() -> void:
 		var reward_val_spin := SpinBox.new()
 		reward_val_spin.min_value = 0.0
 		reward_val_spin.max_value = 999999.0
-		reward_val_spin.step = 0.1
+		reward_val_spin.step = 0.01
 		reward_val_spin.value = float(lv.get("reward_val", 0.0))
-		reward_val_spin.custom_minimum_size = Vector2(90, 0)
-		reward_val_spin.value_changed.connect(func(new_val: float):
-			lv["reward_val"] = new_val
-			if lv_idx == 0: ch["reward_val"] = new_val
-			_update_preview()
-		)
+		reward_val_spin.custom_minimum_size = Vector2(95, 0)
 		reward_head_hbox.add_child(reward_val_spin)
 
-		var reward_edit := LineEdit.new()
-		reward_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		reward_edit.placeholder_text = "例: 装備スキルレベル +%d" % lv_num
-		reward_edit.text = str(lv.get("reward_desc", ""))
-		reward_edit.text_changed.connect(func(new_txt: String):
-			lv["reward_desc"] = new_txt.strip_edges()
-			if lv_idx == 0: ch["reward_desc"] = lv["reward_desc"]
+		var reward_preview_lbl := Label.new()
+		reward_preview_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		reward_preview_lbl.add_theme_color_override("font_color", Color(0.8, 0.95, 0.8, 1.0))
+
+		var cur_tmpl: String = ch.get("reward_template", "")
+		var cur_r_val: float = float(lv.get("reward_val", 0.0))
+		var initial_desc := _format_reward_desc(cur_tmpl, cur_r_val)
+		if initial_desc.is_empty():
+			initial_desc = str(lv.get("reward_desc", ""))
+		lv["reward_desc"] = initial_desc
+		reward_preview_lbl.text = "➜ " + initial_desc
+		reward_head_hbox.add_child(reward_preview_lbl)
+
+		reward_val_spin.value_changed.connect(func(new_val: float):
+			lv["reward_val"] = new_val
+			var tmpl: String = ch.get("reward_template", "")
+			var desc: String = _format_reward_desc(tmpl, new_val)
+			lv["reward_desc"] = desc
+			if lv_idx == 0:
+				ch["reward_val"] = new_val
+				ch["reward_desc"] = desc
+			reward_preview_lbl.text = "➜ " + desc
 			_update_preview()
 		)
-		reward_vbox.add_child(reward_edit)
 
 		# 4. メモ行
 		var memo_hbox := HBoxContainer.new()
@@ -513,6 +555,10 @@ func _clear_form() -> void:
 	name_edit.text = ""
 	icon_edit.text = ""
 	desc_edit.text = ""
+	if reward_template_edit:
+		reward_template_edit.text = ""
+	if reward_type_opt:
+		reward_type_opt.select(0)
 	for child in levels_container.get_children():
 		child.queue_free()
 	_updating_form = false
@@ -523,6 +569,20 @@ func _on_challenge_selected(index: int) -> void:
 	var key: String = challenge_list.get_item_metadata(index)
 	_selected_id = key
 	_fill_form(key)
+
+
+func _on_reward_type_selected(idx: int) -> void:
+	if _updating_form or _selected_id.is_empty():
+		return
+	var item_idx := _get_selected_index()
+	if item_idx == -1:
+		return
+	var ch: Dictionary = _challenges_list[item_idx]
+	var sel_type: String = reward_type_opt.get_item_metadata(idx)
+	ch["reward_type"] = sel_type
+	_challenges_list[item_idx] = ch
+	_challenges_data[_selected_id] = ch
+	status_label.text = "ボーナス計算方式を更新: %s (#%d %s)" % ["加算系 (+b)" if sel_type == "add" else "乗算系 (xb)", item_idx + 1, _selected_id]
 
 
 func _on_general_form_changed(_text: String = "") -> void:
@@ -536,29 +596,51 @@ func _on_general_form_changed(_text: String = "") -> void:
 	ch["name"] = name_edit.text.strip_edges()
 	ch["icon"] = icon_edit.text.strip_edges()
 	ch["desc"] = desc_edit.text.strip_edges()
+	if reward_template_edit:
+		var tmpl := reward_template_edit.text.strip_edges()
+		ch["reward_template"] = tmpl
+		var levels: Array = ch.get("levels", [])
+		for lv in levels:
+			if lv is Dictionary:
+				lv["reward_desc"] = _format_reward_desc(tmpl, float(lv.get("reward_val", 0.0)))
+		if levels.size() > 0:
+			ch["reward_desc"] = levels[0].get("reward_desc", "")
+
+	if reward_type_opt:
+		var sel_idx := reward_type_opt.selected
+		if sel_idx >= 0:
+			ch["reward_type"] = reward_type_opt.get_item_metadata(sel_idx)
+
 	_challenges_list[idx] = ch
 	_challenges_data[_selected_id] = ch
 
 	status_label.text = "チャレンジ情報を更新 (#%d %s)" % [idx + 1, _selected_id]
 	_update_list_item_text()
 	_update_preview()
+	if reward_template_edit and reward_template_edit.has_focus():
+		_refresh_levels_ui()
 
 
 func _on_add_challenge_pressed() -> void:
 	var next_num := _challenges_list.size() + 1
 	var new_id := "c%d" % next_num
+	var default_template := "ボーナス獲得量 +{val}%"
+	var default_val := 10.0 * next_num
 	var new_ch: Dictionary = {
 		"id": new_id,
 		"name": "新規チャレンジ %d" % next_num,
 		"icon": "⚔️",
 		"desc": "チャレンジの制限ルールを入力してください",
+		"reward_template": default_template,
+		"reward_type": "add",
 		"levels": [
 			{
 				"level": 1,
-				"duration": 30.0,
+				"duration": 60.0,
 				"target_type": "gold",
 				"target_val": 5000.0 * next_num,
-				"reward_desc": "恒久効果: ボーナス獲得量 +%d%%" % (10 * next_num),
+				"reward_val": default_val,
+				"reward_desc": _format_reward_desc(default_template, default_val),
 				"memo": "初期レベル"
 			}
 		]
@@ -602,15 +684,19 @@ func _on_add_level_pressed() -> void:
 	var last_lv: Dictionary = levels.back() if not levels.is_empty() else {}
 	var next_num := levels.size() + 1
 	var last_val: float = float(last_lv.get("target_val", 2500.0))
-	var last_dur: float = float(last_lv.get("duration", 30.0))
+	var last_dur: float = float(last_lv.get("duration", 60.0))
 	var last_type: String = str(last_lv.get("target_type", "gold"))
+	var last_reward_val: float = float(last_lv.get("reward_val", 10.0))
+	var next_reward_val: float = last_reward_val + 5.0
+	var tmpl: String = ch.get("reward_template", "")
 
 	var new_lv := {
 		"level": next_num,
 		"duration": last_dur,
 		"target_type": last_type,
 		"target_val": last_val * 2.0,
-		"reward_desc": "恒久効果: Lv.%d 達成ボーナス" % next_num,
+		"reward_val": next_reward_val,
+		"reward_desc": _format_reward_desc(tmpl, next_reward_val),
 		"memo": ""
 	}
 	levels.append(new_lv)
@@ -638,9 +724,10 @@ func _on_delete_specific_level(idx: int) -> void:
 		# トップレベル互換更新
 		if levels.size() > 0:
 			var lv1: Dictionary = levels[0]
-			ch["duration"] = lv1.get("duration", 30.0)
+			ch["duration"] = lv1.get("duration", 60.0)
 			ch["target_type"] = lv1.get("target_type", "gold")
 			ch["target_val"] = lv1.get("target_val", 1000.0)
+			ch["reward_val"] = lv1.get("reward_val", 0.0)
 			ch["reward_desc"] = lv1.get("reward_desc", "")
 
 		_refresh_levels_ui()
@@ -654,6 +741,20 @@ func _on_save_pressed() -> void:
 	var ordered_challenges: Dictionary = {}
 	for ch in _challenges_list:
 		var ch_id: String = ch.get("id", "")
+		var tmpl: String = ch.get("reward_template", "")
+		var levels: Array = ch.get("levels", [])
+		for lv in levels:
+			if lv is Dictionary:
+				var r_val: float = float(lv.get("reward_val", 0.0))
+				lv["reward_desc"] = _format_reward_desc(tmpl, r_val)
+		if levels.size() > 0 and levels[0] is Dictionary:
+			var lv1: Dictionary = levels[0]
+			ch["duration"] = lv1.get("duration", 60.0)
+			ch["target_type"] = lv1.get("target_type", "gold")
+			ch["target_val"] = lv1.get("target_val", 1000.0)
+			ch["reward_val"] = lv1.get("reward_val", 0.0)
+			ch["reward_desc"] = lv1.get("reward_desc", "")
+		ch["reward_type"] = ch.get("reward_type", "add")
 		ordered_challenges[ch_id] = ch
 
 	var data := {"challenges": ordered_challenges}
@@ -670,15 +771,6 @@ func _on_save_pressed() -> void:
 	# GameData singleton に即時反映
 	if GameData:
 		GameData.CHALLENGE_DEFS = ordered_challenges.duplicate(true)
-		for ch_id in GameData.CHALLENGE_DEFS:
-			var ch: Dictionary = GameData.CHALLENGE_DEFS[ch_id]
-			var levels: Array = ch.get("levels", [])
-			if levels.size() > 0 and levels[0] is Dictionary:
-				var lv1: Dictionary = levels[0]
-				ch["duration"] = lv1.get("duration", 60.0)
-				ch["target_type"] = lv1.get("target_type", "gold")
-				ch["target_val"] = lv1.get("target_val", 1000.0)
-				ch["reward_desc"] = lv1.get("reward_desc", "")
 		GameData.challenge_state_changed.emit()
 
 	status_label.text = "💾 %s に保存し、ゲームデータに反映しました！(全%d件)" % [SAVE_PATH, _challenges_list.size()]
@@ -786,7 +878,7 @@ func _update_preview() -> void:
 		var lv1: Dictionary = levels[0]
 		var target_currency := "🪙" if lv1.get("target_type", "gold") == "gold" else "💎"
 		var target_str := _format_val(float(lv1.get("target_val", 0.0)))
-		var duration_str := "%d秒" % int(lv1.get("duration", 60.0))
+		var duration_str := "%d秒" % int(lv1.get("duration", 30.0))
 		if preview_detail_target:
 			preview_detail_target.text = "Lv.1ノルマ: 制限時間 %s 以内に %s %s を獲得" % [duration_str, target_currency, target_str]
 	else:
@@ -794,9 +886,13 @@ func _update_preview() -> void:
 
 	if preview_detail_reward:
 		var reward_lines: Array[String] = []
+		var tmpl: String = ch.get("reward_template", "")
 		for i in levels.size():
 			var lv_item: Dictionary = levels[i]
-			var r_text: String = lv_item.get("reward_desc", "")
+			var r_val: float = float(lv_item.get("reward_val", 0.0))
+			var r_text: String = _format_reward_desc(tmpl, r_val)
+			if r_text.is_empty():
+				r_text = lv_item.get("reward_desc", "")
 			reward_lines.append("• Lv.%d: %s" % [i + 1, r_text])
 		preview_detail_reward.text = "【クリア時報酬一覧】\n" + "\n".join(reward_lines)
 

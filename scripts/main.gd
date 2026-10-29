@@ -99,6 +99,9 @@ func _on_logo_reset_requested() -> void:
 
 
 func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
+	if is_corner and GameData.is_corner_hit_disabled_challenge_active():
+		is_corner = false
+
 	var mult := GameData._cached_ascension_mult
 	# キャッシュ済みスキル倍率＋増幅装置倍率を使用
 	var gold_skill_mult := GameData._cached_gold_skill_mult * GameData._cached_gold_amp_mult

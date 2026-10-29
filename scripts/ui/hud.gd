@@ -53,6 +53,7 @@ func _get_current_buy_mode() -> int:
 @onready var reinc_tree_window: PanelContainer = %ReincTreeWindow
 @onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
 @onready var reincarnation_window: PanelContainer = %ReincarnationWindow
+@onready var save_slot_window: SaveSlotWindow = %SaveSlotWindow
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
 @onready var btn_toggle_skill_vis: Button = %ToggleSkillVisibilityBtn
@@ -106,6 +107,7 @@ var _is_amplifier_open: bool = false
 var _is_reinc_tree_open: bool = false
 var _is_reinc_ability_open: bool = false
 var _is_reincarnation_open: bool = false
+var _is_save_slot_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 var _corner_tween: Tween = null
@@ -439,9 +441,9 @@ func _ready() -> void:
 		btn_reinc_tab_2.pressed.connect(_on_reinc_tab_2_pressed)
 
 	if quick_save_btn:
-		quick_save_btn.pressed.connect(_on_quick_save_pressed)
+		quick_save_btn.pressed.connect(toggle_save_slot_window)
 	if quick_load_btn:
-		quick_load_btn.pressed.connect(_on_quick_load_pressed)
+		quick_load_btn.pressed.connect(toggle_save_slot_window)
 	if quick_reset_btn:
 		quick_reset_btn.pressed.connect(_on_quick_reset_pressed)
 	if reset_confirm_dialog:
@@ -607,6 +609,16 @@ func _ready() -> void:
 		if reinc_ability_window.has_signal("closed"):
 			reinc_ability_window.closed.connect(close_reinc_ability)
 		reinc_ability_window.visible = false
+	if save_slot_window:
+		if save_slot_window.has_signal("closed"):
+			save_slot_window.closed.connect(close_save_slot_window)
+		if save_slot_window.has_signal("slot_saved"):
+			save_slot_window.slot_saved.connect(_on_slot_saved)
+		if save_slot_window.has_signal("slot_loaded"):
+			save_slot_window.slot_loaded.connect(_on_slot_loaded)
+		if save_slot_window.has_signal("slot_deleted"):
+			save_slot_window.slot_deleted.connect(_on_slot_deleted)
+		save_slot_window.visible = false
 	if window_dimmer:
 		window_dimmer.visible = false
 		window_dimmer.modulate.a = 0.0
@@ -922,41 +934,60 @@ func _apply_trinity_button_styles() -> void:
 		{ "stat": "boost", "btn": btn_boost }
 	]
 
+	var is_trinity := GameData.is_trinity_active()
+
 	for entry in stat_btns:
 		var stat_id: String = entry["stat"]
 		var btn: Button = entry["btn"]
-		var is_sacrificed := is_c2 or (active_stat == stat_id)
 		var defaults: Dictionary = _default_upgrade_btn_styles.get(btn, {})
-
 		var states := ["normal", "hover", "pressed", "disabled"]
-		for state_name in states:
-			var def_style: StyleBoxFlat = defaults.get(state_name, null)
-			var style := StyleBoxFlat.new()
-			style.corner_radius_top_left = 3
-			style.corner_radius_top_right = 3
-			style.corner_radius_bottom_right = 3
-			style.corner_radius_bottom_left = 3
 
-			# 通常時と同様の背景色 (hover時は明るく光る)
-			if def_style:
-				style.bg_color = def_style.bg_color
-			else:
-				style.bg_color = Color(0.33, 0.15, 0.85, 1)
+		if is_c2 or (is_trinity and active_stat == stat_id):
+			# 赤枠 (基礎強化無効 または トリニティ生贄)
+			for state_name in states:
+				var def_style: StyleBoxFlat = defaults.get(state_name, null)
+				var style := StyleBoxFlat.new()
+				style.corner_radius_top_left = 3
+				style.corner_radius_top_right = 3
+				style.corner_radius_bottom_right = 3
+				style.corner_radius_bottom_left = 3
+				if def_style:
+					style.bg_color = def_style.bg_color
+				else:
+					style.bg_color = Color(0.33, 0.15, 0.85, 1)
 
-			if is_sacrificed:
 				style.border_color = red_border_hover if state_name == "hover" else red_border
 				style.border_width_left = 2
 				style.border_width_top = 2
 				style.border_width_right = 2
 				style.border_width_bottom = 2
-			else:
+				btn.add_theme_stylebox_override(state_name, style)
+		elif is_trinity:
+			# トリニティ強化枠 (黄色・金色)
+			for state_name in states:
+				var def_style: StyleBoxFlat = defaults.get(state_name, null)
+				var style := StyleBoxFlat.new()
+				style.corner_radius_top_left = 3
+				style.corner_radius_top_right = 3
+				style.corner_radius_bottom_right = 3
+				style.corner_radius_bottom_left = 3
+				if def_style:
+					style.bg_color = def_style.bg_color
+				else:
+					style.bg_color = Color(0.33, 0.15, 0.85, 1)
+
 				style.border_color = glow_gold_hover if state_name == "hover" else glow_gold
 				style.border_width_left = 3
 				style.border_width_top = 3
 				style.border_width_right = 3
 				style.border_width_bottom = 3
-
-			btn.add_theme_stylebox_override(state_name, style)
+				btn.add_theme_stylebox_override(state_name, style)
+		else:
+			# トリニティも c2 も無効な場合 (c4 等のみ発動中) はデフォルトスタイルを維持
+			if not defaults.is_empty():
+				for state_name in states:
+					if defaults.has(state_name) and defaults[state_name]:
+						btn.add_theme_stylebox_override(state_name, defaults[state_name])
 
 	if btn_ascend:
 		var defaults_ascend: Dictionary = _default_upgrade_btn_styles.get(btn_ascend, {})
@@ -1301,6 +1332,8 @@ func open_reincarnation() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 
 	reincarnation_window.visible = true
 	if reincarnation_window.has_method("update_ui"):
@@ -1337,6 +1370,8 @@ func _on_equipment_tab_pressed() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 	
 	if _is_inventory_open:
 		close_inventory()
@@ -1455,6 +1490,8 @@ func _on_skill_tree_tab_pressed() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 		
 	if _is_skill_tree_open:
 		close_skill_tree()
@@ -1513,6 +1550,8 @@ func _on_challenge_tab_pressed() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 		
 	if _is_challenge_open:
 		close_challenge()
@@ -1561,6 +1600,8 @@ func _on_blacksmith_tab_pressed() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 		
 	if _is_blacksmith_open:
 		close_blacksmith()
@@ -1611,6 +1652,8 @@ func _on_amplifier_tab_pressed() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 		
 	if _is_amplifier_open:
 		close_amplifier()
@@ -1657,6 +1700,8 @@ func _on_reinc_tab_1_pressed() -> void:
 		close_amplifier()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 	
 	if _is_reinc_tree_open:
 		close_reinc_tree()
@@ -1700,6 +1745,8 @@ func _on_reinc_tab_2_pressed() -> void:
 		close_amplifier()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
+	if _is_save_slot_open:
+		close_save_slot_window()
 	
 	if _is_reinc_ability_open:
 		close_reinc_ability()
@@ -1730,8 +1777,38 @@ func close_reinc_ability() -> void:
 	_update_window_dimmer()
 
 
+func toggle_save_slot_window() -> void:
+	if _is_save_slot_open:
+		close_save_slot_window()
+	else:
+		open_save_slot_window()
+
+
+func open_save_slot_window() -> void:
+	if _is_save_slot_open:
+		return
+	_close_all_subbar_windows()
+	_is_save_slot_open = true
+	if save_slot_window:
+		save_slot_window.visible = true
+		if save_slot_window.has_method("refresh_slots"):
+			save_slot_window.refresh_slots()
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_save_slot_window() -> void:
+	if not _is_save_slot_open:
+		return
+	_is_save_slot_open = false
+	if save_slot_window:
+		save_slot_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
 func _is_any_subbar_window_open() -> bool:
-	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open
+	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open or _is_save_slot_open
 
 
 var _dimmer_tween: Tween = null
@@ -1780,6 +1857,8 @@ func _close_all_subbar_windows() -> void:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
 		close_reinc_ability()
+	if _is_save_slot_open:
+		close_save_slot_window()
 
 
 func _setup_debug_free_skill_button() -> void:
@@ -2712,21 +2791,30 @@ func _show_save_toast(msg: String, is_error: bool = false) -> void:
 func _on_quick_save_pressed() -> void:
 	var success := GameData.save_game()
 	if success:
-		_show_save_toast("💾 ゲームをセーブしました")
+		var meta := GameData.get_slot_meta(GameData.current_slot_id)
+		var sname: String = meta.get("name", GameData.current_slot_id)
+		_show_save_toast("💾 [%s] にセーブしました" % sname)
 	else:
 		_show_save_toast("❌ セーブに失敗しました", true)
 
 
 func _on_quick_load_pressed() -> void:
-	if not GameData.has_save_data():
-		_show_save_toast("⚠️ セーブデータが見つかりません", true)
-		return
-	var success := GameData.load_game()
-	if success:
-		_force_refresh_all_hud()
-		_show_save_toast("🔄 セーブデータをロードしました")
-	else:
-		_show_save_toast("❌ ロードに失敗しました", true)
+	toggle_save_slot_window()
+
+
+func _on_slot_saved(_slot_id: String, slot_name: String) -> void:
+	_show_save_toast("💾 [%s] にセーブしました" % slot_name)
+
+
+func _on_slot_loaded(slot_id: String) -> void:
+	_force_refresh_all_hud()
+	var meta := GameData.get_slot_meta(slot_id)
+	var sname: String = meta.get("name", slot_id)
+	_show_save_toast("🔄 [%s] をロードしました" % sname)
+
+
+func _on_slot_deleted(_slot_id: String) -> void:
+	_show_save_toast("🗑️ スロットデータを削除しました")
 
 
 func _on_quick_reset_pressed() -> void:
@@ -2767,5 +2855,7 @@ func _force_refresh_all_hud() -> void:
 		reinc_tree_window.refresh_tree()
 	if is_instance_valid(reinc_ability_window) and reinc_ability_window.has_method("refresh_abilities"):
 		reinc_ability_window.refresh_abilities()
+	if is_instance_valid(save_slot_window) and save_slot_window.has_method("refresh_slots"):
+		save_slot_window.refresh_slots()
 	if skill_tree_scroll:
 		skill_tree_scroll.update_culling()

@@ -76,6 +76,18 @@ func format_num(val: float) -> String:
 		if m_str.contains("."):
 			m_str = m_str.rstrip("0").rstrip(".")
 		return "%s%se%d" % [sign_str, m_str, exp_val]
+
+
+func format_crit_marks(weight: int) -> String:
+	if weight <= 0:
+		return ""
+	if weight >= 10:
+		return "!(%d)" % weight
+	var res := ""
+	for i in range(weight):
+		res += "!"
+	return res
+
 var reincarnation_level: int = 0
 var pending_reincarnation_upgrades: Dictionary = {} # 特殊スキル予約 { "upgrade_id": level_int }
 var active_reincarnation_upgrades: Dictionary = {}  # 特殊スキル適用済み { "upgrade_id": level_int }
@@ -124,6 +136,7 @@ var total_equip_drop_rarity_boost_level: int = 0
 var total_equip_drop_level_boost_level: int = 0
 var total_equip_skill_boost_level: int = 0
 var total_accessory_slot_unlock_level: int = 0
+var total_challenge_bonus_boost_level: int = 0
 
 # --- Critical and Direct Hit Parameters ---
 var gold_critical_parameter: float = 1.0
@@ -1047,7 +1060,7 @@ func use_gold(amount: float) -> bool:
 
 func record_bounce(is_corner: bool) -> void:
 	total_bounces += 1
-	if is_corner:
+	if is_corner and not is_corner_hit_disabled_challenge_active():
 		corner_hits += 1
 		corner_hit_occurred.emit()
 	stats_changed.emit()
@@ -1328,8 +1341,9 @@ func get_token_direct_hit_parameter() -> float:
 func calculate_crit_result(crit_factor: float) -> Dictionary:
 	if is_crit_disabled_challenge_active():
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
-	var equip_crit_rate := get_equipped_skill_total_val("crit_rate")
-	var equip_crit_yield := get_equipped_skill_total_val("crit_yield")
+	var crit_bonus := get_c5_crit_bonus()
+	var equip_crit_rate := get_equipped_skill_total_val("crit_rate") + crit_bonus
+	var equip_crit_yield := get_equipped_skill_total_val("crit_yield") + crit_bonus
 	var chance_percent := 5.0 * crit_factor + equip_crit_rate
 	if chance_percent <= 0.0:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
@@ -1360,8 +1374,9 @@ func roll_token_critical() -> Dictionary:
 func calculate_direct_result(direct_factor: float) -> Dictionary:
 	if is_direct_hit_disabled_challenge_active():
 		return {"multiplier": 1.0, "is_direct": false}
+	var direct_yield_bonus := get_c6_direct_yield_bonus()
 	var equip_direct_rate := get_equipped_skill_total_val("direct_rate")
-	var equip_direct_yield := get_equipped_skill_total_val("direct_yield")
+	var equip_direct_yield := get_equipped_skill_total_val("direct_yield") + direct_yield_bonus
 	var chance_percent := minf(100.0, 5.0 * direct_factor + equip_direct_rate)
 	if chance_percent <= 0.0:
 		return {"multiplier": 1.0, "is_direct": false}
@@ -1535,7 +1550,7 @@ func calculate_corner_hit_gold() -> Dictionary:
 	if is_corner_hit_disabled_challenge_active():
 		gold_amount = 0.0
 	else:
-		gold_amount *= get_challenge_corner_gold_multiplier()
+		gold_amount *= get_c7_corner_multiplier()
 
 	return {
 		"amount": gold_amount,
@@ -1566,6 +1581,7 @@ func calculate_corner_hit_token() -> Dictionary:
 	var token_direct := roll_token_direct()
 	var token_mult: float = token_crit.multiplier * token_direct.multiplier
 	var token_amount := base_tokens * token_mult
+	token_amount *= get_c7_corner_multiplier()
 
 	return {
 		"amount": token_amount,
@@ -1578,12 +1594,27 @@ func get_corner_hit_token_amount() -> float:
 	return calculate_corner_hit_token()["amount"]
 
 
+func get_normal_hit_gold_amount() -> float:
+	var mult := _cached_ascension_mult
+	var gold_skill_mult := _cached_gold_skill_mult * _cached_gold_amp_mult
+	var normal_base_gold := (20.0 + float(get_effective_boost_level())) * mult * gold_skill_mult
+	var gold_crit := roll_gold_critical()
+	var gold_direct := roll_gold_direct()
+	var gold_mult: float = gold_crit.multiplier * gold_direct.multiplier
+	return normal_base_gold * gold_mult
+
+
 func discard_equipment_rewards() -> Dictionary:
 	var res := { "gold": 0.0, "tokens": 0.0 }
+	var is_corner_disabled := is_corner_hit_disabled_challenge_active()
 	if get_skill_level("get_gold_when_discarding") > 0:
-		res["gold"] += get_corner_hit_gold_amount()
+		if is_corner_disabled:
+			res["gold"] += get_normal_hit_gold_amount()
+		else:
+			res["gold"] += get_corner_hit_gold_amount()
 	if get_skill_level("get_token_when_discarding") > 0:
-		res["tokens"] += get_corner_hit_token_amount()
+		if not is_corner_disabled:
+			res["tokens"] += get_corner_hit_token_amount()
 	return res
 
 
@@ -1663,6 +1694,7 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
 	total_equip_skill_boost_level = _recalculate_total_level("equip_skill_boost_")
 	total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
+	total_challenge_bonus_boost_level = _recalculate_total_level("challange_bonus_boost_") + _recalculate_total_level("challenge_bonus_boost_")
 	_recalculate_cached_multipliers()
 
 
@@ -1690,6 +1722,11 @@ func _recalculate_cached_multipliers() -> void:
 	if get_skill_level("equip_corner_enhance") > 0:
 		tree_gold_mult *= 5.0
 		tree_token_mult *= 5.0
+
+	# 廃棄時トークン獲得: 入手ゴールド/トークン10倍
+	if get_skill_level("get_token_when_discarding") > 0:
+		tree_gold_mult *= 10.0
+		tree_token_mult *= 10.0
 
 	# チャレンジクリアボーナス関連スキル
 	var cleared_ch_count := 0 if is_challenge_bonus_disabled_challenge_active() else get_cleared_challenge_count()
@@ -1763,6 +1800,13 @@ func _update_cumulative_levels(skill_id: String) -> void:
 	elif _check_and_update_cumulative(skill_id, "accessory_slot_unlock_"):
 		total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 		equipment_changed.emit()
+	elif _check_and_update_cumulative(skill_id, "challange_bonus_boost_") or _check_and_update_cumulative(skill_id, "challenge_bonus_boost_"):
+		total_challenge_bonus_boost_level = _recalculate_total_level("challange_bonus_boost_") + _recalculate_total_level("challenge_bonus_boost_")
+		_recalculate_equipped_skill_levels()
+		_recalculate_cached_multipliers()
+		equipment_changed.emit()
+		upgrades_changed.emit()
+		challenge_state_changed.emit()
 	_recalculate_cached_multipliers()
 
 
@@ -1795,6 +1839,11 @@ func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false
 				equipment_changed.emit()
 			elif skill_id == "equip_drop_unlock" or skill_id == "equip_drop_filter_unlock":
 				equipment_changed.emit()
+			elif skill_id.begins_with("challange_bonus_boost_") or skill_id.begins_with("challenge_bonus_boost_"):
+				_recalculate_equipped_skill_levels()
+				_recalculate_cached_multipliers()
+				equipment_changed.emit()
+				challenge_state_changed.emit()
 				
 			if not is_free:
 				tokens_changed.emit(tokens)
@@ -2988,20 +3037,20 @@ var CHALLENGE_DEFS: Dictionary = {
 		"name": "角ヒット無効",
 		"icon": "📐",
 		"desc": "角ヒット時の獲得・ボーナスが無効化される",
-		"duration": 60.0,
+		"duration": 30.0,
 		"target_type": "gold",
 		"target_val": 250000.0,
-		"reward_desc": "角ヒットゴールド倍率 +25%"
+		"reward_desc": "角ヒット時ゴールド/トークン入手量 x1.25"
 	},
 	"c8": {
 		"id": "c8",
 		"name": "チャレンジボーナス無効",
 		"icon": "🏆",
 		"desc": "チャレンジクリアによる恒久ボーナスが無効化される",
-		"duration": 60.0,
+		"duration": 30.0,
 		"target_type": "gold",
 		"target_val": 500000.0,
-		"reward_desc": "全トークン獲得量 +15%"
+		"reward_desc": "チャレンジクリアボーナス効果量 x1.1"
 	}
 }
 
@@ -3025,12 +3074,20 @@ func _load_challenge_defs() -> void:
 			for ch_id in CHALLENGE_DEFS:
 				var ch: Dictionary = CHALLENGE_DEFS[ch_id]
 				var levels: Array = ch.get("levels", [])
+				var template: String = str(ch.get("reward_template", ""))
+				for lv in levels:
+					if lv is Dictionary and not template.is_empty():
+						var r_val: float = float(lv.get("reward_val", 0.0))
+						lv["reward_desc"] = format_challenge_reward_desc(template, r_val)
 				if levels.size() > 0 and levels[0] is Dictionary:
 					var lv1: Dictionary = levels[0]
 					if not ch.has("duration"): ch["duration"] = lv1.get("duration", 60.0)
 					if not ch.has("target_type"): ch["target_type"] = lv1.get("target_type", "gold")
 					if not ch.has("target_val"): ch["target_val"] = lv1.get("target_val", 1000.0)
-					if not ch.has("reward_desc"): ch["reward_desc"] = lv1.get("reward_desc", "")
+					if not template.is_empty():
+						ch["reward_desc"] = lv1.get("reward_desc", "")
+					elif not ch.has("reward_desc"):
+						ch["reward_desc"] = lv1.get("reward_desc", "")
 	file.close()
 
 
@@ -3229,7 +3286,134 @@ func is_c4_active() -> bool:
 	return is_ascension_disabled_challenge_active()
 
 
+static func format_challenge_reward_desc(template: String, val: float) -> String:
+	if template.is_empty():
+		return ""
+	var val_str: String
+	var rounded := roundf(val)
+	if absf(val - rounded) < 0.0001:
+		val_str = str(int(rounded))
+	else:
+		var snapped_val := snappedf(val, 0.001)
+		var s := "%.3f" % snapped_val
+		if s.contains("."):
+			while s.ends_with("0"):
+				s = s.left(s.length() - 1)
+			if s.ends_with("."):
+				s = s.left(s.length() - 1)
+		val_str = s
+
+	if "{val}" in template:
+		return template.replace("{val}", val_str)
+	elif "%s" in template:
+		return template.replace("%s", val_str)
+	elif "%d" in template:
+		return template % int(round(val))
+	elif "%.1f" in template or "%.2f" in template or "%f" in template:
+		return template % val
+	return template + " " + val_str
+
+
+func get_challenge_level_reward_desc(ch_id: String, level: int = -1) -> String:
+	var def: Dictionary = CHALLENGE_DEFS.get(ch_id, {})
+	var lv_def := get_challenge_level_def(ch_id, level)
+	var template: String = str(def.get("reward_template", ""))
+	var raw_val: float = float(lv_def.get("reward_val", 0.0))
+	var eff_val := apply_challenge_bonus_boost(ch_id, raw_val)
+	if not template.is_empty():
+		return format_challenge_reward_desc(template, eff_val)
+	return str(lv_def.get("reward_desc", def.get("reward_desc", "")))
+
+
+func get_c8_raw_challenge_bonus_multiplier() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 1.0
+	var ch_id := get_challenge_id_by_name("チャレンジボーナス無効")
+	if ch_id.is_empty():
+		ch_id = get_challenge_id_by_name_contains("チャレンジボーナス")
+	if ch_id.is_empty():
+		return 1.0
+	var cleared_lvl := get_challenge_cleared_level(ch_id)
+	if cleared_lvl <= 0:
+		return 1.0
+	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 1.0
+	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"x([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	return raw_val
+
+
+func get_tree_challenge_bonus_boost_count() -> int:
+	if total_challenge_bonus_boost_level > 0:
+		return total_challenge_bonus_boost_level
+	var count := 0
+	for i in range(1, 6):
+		if get_skill_level("challange_bonus_boost_%d" % i) > 0 or get_skill_level("challenge_bonus_boost_%d" % i) > 0:
+			count += 1
+	return count
+
+
+func get_tree_challenge_bonus_boost_multiplier() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 1.0
+	return 1.0 + 0.1 * float(get_tree_challenge_bonus_boost_count())
+
+
+func get_c8_challenge_bonus_multiplier() -> float:
+	var a := get_c8_raw_challenge_bonus_multiplier()
+	var b := get_tree_challenge_bonus_boost_multiplier()
+	# チャレンジクリア無効クリアボーナスの効果量 A = 1 + b * (a - 1)
+	return 1.0 + b * (a - 1.0)
+
+
+func get_challenge_reward_type(ch_id: String) -> String:
+	if CHALLENGE_DEFS.has(ch_id):
+		return str(CHALLENGE_DEFS[ch_id].get("reward_type", "add"))
+	return "add"
+
+
+func apply_c8_mult_bonus(base_multiplier: float) -> float:
+	var A := get_c8_challenge_bonus_multiplier()
+	var b := get_tree_challenge_bonus_boost_multiplier()
+	# 乗算系：1 + (c - 1) * A * b
+	return 1.0 + (base_multiplier - 1.0) * A * b
+
+
+func apply_c8_add_bonus(base_addition: float) -> float:
+	var A := get_c8_challenge_bonus_multiplier()
+	var b := get_tree_challenge_bonus_boost_multiplier()
+	# 加算系：c * A * b
+	return base_addition * A * b
+
+
+func apply_challenge_bonus_boost(ch_id: String, base_val: float) -> float:
+	var c8_id := get_challenge_id_by_name("チャレンジボーナス無効")
+	if c8_id.is_empty():
+		c8_id = get_challenge_id_by_name_contains("チャレンジボーナス")
+	if ch_id == c8_id or (c8_id.is_empty() and ch_id == "c8"):
+		# C8自身の効果量: 1 + b * (a - 1)
+		var b := get_tree_challenge_bonus_boost_multiplier()
+		return 1.0 + b * (base_val - 1.0)
+
+	var r_type := get_challenge_reward_type(ch_id)
+	if r_type == "mult":
+		return apply_c8_mult_bonus(base_val)
+	else:
+		return apply_c8_add_bonus(base_val)
+
+
 func get_c1_equipment_skill_bonus() -> int:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 0
 	var ch_id := get_challenge_id_by_name("装備無効")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name_contains("装備")
@@ -3239,20 +3423,26 @@ func get_c1_equipment_skill_bonus() -> int:
 	if cleared_lvl <= 0:
 		return 0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
-	if lv_def.has("reward_val"):
-		return int(lv_def["reward_val"])
-	if lv_def.has("reward_value"):
-		return int(lv_def["reward_value"])
-	var desc: String = str(lv_def.get("reward_desc", ""))
-	var regex := RegEx.new()
-	if regex.compile(r"\+(\d+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_int()
-	return 0
+	var raw_val := 0.0
+	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"\+(\d+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if raw_val <= 0.0:
+		return 0
+	return int(round(apply_challenge_bonus_boost(ch_id, raw_val)))
 
 
 func get_c2_base_upgrade_multiplier() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 1.0
 	var ch_id := get_challenge_id_by_name("基礎強化無効")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name_contains("基礎")
@@ -3262,20 +3452,26 @@ func get_c2_base_upgrade_multiplier() -> float:
 	if cleared_lvl <= 0:
 		return 1.0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 1.0
 	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
-		return float(lv_def["reward_val"])
-	if lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
-		return float(lv_def["reward_value"])
-	var desc: String = str(lv_def.get("reward_desc", ""))
-	var regex := RegEx.new()
-	if regex.compile(r"x([\d\.]+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_float()
-	return 1.0
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"x([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if is_equal_approx(raw_val, 1.0):
+		return 1.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
 
 
 func get_c3_logo_count_bonus() -> int:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 0
 	var ch_id := get_challenge_id_by_name("ロゴ数制限")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name("ロゴ個数制限")
@@ -3287,20 +3483,26 @@ func get_c3_logo_count_bonus() -> int:
 	if cleared_lvl <= 0:
 		return 0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 0.0
 	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
-		return int(lv_def["reward_val"])
-	if lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
-		return int(lv_def["reward_value"])
-	var desc: String = str(lv_def.get("reward_desc", ""))
-	var regex := RegEx.new()
-	if regex.compile(r"\+(\d+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_int()
-	return 0
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"\+(\d+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if raw_val <= 0.0:
+		return 0
+	return int(round(apply_challenge_bonus_boost(ch_id, raw_val)))
 
 
 func get_c4_ascension_multiplier() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 1.0
 	var ch_id := get_challenge_id_by_name("アセンションボーナス無効")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name_contains("アセンション")
@@ -3310,22 +3512,113 @@ func get_c4_ascension_multiplier() -> float:
 	if cleared_lvl <= 0:
 		return 1.0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 1.0
 	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
-		return float(lv_def["reward_val"])
-	if lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
-		return float(lv_def["reward_value"])
-	var desc: String = str(lv_def.get("reward_desc", ""))
-	var regex := RegEx.new()
-	if regex.compile(r"x([\d\.]+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_float()
-	return 1.0
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"x([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if is_equal_approx(raw_val, 1.0):
+		return 1.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
+
+
+func get_c5_crit_bonus() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 0.0
+	var ch_id := get_challenge_id_by_name("クリティカル無効")
+	if ch_id.is_empty():
+		ch_id = get_challenge_id_by_name_contains("クリティカル")
+	if ch_id.is_empty():
+		return 0.0
+	var cleared_lvl := get_challenge_cleared_level(ch_id)
+	if cleared_lvl <= 0:
+		return 0.0
+	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 0.0
+	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"\+([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if raw_val <= 0.0:
+		return 0.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
+
+
+func get_c6_direct_yield_bonus() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 0.0
+	var ch_id := get_challenge_id_by_name("ダイレクトヒット無効")
+	if ch_id.is_empty():
+		ch_id = get_challenge_id_by_name_contains("ダイレクト")
+	if ch_id.is_empty():
+		return 0.0
+	var cleared_lvl := get_challenge_cleared_level(ch_id)
+	if cleared_lvl <= 0:
+		return 0.0
+	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 0.0
+	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"\+([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if raw_val <= 0.0:
+		return 0.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
+
+
+func get_c7_corner_multiplier() -> float:
+	if is_challenge_bonus_disabled_challenge_active():
+		return 1.0
+	var ch_id := get_challenge_id_by_name("角ヒット無効")
+	if ch_id.is_empty():
+		ch_id = get_challenge_id_by_name_contains("角ヒット")
+	if ch_id.is_empty():
+		return 1.0
+	var cleared_lvl := get_challenge_cleared_level(ch_id)
+	if cleared_lvl <= 0:
+		return 1.0
+	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
+	var raw_val := 1.0
+	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
+		raw_val = float(lv_def["reward_val"])
+	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
+		raw_val = float(lv_def["reward_value"])
+	else:
+		var desc: String = str(lv_def.get("reward_desc", ""))
+		var regex := RegEx.new()
+		if regex.compile(r"x([\d\.]+)") == OK:
+			var result := regex.search(desc)
+			if result:
+				raw_val = result.get_string(1).to_float()
+	if is_equal_approx(raw_val, 1.0):
+		return 1.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
 
 
 func get_challenge_effective_duration(ch_id: String, level: int = -1) -> float:
 	var lv_def := get_challenge_level_def(ch_id, level)
-	var base_dur: float = float(lv_def.get("duration", 30.0))
+	var base_dur: float = float(lv_def.get("duration", 60.0))
 	return base_dur * get_challenge_time_multiplier()
 
 
@@ -3432,6 +3725,46 @@ func complete_challenge() -> void:
 	challenge_completed.emit(old_id)
 
 
+func set_challenge_cleared_level(ch_id: String, level: int) -> void:
+	if not CHALLENGE_DEFS.has(ch_id):
+		return
+	var max_lvl := get_challenge_def_max_level(ch_id)
+	level = clampi(level, 0, max_lvl)
+	challenge_cleared_levels[ch_id] = level
+	challenge_cleared[ch_id] = (level > 0)
+	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
+	equipment_changed.emit()
+	upgrades_changed.emit()
+	logo_reset_requested.emit()
+	challenge_state_changed.emit()
+
+
+func set_all_challenges_max_cleared() -> void:
+	for ch_id in CHALLENGE_DEFS:
+		var max_lvl := get_challenge_def_max_level(ch_id)
+		challenge_cleared_levels[ch_id] = max_lvl
+		challenge_cleared[ch_id] = (max_lvl > 0)
+	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
+	equipment_changed.emit()
+	upgrades_changed.emit()
+	logo_reset_requested.emit()
+	challenge_state_changed.emit()
+
+
+func reset_all_challenges_cleared() -> void:
+	for ch_id in CHALLENGE_DEFS:
+		challenge_cleared_levels[ch_id] = 0
+		challenge_cleared[ch_id] = false
+	_recalculate_equipped_skill_levels()
+	_recalculate_cached_multipliers()
+	equipment_changed.emit()
+	upgrades_changed.emit()
+	logo_reset_requested.emit()
+	challenge_state_changed.emit()
+
+
 func get_cleared_challenge_count() -> int:
 	var count := 0
 	for ch_id in challenge_cleared:
@@ -3467,60 +3800,30 @@ func get_challenge_gold_multiplier() -> float:
 
 
 func get_challenge_speed_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	var mult: float = 1.0
-	if is_challenge_cleared_by_name_contains("ロゴ"):
-		mult *= 1.10 # ロゴ数制限クリア: 速度 +10%
-	return mult
+	return 1.0
 
 
 func get_challenge_corner_gold_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	var mult: float = 1.0
-	if is_challenge_cleared_by_name_contains("角ヒット"):
-		mult *= 1.25 # 角ヒット無効クリア: 角ヒットゴールド +25%
-	return mult
+	return get_c7_corner_multiplier()
 
 
 func get_challenge_drop_rate_bonus() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 0.0
-	if is_challenge_cleared_by_name_contains("装備"):
-		return 0.10 # 装備無効クリア: ドロップ率 +10%
 	return 0.0
 
 
 func get_challenge_ascension_token_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	if is_challenge_cleared_by_name_contains("アセンション"):
-		return 1.15 # アセンションボーナス無効クリア: アセンショントークン +15%
 	return 1.0
 
 
 func get_challenge_crit_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	if is_challenge_cleared_by_name_contains("クリティカル"):
-		return 1.15 # クリティカル無効クリア: クリティカル倍率 +15%
 	return 1.0
 
 
 func get_challenge_direct_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	if is_challenge_cleared_by_name_contains("ダイレクト"):
-		return 1.15 # ダイレクトヒット無効クリア: ダイレクトヒット倍率 +15%
 	return 1.0
 
 
 func get_challenge_token_multiplier() -> float:
-	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
-	if is_challenge_cleared_by_name_contains("チャレンジボーナス"):
-		return 1.15 # チャレンジボーナス無効クリア: トークン獲得量 +15%
 	return 1.0
 
 
@@ -3783,20 +4086,147 @@ func buy_amp_token_pow(count: int = 1) -> bool:
 
 
 # ==============================================================================
-# セーブ＆ロード＆リセット機能 (Save / Load / Reset System)
+# セーブ＆ロード＆スロット管理機能 (Save / Load / Slot System)
 # ==============================================================================
 
 const SAVE_DATA_PATH = "user://save_data.json"
+const SAVE_SLOTS_META_PATH = "user://save_slots_meta.json"
+const SAVE_SLOT_PREFIX = "user://save_slot_"
+const DEFAULT_SLOT_COUNT = 5
+const MAX_SLOT_COUNT = 10
+
+var current_slot_id: String = "slot_1"
+
+signal save_slots_updated()
 
 
-func has_save_data() -> bool:
-	return FileAccess.file_exists(SAVE_DATA_PATH)
+func get_slot_file_path(slot_id: String) -> String:
+	return "%s%s.json" % [SAVE_SLOT_PREFIX, slot_id]
 
 
-func save_game() -> bool:
-	var save_dict: Dictionary = {
+static func format_play_time(total_seconds: float) -> String:
+	var total_sec := int(total_seconds)
+	var hours := total_sec / 3600
+	var minutes := (total_sec % 3600) / 60
+	var seconds := total_sec % 60
+	if hours > 0:
+		return "%02d:%02d:%02d" % [hours, minutes, seconds]
+	return "%02d:%02d" % [minutes, seconds]
+
+
+func get_save_slots_meta() -> Dictionary:
+	var meta_data: Dictionary = {}
+	if FileAccess.file_exists(SAVE_SLOTS_META_PATH):
+		var file := FileAccess.open(SAVE_SLOTS_META_PATH, FileAccess.READ)
+		if file:
+			var json := JSON.new()
+			if json.parse(file.get_as_text()) == OK and json.get_data() is Dictionary:
+				meta_data = json.get_data()
+			file.close()
+
+	if meta_data.is_empty() or not meta_data.has("slots") or not (meta_data["slots"] is Array):
+		meta_data = {
+			"current_slot": "slot_1",
+			"slots": []
+		}
+		for i in range(1, DEFAULT_SLOT_COUNT + 1):
+			var s_id := "slot_%d" % i
+			meta_data["slots"].append({
+				"id": s_id,
+				"name": "スロット %d" % i,
+				"has_data": false,
+				"timestamp": "",
+				"play_time": 0.0,
+				"ascension_level": 0,
+				"reincarnation_level": 0,
+				"gold": 0.0,
+				"tokens": 0.0,
+				"stars": 0
+			})
+
+		# 既存の save_data.json が存在する場合は slot_1 にインポート
+		if FileAccess.file_exists(SAVE_DATA_PATH):
+			var leg_file := FileAccess.open(SAVE_DATA_PATH, FileAccess.READ)
+			if leg_file:
+				var leg_json := JSON.new()
+				if leg_json.parse(leg_file.get_as_text()) == OK and leg_json.get_data() is Dictionary:
+					var d: Dictionary = leg_json.get_data()
+					var s1_info: Dictionary = {
+						"id": "slot_1",
+						"name": d.get("slot_name", "既存データ"),
+						"has_data": true,
+						"timestamp": d.get("timestamp", Time.get_datetime_string_from_system()),
+						"play_time": float(d.get("total_play_time", 0.0)),
+						"ascension_level": int(d.get("ascension_level", 0)),
+						"reincarnation_level": int(d.get("reincarnation_level", 0)),
+						"gold": float(d.get("gold", 0.0)),
+						"tokens": float(d.get("tokens", 0.0)),
+						"stars": int(d.get("stars", 0))
+					}
+					meta_data["slots"][0] = s1_info
+					# slot_1 ファイルにも書き出し
+					var s1_path := get_slot_file_path("slot_1")
+					var s1_file := FileAccess.open(s1_path, FileAccess.WRITE)
+					if s1_file:
+						s1_file.store_string(JSON.stringify(d, "\t"))
+						s1_file.close()
+				leg_file.close()
+		_save_slots_meta_file(meta_data)
+
+	if meta_data.has("current_slot"):
+		current_slot_id = str(meta_data["current_slot"])
+
+	return meta_data
+
+
+func _save_slots_meta_file(meta_data: Dictionary) -> void:
+	var file := FileAccess.open(SAVE_SLOTS_META_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(meta_data, "\t"))
+		file.close()
+
+
+func get_slot_meta(slot_id: String) -> Dictionary:
+	var meta := get_save_slots_meta()
+	var slots: Array = meta.get("slots", [])
+	for s in slots:
+		if s is Dictionary and s.get("id") == slot_id:
+			return s
+	return {}
+
+
+func add_save_slot() -> String:
+	var meta := get_save_slots_meta()
+	var slots: Array = meta.get("slots", [])
+	if slots.size() >= MAX_SLOT_COUNT:
+		return ""
+	var next_num := slots.size() + 1
+	var new_id := "slot_%d" % next_num
+	var new_slot := {
+		"id": new_id,
+		"name": "スロット %d" % next_num,
+		"has_data": false,
+		"timestamp": "",
+		"play_time": 0.0,
+		"ascension_level": 0,
+		"reincarnation_level": 0,
+		"gold": 0.0,
+		"tokens": 0.0,
+		"stars": 0
+	}
+	slots.append(new_slot)
+	meta["slots"] = slots
+	_save_slots_meta_file(meta)
+	save_slots_updated.emit()
+	return new_id
+
+
+func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dictionary:
+	return {
 		"version": 1,
 		"timestamp": Time.get_datetime_string_from_system(),
+		"slot_id": slot_id,
+		"slot_name": slot_name,
 		# 通貨・統計
 		"gold": gold,
 		"tokens": tokens,
@@ -3847,29 +4277,87 @@ func save_game() -> bool:
 		"amp_token_pow_level": amp_token_pow_level
 	}
 
+
+func save_to_slot(slot_id: String, slot_name: String = "") -> bool:
+	if slot_id.is_empty():
+		slot_id = current_slot_id
+	if slot_name.strip_edges().is_empty():
+		var existing_meta := get_slot_meta(slot_id)
+		slot_name = existing_meta.get("name", "スロット %s" % slot_id.replace("slot_", ""))
+
+	var save_dict := _build_save_dictionary(slot_id, slot_name)
 	var json_str := JSON.stringify(save_dict, "\t")
-	var file := FileAccess.open(SAVE_DATA_PATH, FileAccess.WRITE)
+	var slot_path := get_slot_file_path(slot_id)
+
+	var file := FileAccess.open(slot_path, FileAccess.WRITE)
 	if not file:
-		printerr("セーブデータの保存に失敗しました: ", SAVE_DATA_PATH)
+		printerr("セーブデータの保存に失敗しました: ", slot_path)
 		game_saved.emit(false)
 		return false
 
 	file.store_string(json_str)
 	file.close()
-	print("セーブ完了: ", SAVE_DATA_PATH)
+
+	# 互換性のため SAVE_DATA_PATH にも保存
+	var legacy_file := FileAccess.open(SAVE_DATA_PATH, FileAccess.WRITE)
+	if legacy_file:
+		legacy_file.store_string(json_str)
+		legacy_file.close()
+
+	# メタデータインデックス更新
+	var meta := get_save_slots_meta()
+	meta["current_slot"] = slot_id
+	current_slot_id = slot_id
+	var slots: Array = meta.get("slots", [])
+	var found := false
+	for s in slots:
+		if s is Dictionary and s.get("id") == slot_id:
+			s["name"] = slot_name
+			s["has_data"] = true
+			s["timestamp"] = save_dict["timestamp"]
+			s["play_time"] = total_play_time
+			s["ascension_level"] = ascension_level
+			s["reincarnation_level"] = reincarnation_level
+			s["gold"] = gold
+			s["tokens"] = tokens
+			s["stars"] = stars
+			found = true
+			break
+	if not found:
+		slots.append({
+			"id": slot_id,
+			"name": slot_name,
+			"has_data": true,
+			"timestamp": save_dict["timestamp"],
+			"play_time": total_play_time,
+			"ascension_level": ascension_level,
+			"reincarnation_level": reincarnation_level,
+			"gold": gold,
+			"tokens": tokens,
+			"stars": stars
+		})
+	meta["slots"] = slots
+	_save_slots_meta_file(meta)
+
+	print("スロットセーブ完了: [%s] %s -> %s" % [slot_id, slot_name, slot_path])
 	game_saved.emit(true)
+	save_slots_updated.emit()
 	return true
 
 
-func load_game() -> bool:
-	if not has_save_data():
-		print("セーブデータが見つかりません: ", SAVE_DATA_PATH)
-		game_loaded.emit(false)
-		return false
+func load_from_slot(slot_id: String) -> bool:
+	var slot_path := get_slot_file_path(slot_id)
+	if not FileAccess.file_exists(slot_path):
+		if slot_id == "slot_1" and FileAccess.file_exists(SAVE_DATA_PATH):
+			slot_path = SAVE_DATA_PATH
+		else:
+			print("指定スロットのセーブデータが見つかりません: ", slot_path)
+			game_loaded.emit(false)
+			return false
 
-	var file := FileAccess.open(SAVE_DATA_PATH, FileAccess.READ)
+	var file := FileAccess.open(slot_path, FileAccess.READ)
 	if not file:
-		printerr("セーブデータのオープンに失敗しました: ", SAVE_DATA_PATH)
+		printerr("セーブデータのオープンに失敗しました: ", slot_path)
 		game_loaded.emit(false)
 		return false
 
@@ -3888,6 +4376,85 @@ func load_game() -> bool:
 		game_loaded.emit(false)
 		return false
 
+	_apply_save_data(data)
+	current_slot_id = slot_id
+
+	var meta := get_save_slots_meta()
+	meta["current_slot"] = slot_id
+	_save_slots_meta_file(meta)
+
+	print("スロットロード完了: [%s] -> %s" % [slot_id, slot_path])
+	game_loaded.emit(true)
+	save_slots_updated.emit()
+	return true
+
+
+func delete_save_slot(slot_id: String) -> bool:
+	var slot_path := get_slot_file_path(slot_id)
+	var dir := DirAccess.open("user://")
+	if dir:
+		if FileAccess.file_exists(slot_path):
+			dir.remove(slot_path.replace("user://", ""))
+		if slot_id == "slot_1" and FileAccess.file_exists(SAVE_DATA_PATH):
+			dir.remove("save_data.json")
+
+	var meta := get_save_slots_meta()
+	var slots: Array = meta.get("slots", [])
+	for s in slots:
+		if s is Dictionary and s.get("id") == slot_id:
+			s["has_data"] = false
+			s["name"] = "スロット %s" % slot_id.replace("slot_", "")
+			s["timestamp"] = ""
+			s["play_time"] = 0.0
+			s["ascension_level"] = 0
+			s["reincarnation_level"] = 0
+			s["gold"] = 0.0
+			s["tokens"] = 0.0
+			s["stars"] = 0
+			break
+	meta["slots"] = slots
+	_save_slots_meta_file(meta)
+	save_slots_updated.emit()
+	return true
+
+
+func has_save_data() -> bool:
+	if FileAccess.file_exists(SAVE_DATA_PATH):
+		return true
+	var meta := get_save_slots_meta()
+	for s in meta.get("slots", []):
+		if s is Dictionary and s.get("has_data", false):
+			return true
+	return false
+
+
+func save_game() -> bool:
+	var slot_meta := get_slot_meta(current_slot_id)
+	var s_name: String = slot_meta.get("name", "")
+	return save_to_slot(current_slot_id, s_name)
+
+
+func load_game() -> bool:
+	if FileAccess.file_exists(get_slot_file_path(current_slot_id)):
+		return load_from_slot(current_slot_id)
+	var meta := get_save_slots_meta()
+	for s in meta.get("slots", []):
+		if s is Dictionary and s.get("has_data", false):
+			return load_from_slot(s.get("id", "slot_1"))
+	if FileAccess.file_exists(SAVE_DATA_PATH):
+		return load_from_slot("slot_1")
+	game_loaded.emit(false)
+	return false
+
+
+func delete_save_data() -> bool:
+	delete_save_slot(current_slot_id)
+	reset_all_data()
+	game_reset.emit()
+	return true
+
+
+func _apply_save_data(data: Dictionary) -> void:
 	# 1. 通貨・統計
 	gold = float(data.get("gold", 0.0))
 	tokens = float(data.get("tokens", 0.0))
@@ -3996,20 +4563,6 @@ func load_game() -> bool:
 	amplifier_changed.emit()
 	challenge_state_changed.emit()
 	logo_reset_requested.emit()
-
-	print("ロード完了: ", SAVE_DATA_PATH)
-	game_loaded.emit(true)
-	return true
-
-
-func delete_save_data() -> bool:
-	if has_save_data():
-		var dir := DirAccess.open("user://")
-		if dir:
-			dir.remove("save_data.json")
-	reset_all_data()
-	game_reset.emit()
-	return true
 
 
 func reset_all_data() -> void:

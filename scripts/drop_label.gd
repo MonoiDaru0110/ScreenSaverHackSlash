@@ -25,8 +25,7 @@ func setup(content: String, start_pos: Vector2, color: Color, is_corner: bool, i
 	var weight := crit_weight if is_crit else 0
 	if is_crit and weight <= 0:
 		weight = 1
-	for i in range(weight):
-		label_text += "!"
+	label_text += GameData.format_crit_marks(weight)
 		
 	label.text = label_text
 	

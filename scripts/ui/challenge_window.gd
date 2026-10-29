@@ -26,6 +26,15 @@ var _selected_challenge_id: String = "c1"
 @onready var _detail_action_btn: Button = %DetailActionBtn
 @onready var _detail_action_btn_label: Label = %DetailActionBtnLabel
 @onready var _open_editor_btn: Button = get_node_or_null("%OpenChallengeEditorBtn")
+@onready var _debug_clear_all_btn: Button = get_node_or_null("%DebugClearAllBtn")
+@onready var _debug_reset_all_btn: Button = get_node_or_null("%DebugResetAllBtn")
+@onready var _debug_clear_section: VBoxContainer = get_node_or_null("%DebugClearSection")
+@onready var _debug_minus_btn: Button = get_node_or_null("%DebugMinusBtn")
+@onready var _debug_plus_btn: Button = get_node_or_null("%DebugPlusBtn")
+@onready var _debug_clear_opt: OptionButton = get_node_or_null("%DebugClearOption")
+@onready var _debug_max_btn: Button = get_node_or_null("%DebugMaxBtn")
+@onready var _debug_reset_btn: Button = get_node_or_null("%DebugResetBtn")
+var _updating_debug_ui: bool = false
 
 
 func _ready() -> void:
@@ -53,6 +62,21 @@ func _setup_challenge_ui() -> void:
 
 	if _open_editor_btn and not _open_editor_btn.pressed.is_connected(_on_open_editor_pressed):
 		_open_editor_btn.pressed.connect(_on_open_editor_pressed)
+
+	if _debug_clear_all_btn and not _debug_clear_all_btn.pressed.is_connected(_on_debug_clear_all_pressed):
+		_debug_clear_all_btn.pressed.connect(_on_debug_clear_all_pressed)
+	if _debug_reset_all_btn and not _debug_reset_all_btn.pressed.is_connected(_on_debug_reset_all_pressed):
+		_debug_reset_all_btn.pressed.connect(_on_debug_reset_all_pressed)
+	if _debug_minus_btn and not _debug_minus_btn.pressed.is_connected(_on_debug_minus_pressed):
+		_debug_minus_btn.pressed.connect(_on_debug_minus_pressed)
+	if _debug_plus_btn and not _debug_plus_btn.pressed.is_connected(_on_debug_plus_pressed):
+		_debug_plus_btn.pressed.connect(_on_debug_plus_pressed)
+	if _debug_clear_opt and not _debug_clear_opt.item_selected.is_connected(_on_debug_clear_opt_selected):
+		_debug_clear_opt.item_selected.connect(_on_debug_clear_opt_selected)
+	if _debug_max_btn and not _debug_max_btn.pressed.is_connected(_on_debug_max_pressed):
+		_debug_max_btn.pressed.connect(_on_debug_max_pressed)
+	if _debug_reset_btn and not _debug_reset_btn.pressed.is_connected(_on_debug_reset_pressed):
+		_debug_reset_btn.pressed.connect(_on_debug_reset_pressed)
 
 	_list_item_nodes.clear()
 	if not _grid_container:
@@ -552,11 +576,14 @@ func _update_detail_panel() -> void:
 		else:
 			display_reward_lvl = maxi(1, cleared_lvl)
 
-		var reward_lv_def := GameData.get_challenge_level_def(ch_id, display_reward_lvl)
-		var r_text: String = reward_lv_def.get("reward_desc", def.get("reward_desc", ""))
+		var r_text: String = GameData.get_challenge_level_reward_desc(ch_id, display_reward_lvl)
 		var clean_r_text := r_text.replace("恒久効果: ", "").replace("恒久効果：", "").replace("恒久効果", "").strip_edges()
-		_detail_reward_label.text = clean_r_text
-		_detail_reward_label.add_theme_color_override("font_color", Color(0.40, 0.92, 0.60, 1.0)) # 明るいミントグリーン
+		if GameData.is_challenge_bonus_disabled_challenge_active():
+			_detail_reward_label.text = "%s [無効]" % clean_r_text
+			_detail_reward_label.add_theme_color_override("font_color", Color(0.95, 0.40, 0.40, 1.0))
+		else:
+			_detail_reward_label.text = clean_r_text
+			_detail_reward_label.add_theme_color_override("font_color", Color(0.40, 0.92, 0.60, 1.0)) # 明るいミントグリーン
 	_detail_reward_label.add_theme_font_size_override("font_size", 24)
 
 	# アクションボタン
@@ -586,6 +613,8 @@ func _update_detail_panel() -> void:
 			_detail_action_btn_label.text = "挑戦する"
 		_detail_action_btn.disabled = false
 		_apply_btn_style(_detail_action_btn, Color(0.18, 0.42, 0.78, 1.0), Color(0.35, 0.65, 0.98, 1.0), Color(1.0, 1.0, 1.0, 1.0))
+
+	_update_debug_clear_ui()
 
 
 func _apply_btn_style(btn: Button, bg_col: Color, border_col: Color, text_col: Color = Color(0.95, 0.95, 0.98, 1.0)) -> void:
@@ -661,3 +690,89 @@ func _on_challenge_failed(_challenge_id: String) -> void:
 
 func _on_open_editor_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/editor/challenge_editor.tscn")
+
+
+# --- デバッグ・バランス調整用 クリア状況変更ハンドラ ---
+
+func _on_debug_clear_all_pressed() -> void:
+	GameData.set_all_challenges_max_cleared()
+	_update_all_ui()
+
+
+func _on_debug_reset_all_pressed() -> void:
+	GameData.reset_all_challenges_cleared()
+	_update_all_ui()
+
+
+func _on_debug_minus_pressed() -> void:
+	if _selected_challenge_id.is_empty():
+		return
+	var cur_lvl: int = GameData.get_challenge_cleared_level(_selected_challenge_id)
+	GameData.set_challenge_cleared_level(_selected_challenge_id, cur_lvl - 1)
+	_update_all_ui()
+
+
+func _on_debug_plus_pressed() -> void:
+	if _selected_challenge_id.is_empty():
+		return
+	var cur_lvl: int = GameData.get_challenge_cleared_level(_selected_challenge_id)
+	GameData.set_challenge_cleared_level(_selected_challenge_id, cur_lvl + 1)
+	_update_all_ui()
+
+
+func _on_debug_max_pressed() -> void:
+	if _selected_challenge_id.is_empty():
+		return
+	var max_lvl: int = GameData.get_challenge_def_max_level(_selected_challenge_id)
+	GameData.set_challenge_cleared_level(_selected_challenge_id, max_lvl)
+	_update_all_ui()
+
+
+func _on_debug_reset_pressed() -> void:
+	if _selected_challenge_id.is_empty():
+		return
+	GameData.set_challenge_cleared_level(_selected_challenge_id, 0)
+	_update_all_ui()
+
+
+func _on_debug_clear_opt_selected(idx: int) -> void:
+	if _updating_debug_ui or _selected_challenge_id.is_empty() or not _debug_clear_opt:
+		return
+	var target_lvl: int = int(_debug_clear_opt.get_item_metadata(idx))
+	GameData.set_challenge_cleared_level(_selected_challenge_id, target_lvl)
+	_update_all_ui()
+
+
+func _update_debug_clear_ui() -> void:
+	if not _debug_clear_opt or not _debug_clear_section:
+		return
+	if _selected_challenge_id.is_empty() or not GameData.CHALLENGE_DEFS.has(_selected_challenge_id):
+		_debug_clear_section.visible = false
+		return
+	_debug_clear_section.visible = true
+
+	var ch_id := _selected_challenge_id
+	var cleared_lvl: int = GameData.get_challenge_cleared_level(ch_id)
+	var max_lvl: int = GameData.get_challenge_def_max_level(ch_id)
+
+	_updating_debug_ui = true
+	_debug_clear_opt.clear()
+	_debug_clear_opt.add_item("未クリア (Lv.0)", 0)
+	_debug_clear_opt.set_item_metadata(0, 0)
+
+	var selected_idx := 0
+	for lv in range(1, max_lvl + 1):
+		var item_text := "Lv.%d クリア" % lv
+		if lv == max_lvl:
+			item_text += " (MAX)"
+		_debug_clear_opt.add_item(item_text, lv)
+		_debug_clear_opt.set_item_metadata(lv, lv)
+		if lv == cleared_lvl:
+			selected_idx = lv
+
+	_debug_clear_opt.select(selected_idx)
+	if _debug_minus_btn:
+		_debug_minus_btn.disabled = (cleared_lvl <= 0)
+	if _debug_plus_btn:
+		_debug_plus_btn.disabled = (cleared_lvl >= max_lvl)
+	_updating_debug_ui = false

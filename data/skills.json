@@ -39,6 +39,32 @@
 			"x": 320.0,
 			"y": -960.0
 		},
+		"auto_ascension": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "アセンションの自動化が解放される。",
+			"icon": "res://images/skill_icon/general/auto_ascension.png",
+			"is_unlimited": false,
+			"name": "アセンション自動化",
+			"prerequisites": [
+				"challange_time_extend_3"
+			],
+			"x": 800.0,
+			"y": 320.0
+		},
+		"auto_status_buying": {
+			"base_cost": 1.0,
+			"cost_multiplier": 1.5,
+			"description": "ステータス強化購入の自動化が解放される。",
+			"icon": "res://images/skill_icon/general/auto_status_buying.png",
+			"is_unlimited": false,
+			"name": "ステータス強化自動化",
+			"prerequisites": [
+				"challange_norma_onus_4"
+			],
+			"x": 800.0,
+			"y": -320.0
+		},
 		"buying_expand": {
 			"base_cost": 5000000.0,
 			"cost_multiplier": 1.5,
@@ -53,7 +79,7 @@
 			"y": -960.0
 		},
 		"challange_bonus_boost_1": {
-			"base_cost": 10000000000000.0,
+			"base_cost": 5000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジクリア後のボーナス x1.1。",
 			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
@@ -118,7 +144,7 @@
 			"y": 160.0
 		},
 		"challange_gold_bonus": {
-			"base_cost": 1000000000000000.0,
+			"base_cost": 10000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "クリアしたチャレンジ一つにつき、入手ゴールド +10％。",
 			"icon": "res://images/skill_icon/challange/challange_gold_bonus.png",
@@ -131,7 +157,7 @@
 			"y": 0.0
 		},
 		"challange_level_unlock_1": {
-			"base_cost": 500000000000000.0,
+			"base_cost": 500000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジの最大レベル +1。",
 			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
@@ -144,7 +170,7 @@
 			"y": 160.0
 		},
 		"challange_level_unlock_2": {
-			"base_cost": 1.0,
+			"base_cost": 1000000000000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジの最大レベル +1。",
 			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
@@ -170,7 +196,7 @@
 			"y": 160.0
 		},
 		"challange_max_level_bonus": {
-			"base_cost": 1.0,
+			"base_cost": 100000000000000050000000000000000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "レベル5までクリアしたチャレンジ一つにつき、入手ゴールド/トークン x2。",
 			"icon": "res://images/skill_icon/challange/challange_max_level_bonus.png",
@@ -183,7 +209,7 @@
 			"y": 0.0
 		},
 		"challange_norma_onus_1": {
-			"base_cost": 10000000000000.0,
+			"base_cost": 100000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジのノルマ x0.8。",
 			"icon": "res://images/skill_icon/challange/challange_norma_onus.png",
@@ -248,7 +274,7 @@
 			"y": -160.0
 		},
 		"challange_time_extend_1": {
-			"base_cost": 10000000000000.0,
+			"base_cost": 100000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジの制限時間 x1.2。",
 			"icon": "res://images/skill_icon/challange/challange_time_extend.png",
@@ -313,7 +339,7 @@
 			"y": 160.0
 		},
 		"challange_token_bonus": {
-			"base_cost": 1.0,
+			"base_cost": 99999999999999998000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "クリアしたチャレンジ一つにつき、入手トークン +10％。",
 			"icon": "res://images/skill_icon/challange/challange_token_bonus.png",
@@ -666,7 +692,7 @@
 		"get_token_when_discarding": {
 			"base_cost": 10000000000000.0,
 			"cost_multiplier": 1.5,
-			"description": "装備廃棄時、トークンを獲得(角衝突時と同じ量)。",
+			"description": "装備廃棄時、トークンを獲得(角衝突時と同じ量)。ゴールド/トークン入手量 x10。",
 			"icon": "res://images/skill_icon/equip/get_token_when_discarding.png",
 			"is_unlimited": false,
 			"name": "廃棄時トークン獲得",
@@ -729,7 +755,7 @@
 			"y": -1760.0
 		},
 		"new_challange_unlock_1": {
-			"base_cost": 10000000000000.0,
+			"base_cost": 100000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジ3、4が解放される。",
 			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
@@ -742,7 +768,7 @@
 			"y": 0.0
 		},
 		"new_challange_unlock_2": {
-			"base_cost": 1.0,
+			"base_cost": 999999999999999980000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジ5、6が解放される。",
 			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
@@ -755,7 +781,7 @@
 			"y": 0.0
 		},
 		"new_challange_unlock_3": {
-			"base_cost": 1.0,
+			"base_cost": 1000000000000000100000000000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジ7、8が解放される。",
 			"icon": "res://images/skill_icon/challange/new_challange_unlock.png",
