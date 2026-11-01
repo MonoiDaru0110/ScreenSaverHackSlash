@@ -2045,6 +2045,23 @@ func get_rarity_color(rarity: String) -> Color:
 			return Color(1.0, 1.0, 1.0)
 
 
+func get_rarity_index(rarity: String) -> int:
+	match rarity:
+		"コモン": return 1
+		"アンコモン": return 2
+		"レア": return 3
+		"エピック": return 4
+		"レジェンド": return 5
+		"ミシック": return 6
+		_: return 1
+
+
+func get_forge_max_special_skills() -> int:
+	var base_limit := 1
+	# 将来スキルツリーやチャレンジで上限が上がる場合の拡張ポイント
+	return base_limit
+
+
 func get_rarity_bg_path(rarity: String) -> String:
 	match rarity:
 		"コモン":
@@ -2407,32 +2424,57 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 	all_skills.append_array(special_skills)
 
 	# レア度抽選確率の算出
-	# 1~5個: nからn-2の3種 (1のときはコモンのみ、2のときはコモンとアンコモン)
-	# 6個以上: 4~6に対応したレア度が等確率 (エピック, レジェンド, ミシック) ※ミシック未解放時はレジェンドまで
+	# 1. 投入された素材レアリティの最小値・最大値を取得
+	var mat_r_indices: Array[int] = []
+	for mat in materials:
+		var r_str: String = mat.get("rarity", "コモン")
+		mat_r_indices.append(get_rarity_index(r_str))
+
+	var r_min: int = mat_r_indices.min() if not mat_r_indices.is_empty() else 1
+	var r_max: int = mat_r_indices.max() if not mat_r_indices.is_empty() else 1
+
+	# 2. 基本範囲: [r_min - 1, r_max + 1] (1~6の範囲、ミシック未解放時は最大5)
 	var is_mythic_unlocked := get_skill_level("mythic_unlock") > 0
 	var max_allowed_r := 6 if is_mythic_unlocked else 5
-	var n: int = all_skills.size()
+	var base_min_r: int = maxi(1, r_min - 1)
+	var base_max_r: int = mini(max_allowed_r, r_max + 1)
+
+	# 3. スキル数制約による実現可能性チェック
+	# 特殊スキルの付与上限初期値 = 1 (get_forge_max_special_skills())
+	# 付与可能な最大スキル数 = 通常スキル候補数 + min(特殊スキル候補数, 特殊スキル付与上限)
+	var max_special_count: int = get_forge_max_special_skills()
+	var max_possible_skills: int = normal_skills.size() + mini(special_skills.size(), max_special_count)
+
+	var valid_rarities: Array[int] = []
+	for r in range(base_min_r, base_max_r + 1):
+		# 各レアリティには r 個のスキル枠が必要。付与可能最大スキル数以下なら実現可能
+		if r <= max_possible_skills:
+			valid_rarities.append(r)
+
+	if valid_rarities.is_empty():
+		valid_rarities.append(base_min_r)
+
+	# 4. 正規分布（中央が太め）に従う確率算出
+	var K: int = valid_rarities.size()
+	var center: float = float(K - 1) / 2.0
+	var sigma: float = maxf(0.8, float(K) * 0.25)
+	var weights: Array[float] = []
+	var total_weight: float = 0.0
+	for i in range(K):
+		var diff: float = float(i) - center
+		var w: float = exp(-(diff * diff) / (2.0 * sigma * sigma))
+		weights.append(w)
+		total_weight += w
+
 	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
 	var rarity_probs: Dictionary = {}
-	var min_r: int = 1
-	var max_r: int = 1
+	for i in range(K):
+		var r_idx: int = valid_rarities[i]
+		var r_name: String = rarity_names[r_idx - 1]
+		rarity_probs[r_name] = (weights[i] / total_weight) if total_weight > 0.0 else (1.0 / float(K))
 
-	if n <= 0:
-		pass
-	elif n <= 5:
-		min_r = maxi(1, n - 2)
-		max_r = mini(n, max_allowed_r)
-		var count: float = float(max_r - min_r + 1)
-		for r_idx in range(min_r, max_r + 1):
-			var r_name: String = rarity_names[r_idx - 1]
-			rarity_probs[r_name] = 1.0 / count
-	else:
-		min_r = 4
-		max_r = max_allowed_r
-		var count: float = float(max_r - min_r + 1)
-		for r_idx in range(min_r, max_r + 1):
-			var r_name: String = rarity_names[r_idx - 1]
-			rarity_probs[r_name] = 1.0 / count
+	var min_r: int = valid_rarities[0]
+	var max_r: int = valid_rarities[K - 1]
 
 	var min_level: int = 10
 	var max_level: int = 10
@@ -2458,6 +2500,9 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 		"can_forge": materials.size() >= 2 and materials.size() <= 9,
 		"reason": "" if materials.size() >= 2 else "素材が2つ以上必要です",
 		"skills": all_skills,
+		"normal_skills": normal_skills,
+		"special_skills": special_skills,
+		"valid_rarities": valid_rarities,
 		"rarity_probs": rarity_probs,
 		"possible_rarity_range": [min_r, max_r],
 		"forge_count": first_forge_count + 1,
@@ -2503,30 +2548,48 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 	var forge_count: int = preview["forge_count"]
 	var possible_levels: Array = preview.get("possible_levels", [10])
 	var chosen_level: int = possible_levels[randi() % possible_levels.size()]
-	var all_candidate_skills: Array = preview["skills"].duplicate(true)
-
-	# レア度の決定
-	var r_range: Array = preview.get("possible_rarity_range", [1, 1])
-	var rolled_r_idx: int = randi_range(r_range[0], r_range[1])
+	var normal_candidates: Array = preview.get("normal_skills", []).duplicate(true)
+	var special_candidates: Array = preview.get("special_skills", []).duplicate(true)
+	var valid_rarities: Array = preview.get("valid_rarities", [1])
+	var rarity_probs: Dictionary = preview.get("rarity_probs", {})
 	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
+
+	# 1. 正規分布確率によるレア度の抽選
+	var rolled_r_idx: int = valid_rarities[0]
+	var roll := randf()
+	var accum := 0.0
+	for r_idx in valid_rarities:
+		var r_name: String = rarity_names[r_idx - 1]
+		accum += float(rarity_probs.get(r_name, 0.0))
+		if roll <= accum:
+			rolled_r_idx = r_idx
+			break
 	var chosen_rarity: String = rarity_names[rolled_r_idx - 1]
 
-	# 決定されたレア度枠数に応じたスキル選出
+	# 2. スキルの選出（特殊スキル候補が存在する場合は必ず付与 → 残り枠を通常スキルで埋める）
 	var num_slots: int = rolled_r_idx
-	var select_count: int = mini(num_slots, all_candidate_skills.size())
-	all_candidate_skills.shuffle()
-	var selected_skills := all_candidate_skills.slice(0, select_count)
+	var chosen_spec_count: int = mini(num_slots, mini(special_candidates.size(), get_forge_max_special_skills()))
 
-	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
+	# 特殊スキルの選出
+	special_candidates.shuffle()
+	var selected_spec_skills: Array = special_candidates.slice(0, chosen_spec_count)
+
+	# 残り枠数の通常スキルの選出
+	var needed_norm_count: int = num_slots - chosen_spec_count
+	normal_candidates.shuffle()
+	var selected_norm_skills: Array = normal_candidates.slice(0, mini(needed_norm_count, normal_candidates.size()))
+
+	# スキル説明文を生成
 	var normal_list: Array[Dictionary] = []
 	var special_list: Array[Dictionary] = []
-	for sk in selected_skills:
-		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], sk.get("is_special", false))
-		if sk.get("is_special", false):
-			special_list.append(sk)
-		else:
-			normal_list.append(sk)
+	for sk in selected_norm_skills:
+		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], false)
+		normal_list.append(sk)
+	for sk in selected_spec_skills:
+		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], true)
+		special_list.append(sk)
 
+	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
 	normal_list.sort_custom(func(a, b): return a["level"] > b["level"])
 	special_list.sort_custom(func(a, b): return a["level"] > b["level"])
 
