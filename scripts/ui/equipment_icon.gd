@@ -43,7 +43,13 @@ func update_item(eq: Variant) -> void:
 			slot_base.visible = true
 		if bg_texture_rect:
 			bg_texture_rect.visible = true
-			var bg_path := GameData.get_rarity_bg_path(item_rarity)
+			var bg_path := ""
+			if eq.has("bg_path") and not str(eq["bg_path"]).is_empty():
+				bg_path = str(eq["bg_path"])
+			elif eq.has("bg_texture_path") and not str(eq["bg_texture_path"]).is_empty():
+				bg_path = str(eq["bg_texture_path"])
+			else:
+				bg_path = GameData.get_rarity_bg_path(item_rarity)
 			var bg_tex := load(bg_path)
 			bg_texture_rect.texture = bg_tex
 		
@@ -65,7 +71,9 @@ func update_item(eq: Variant) -> void:
 					icon_rect.visible = false
 		
 		if level_label:
-			if eq.has("level_str"):
+			if eq.get("hide_level", false) or eq.get("hide_icon_level", false):
+				level_label.text = ""
+			elif eq.has("level_str"):
 				level_label.text = str(eq.get("level_str"))
 			elif eq.has("level"):
 				level_label.text = "Lv%d" % eq.get("level", 1)

@@ -191,8 +191,16 @@ func get_max_inventory_size() -> int:
 
 # --- Automation Settings ---
 var auto_status_buying_enabled: bool = true
+var auto_buy_size_enabled: bool = true
+var auto_buy_speed_enabled: bool = true
+var auto_buy_boost_enabled: bool = true
+
 var auto_ascend_enabled: bool = true
+var auto_ascend_disable_during_challenge: bool = true
 var auto_ascend_min_total_level: int = 100
+var auto_ascend_min_size_level: int = 0
+var auto_ascend_min_speed_level: int = 0
+var auto_ascend_min_boost_level: int = 0
 var auto_ascend_wait_seconds: float = 0.0
 var _auto_ascend_timer: float = 0.0
 signal auto_settings_changed
@@ -236,7 +244,7 @@ var special_skill_defs: Dictionary = {
 	"spec_accumulation": {
 		"id": "spec_accumulation",
 		"name": "累積",
-		"desc_template": "ゴールド、トークン入手量×2^(レベル) 一定回数衝突するごとにさらに倍率+2^(レベル)",
+		"desc_template": "ゴールド、トークン入手量×1.5^(レベル) 一定回数衝突するごとにさらに倍率+1.5^(レベル)",
 		"has_custom_ui": true,
 		"ui_title": "累積"
 	},
@@ -409,7 +417,7 @@ func get_special_skill_total_level(skill_id: String) -> int:
 	var total_lvl := get_special_skill_active_level(skill_id)
 	if is_equip_disabled_challenge_active():
 		return total_lvl
-	var bonus_lvl := get_c1_equipment_skill_bonus()
+	var bonus_lvl := get_c1_special_skill_bonus()
 	for slot_key in equipped_items:
 		if not is_slot_unlocked(slot_key):
 			continue
@@ -446,8 +454,8 @@ func get_accumulation_multiplier() -> float:
 	if m <= 0:
 		return 1.0
 	var n: int = accumulation_rank
-	# (n + 1) * 2^m
-	return float(n + 1) * pow(2.0, float(m))
+	# (n + 1) * 1.5^m
+	return float(n + 1) * pow(1.5, float(m))
 
 
 func record_accumulation_bounce() -> void:
@@ -1450,13 +1458,13 @@ func _run_auto_status_buying() -> void:
 		var min_cost := INF
 		var target := ""
 
-		if gold >= c_speed and c_speed < min_cost:
+		if auto_buy_speed_enabled and gold >= c_speed and c_speed < min_cost:
 			min_cost = c_speed
 			target = "speed"
-		if gold >= c_boost and c_boost < min_cost:
+		if auto_buy_boost_enabled and gold >= c_boost and c_boost < min_cost:
 			min_cost = c_boost
 			target = "boost"
-		if gold >= c_size and c_size < min_cost:
+		if auto_buy_size_enabled and gold >= c_size and c_size < min_cost:
 			min_cost = c_size
 			target = "size"
 
@@ -1482,6 +1490,22 @@ func _run_auto_status_buying() -> void:
 		upgrades_changed.emit()
 
 
+func is_auto_ascend_condition_met() -> bool:
+	if not can_ascend():
+		return false
+	if auto_ascend_disable_during_challenge and is_challenge_active():
+		return false
+	if get_base_upgrade_total_level() < auto_ascend_min_total_level:
+		return false
+	if size_level < auto_ascend_min_size_level:
+		return false
+	if speed_level < auto_ascend_min_speed_level:
+		return false
+	if boost_level < auto_ascend_min_boost_level:
+		return false
+	return true
+
+
 func _run_auto_ascension(delta: float) -> void:
 	if not auto_ascend_enabled:
 		if _auto_ascend_timer > 0.0:
@@ -1489,8 +1513,7 @@ func _run_auto_ascension(delta: float) -> void:
 			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
 		return
 
-	var total_lvl := get_base_upgrade_total_level()
-	if can_ascend() and total_lvl >= auto_ascend_min_total_level:
+	if is_auto_ascend_condition_met():
 		_auto_ascend_timer += delta
 		auto_ascend_timer_updated.emit(_auto_ascend_timer, auto_ascend_wait_seconds)
 		if _auto_ascend_timer >= auto_ascend_wait_seconds:
@@ -1508,10 +1531,34 @@ func get_auto_ascend_timer() -> float:
 
 
 func set_auto_ascend_settings(enabled: bool, min_total_lvl: int, wait_sec: float) -> void:
+	set_auto_ascend_all_conditions(
+		enabled,
+		auto_ascend_disable_during_challenge,
+		min_total_lvl,
+		auto_ascend_min_size_level,
+		auto_ascend_min_speed_level,
+		auto_ascend_min_boost_level,
+		wait_sec
+	)
+
+
+func set_auto_ascend_all_conditions(enabled: bool, disable_challenge: bool, min_total: int, min_size: int, min_speed: int, min_boost: int, wait_sec: float) -> void:
 	auto_ascend_enabled = enabled
-	auto_ascend_min_total_level = maxi(100, min_total_lvl)
+	auto_ascend_disable_during_challenge = disable_challenge
+	auto_ascend_min_total_level = maxi(100, min_total)
+	auto_ascend_min_size_level = maxi(0, min_size)
+	auto_ascend_min_speed_level = maxi(0, min_speed)
+	auto_ascend_min_boost_level = maxi(0, min_boost)
 	auto_ascend_wait_seconds = maxf(0.0, wait_sec)
-	if not auto_ascend_enabled or get_base_upgrade_total_level() < auto_ascend_min_total_level:
+	if not auto_ascend_enabled or not is_auto_ascend_condition_met():
+		_auto_ascend_timer = 0.0
+		auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+	auto_settings_changed.emit()
+
+
+func set_auto_ascend_disable_during_challenge(disable: bool) -> void:
+	auto_ascend_disable_during_challenge = disable
+	if not auto_ascend_enabled or not is_auto_ascend_condition_met():
 		_auto_ascend_timer = 0.0
 		auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
 	auto_settings_changed.emit()
@@ -1519,6 +1566,14 @@ func set_auto_ascend_settings(enabled: bool, min_total_lvl: int, wait_sec: float
 
 func set_auto_status_buying_enabled(enabled: bool) -> void:
 	auto_status_buying_enabled = enabled
+	auto_settings_changed.emit()
+
+
+func set_auto_buying_settings(main_enabled: bool, size_on: bool, speed_on: bool, boost_on: bool) -> void:
+	auto_status_buying_enabled = main_enabled
+	auto_buy_size_enabled = size_on
+	auto_buy_speed_enabled = speed_on
+	auto_buy_boost_enabled = boost_on
 	auto_settings_changed.emit()
 
 
@@ -1571,6 +1626,18 @@ func _parse_skill_percent_bonus(skill_id: String, fallback: float) -> float:
 		var result := regex.search(desc)
 		if result:
 			return float(result.get_string(1)) * 0.01
+	return fallback
+
+
+func _parse_skill_multiplier_bonus(skill_id: String, fallback: float) -> float:
+	if not skill_tree_defs.has(skill_id):
+		return fallback
+	var desc: String = skill_tree_defs[skill_id].get("description", "")
+	var regex := RegEx.new()
+	if regex.compile(r"[x×]([\d\.]+)") == OK:
+		var result := regex.search(desc)
+		if result:
+			return result.get_string(1).to_float()
 	return fallback
 
 
@@ -1801,8 +1868,21 @@ func _recalculate_cached_multipliers() -> void:
 
 	# 購入オプション拡張: 入手ゴールド/トークン×150倍
 	if get_skill_level("buying_expand") > 0:
-		tree_gold_mult *= 150.0
-		tree_token_mult *= 150.0
+		var mult := _parse_skill_multiplier_bonus("buying_expand", 150.0)
+		tree_gold_mult *= mult
+		tree_token_mult *= mult
+
+	# 基礎強化自動化: 入手ゴールド/トークンx5倍
+	if get_skill_level("auto_status_buying") > 0:
+		var mult := _parse_skill_multiplier_bonus("auto_status_buying", 5.0)
+		tree_gold_mult *= mult
+		tree_token_mult *= mult
+
+	# アセンション自動化: 入手ゴールド/トークンx5倍
+	if get_skill_level("auto_ascension") > 0:
+		var mult := _parse_skill_multiplier_bonus("auto_ascension", 5.0)
+		tree_gold_mult *= mult
+		tree_token_mult *= mult
 
 	# 角ヒット時装備強化: 入手ゴールド/トークン5倍
 	if get_skill_level("equip_corner_enhance") > 0:
@@ -1993,8 +2073,8 @@ func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool =
 			var m4 := pow(4.0, float(s_level))
 			return desc_tmpl % [format_num(m2), format_num(m4)]
 		elif sk_id == "spec_accumulation":
-			var base_mult := int(pow(2.0, float(s_level)))
-			var s_val := format_num(float(base_mult))
+			var base_mult := pow(1.5, float(s_level))
+			var s_val := ("%.2f" % base_mult).rstrip("0").rstrip(".") if base_mult < 100.0 else format_num(base_mult)
 			return "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
 		elif sk_id == "spec_trinity":
 			var mult_val := 2.0 + 0.2 * float(s_level - 1)
@@ -2026,6 +2106,57 @@ func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool =
 		elif "%d" in desc_tmpl:
 			return desc_tmpl % int(round(total_val))
 		return desc_tmpl
+
+
+# --- Equipment Drop Rarity Probability Tables ---
+# レアリティ係数が低いときは低レアが出やすく、高くなるほど各レアリティのドロップ確率が等確率 (1/N) に近づくテーブル
+const RARITY_DROP_TABLE_STANDARD: Dictionary = {
+	"names": ["コモン", "アンコモン", "レア", "エピック", "レジェンド"],
+	"base_probs": [0.65, 0.23, 0.085, 0.03, 0.005], # レアリティ係数0のときの基本確率 (計 1.0)
+	"half_life_l": 80.0, # 等確率への接近速度パラメータ (L = 80 で約63%接近)
+}
+
+const RARITY_DROP_TABLE_MYTHIC: Dictionary = {
+	"names": ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"],
+	"base_probs": [0.55, 0.25, 0.12, 0.055, 0.02, 0.005], # レアリティ係数0のときの基本確率 (計 1.0)
+	"half_life_l": 100.0, # 等確率への接近速度パラメータ (L = 100 で約63%接近)
+}
+
+
+## 指定されたレアリティ係数とミシック解放状態から、各レアリティのドロップ確率を計算して返す
+func calculate_drop_rarity_probabilities(rarity_lvl: int, is_mythic: bool) -> Dictionary:
+	var table: Dictionary = RARITY_DROP_TABLE_MYTHIC if is_mythic else RARITY_DROP_TABLE_STANDARD
+	var names: Array = table["names"]
+	var base_probs: Array = table["base_probs"]
+	var half_life: float = float(table.get("half_life_l", 80.0))
+	var n: int = names.size()
+	var uniform_p: float = 1.0 / float(n)
+
+	var L: float = maxf(0.0, float(rarity_lvl))
+	# L が高くなるにつれて t は 0.0 -> 1.0 に漸近（等確率へ近づく）
+	var t: float = 1.0 - exp(-L / half_life)
+
+	var result: Dictionary = {}
+	for i in range(n):
+		var r_name: String = names[i]
+		var b_p: float = float(base_probs[i])
+		var p: float = (1.0 - t) * b_p + t * uniform_p
+		result[r_name] = p
+	return result
+
+
+## ドロップ時のレアリティを抽選する
+func roll_drop_equipment_rarity(rarity_lvl: int, is_mythic: bool) -> String:
+	var probs := calculate_drop_rarity_probabilities(rarity_lvl, is_mythic)
+	var roll := randf()
+	var accum := 0.0
+	var last_name := "コモン"
+	for r_name in probs:
+		last_name = r_name
+		accum += float(probs[r_name])
+		if roll <= accum:
+			return r_name
+	return last_name
 
 
 func generate_random_equipment(is_corner: bool = false) -> Dictionary:
@@ -2076,41 +2207,13 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	else:
 		tier = "low"
 	
-	# Generate random rarity using Gaussian (Normal) Distribution model
-	# Index x: 0:コモン, 1:アンコモン, 2:レア, 3:エピック, 4:レジェンド, 5:ミシック
+	# レア度抽選 (レアリティ係数が高くなるほど等確率に近づくテーブル方式)
 	var rarity_level := get_total_equip_drop_rarity_boost() + int(get_equipped_skill_total_val("drop_rarity") + get_equipped_skill_total_val("drop_luck"))
 	if is_corner and get_skill_level("equip_corner_enhance") > 0:
 		rarity_level += 1
 
 	var is_mythic_unlocked := get_skill_level("mythic_unlock") > 0
-	var max_rarity_idx := 5 if is_mythic_unlocked else 4
-	var max_mu := 5.0 if is_mythic_unlocked else 4.0
-
-	var L := float(rarity_level)
-	var mu := minf(max_mu, 0.05 * L)
-	var threshold_L := 100.0 if is_mythic_unlocked else 80.0
-	var extra_L := maxf(0.0, L - threshold_L)
-	var sigma := 0.01 + 1.09 * exp(-0.02 * extra_L)
-
-	var num_rarities := max_rarity_idx + 1
-	var weights: Array[float] = []
-	weights.resize(num_rarities)
-	var total_w := 0.0
-	for x in range(num_rarities):
-		var diff := float(x) - mu
-		var w := exp(- (diff * diff) / (2.0 * sigma * sigma))
-		weights[x] = w
-		total_w += w
-
-	var roll := randf() * total_w
-	var accumulated_w := 0.0
-	var rarity_names := ["コモン", "アンコモン", "レア", "エピック", "レジェンド", "ミシック"]
-	var rarity: String = "コモン"
-	for x in range(num_rarities):
-		accumulated_w += weights[x]
-		if roll <= accumulated_w:
-			rarity = rarity_names[x]
-			break
+	var rarity: String = roll_drop_equipment_rarity(rarity_level, is_mythic_unlocked)
 	
 	# レア度に応じたスキル付与数
 	var num_skills := 1
@@ -2331,6 +2434,26 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 			var r_name: String = rarity_names[r_idx - 1]
 			rarity_probs[r_name] = 1.0 / count
 
+	var min_level: int = 10
+	var max_level: int = 10
+	if not levels.is_empty():
+		min_level = levels[0]
+		max_level = levels[0]
+		for lvl in levels:
+			min_level = mini(min_level, lvl)
+			max_level = maxi(max_level, lvl)
+
+	var possible_levels: Array[int] = []
+	if min_level == max_level:
+		possible_levels.append(min_level)
+	else:
+		var curr := min_level
+		while curr <= max_level:
+			possible_levels.append(curr)
+			curr += 10
+		if not possible_levels.has(max_level):
+			possible_levels.append(max_level)
+
 	return {
 		"can_forge": materials.size() >= 2 and materials.size() <= 9,
 		"reason": "" if materials.size() >= 2 else "素材が2つ以上必要です",
@@ -2339,6 +2462,9 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 		"possible_rarity_range": [min_r, max_r],
 		"forge_count": first_forge_count + 1,
 		"levels": levels,
+		"min_level": min_level,
+		"max_level": max_level,
+		"possible_levels": possible_levels,
 		"item_type": first_type
 	}
 
@@ -2375,8 +2501,8 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 		return {}
 
 	var forge_count: int = preview["forge_count"]
-	var levels: Array = preview["levels"]
-	var chosen_level: int = levels[randi() % levels.size()]
+	var possible_levels: Array = preview.get("possible_levels", [10])
+	var chosen_level: int = possible_levels[randi() % possible_levels.size()]
 	var all_candidate_skills: Array = preview["skills"].duplicate(true)
 
 	# レア度の決定
@@ -2442,29 +2568,8 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 
 
 # --- Equipment Filtering Logic ---
-var equipment_filter_settings: Dictionary = {
-	"level_tiers": {
-		"low": true,
-		"medium": true,
-		"high": true
-	},
-	"rarities": {
-		"コモン": true,
-		"アンコモン": true,
-		"レア": true,
-		"エピック": true,
-		"レジェンド": true,
-		"ミシック": true
-	},
-	"normal_skills": {},
-	"normal_skill_mode": "OR",
-	"special_skill": ""
-}
-signal equipment_filter_changed
-
-
-func reset_equipment_filter_settings() -> void:
-	equipment_filter_settings = {
+static func get_default_equipment_filter_settings() -> Dictionary:
+	return {
 		"level_tiers": {
 			"low": true,
 			"medium": true,
@@ -2481,6 +2586,48 @@ func reset_equipment_filter_settings() -> void:
 		"normal_skills": {},
 		"normal_skill_mode": "OR",
 		"special_skill": ""
+	}
+
+var equipment_filter_settings: Dictionary = get_default_equipment_filter_settings()
+signal equipment_filter_changed
+
+
+func reset_equipment_filter_settings() -> void:
+	equipment_filter_settings = get_default_equipment_filter_settings()
+	equipment_filter_changed.emit()
+
+
+func _apply_equipment_filter_settings(raw: Dictionary) -> void:
+	var def := get_default_equipment_filter_settings()
+	var tiers: Dictionary = def["level_tiers"]
+	if raw.has("level_tiers") and raw["level_tiers"] is Dictionary:
+		for k in tiers:
+			if raw["level_tiers"].has(k):
+				tiers[k] = bool(raw["level_tiers"][k])
+
+	var rarities: Dictionary = def["rarities"]
+	if raw.has("rarities") and raw["rarities"] is Dictionary:
+		for k in rarities:
+			if raw["rarities"].has(k):
+				rarities[k] = bool(raw["rarities"][k])
+
+	var normal_skills: Dictionary = {}
+	if raw.has("normal_skills") and raw["normal_skills"] is Dictionary:
+		for k in raw["normal_skills"]:
+			normal_skills[k] = bool(raw["normal_skills"][k])
+
+	var mode := str(raw.get("normal_skill_mode", "OR"))
+	if mode != "AND" and mode != "OR":
+		mode = "OR"
+
+	var spec := str(raw.get("special_skill", ""))
+
+	equipment_filter_settings = {
+		"level_tiers": tiers,
+		"rarities": rarities,
+		"normal_skills": normal_skills,
+		"normal_skill_mode": mode,
+		"special_skill": spec
 	}
 	equipment_filter_changed.emit()
 
@@ -3506,17 +3653,17 @@ func apply_challenge_bonus_boost(ch_id: String, base_val: float) -> float:
 		return apply_c8_add_bonus(base_val)
 
 
-func get_c1_equipment_skill_bonus() -> int:
+func get_c1_equipment_skill_bonus_float() -> float:
 	if is_challenge_bonus_disabled_challenge_active():
-		return 0
+		return 0.0
 	var ch_id := get_challenge_id_by_name("装備無効")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name_contains("装備")
 	if ch_id.is_empty():
-		return 0
+		return 0.0
 	var cleared_lvl := get_challenge_cleared_level(ch_id)
 	if cleared_lvl <= 0:
-		return 0
+		return 0.0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
 	var raw_val := 0.0
 	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
@@ -3526,13 +3673,21 @@ func get_c1_equipment_skill_bonus() -> int:
 	else:
 		var desc: String = str(lv_def.get("reward_desc", ""))
 		var regex := RegEx.new()
-		if regex.compile(r"\+(\d+)") == OK:
+		if regex.compile(r"\+([\d\.]+)") == OK:
 			var result := regex.search(desc)
 			if result:
 				raw_val = result.get_string(1).to_float()
 	if raw_val <= 0.0:
-		return 0
-	return int(round(apply_challenge_bonus_boost(ch_id, raw_val)))
+		return 0.0
+	return apply_challenge_bonus_boost(ch_id, raw_val)
+
+
+func get_c1_equipment_skill_bonus() -> int:
+	return int(round(get_c1_equipment_skill_bonus_float()))
+
+
+func get_c1_special_skill_bonus() -> int:
+	return int(round(get_c1_equipment_skill_bonus_float() * 0.1))
 
 
 func get_base_upgrade_challenge_bonus() -> int:
@@ -4376,9 +4531,18 @@ func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dic
 		"amp_token_pow_level": amp_token_pow_level,
 		# 自動化設定
 		"auto_status_buying_enabled": auto_status_buying_enabled,
+		"auto_buy_size_enabled": auto_buy_size_enabled,
+		"auto_buy_speed_enabled": auto_buy_speed_enabled,
+		"auto_buy_boost_enabled": auto_buy_boost_enabled,
 		"auto_ascend_enabled": auto_ascend_enabled,
+		"auto_ascend_disable_during_challenge": auto_ascend_disable_during_challenge,
 		"auto_ascend_min_total_level": auto_ascend_min_total_level,
-		"auto_ascend_wait_seconds": auto_ascend_wait_seconds
+		"auto_ascend_min_size_level": auto_ascend_min_size_level,
+		"auto_ascend_min_speed_level": auto_ascend_min_speed_level,
+		"auto_ascend_min_boost_level": auto_ascend_min_boost_level,
+		"auto_ascend_wait_seconds": auto_ascend_wait_seconds,
+		# 装備ドロップフィルター
+		"equipment_filter_settings": equipment_filter_settings.duplicate(true)
 	}
 
 
@@ -4653,12 +4817,26 @@ func _apply_save_data(data: Dictionary) -> void:
 
 	# 8. 自動化設定
 	auto_status_buying_enabled = bool(data.get("auto_status_buying_enabled", true))
+	auto_buy_size_enabled = bool(data.get("auto_buy_size_enabled", true))
+	auto_buy_speed_enabled = bool(data.get("auto_buy_speed_enabled", true))
+	auto_buy_boost_enabled = bool(data.get("auto_buy_boost_enabled", true))
 	auto_ascend_enabled = bool(data.get("auto_ascend_enabled", true))
+	auto_ascend_disable_during_challenge = bool(data.get("auto_ascend_disable_during_challenge", true))
 	auto_ascend_min_total_level = maxi(100, int(data.get("auto_ascend_min_total_level", 100)))
+	auto_ascend_min_size_level = maxi(0, int(data.get("auto_ascend_min_size_level", 0)))
+	auto_ascend_min_speed_level = maxi(0, int(data.get("auto_ascend_min_speed_level", 0)))
+	auto_ascend_min_boost_level = maxi(0, int(data.get("auto_ascend_min_boost_level", 0)))
 	auto_ascend_wait_seconds = maxf(0.0, float(data.get("auto_ascend_wait_seconds", 0.0)))
 	_auto_ascend_timer = 0.0
 
-	# 9. 各種キャッシュの再計算 & シグナル通知
+	# 9. 装備ドロップフィルター
+	var raw_filter = data.get("equipment_filter_settings", null)
+	if raw_filter is Dictionary:
+		_apply_equipment_filter_settings(raw_filter)
+	else:
+		reset_equipment_filter_settings()
+
+	# 10. 各種キャッシュの再計算 & シグナル通知
 	_recalculate_all_cumulative_levels()
 	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
@@ -4697,8 +4875,15 @@ func reset_all_data() -> void:
 	ascension_level = 0
 
 	auto_status_buying_enabled = true
+	auto_buy_size_enabled = true
+	auto_buy_speed_enabled = true
+	auto_buy_boost_enabled = true
 	auto_ascend_enabled = true
+	auto_ascend_disable_during_challenge = true
 	auto_ascend_min_total_level = 100
+	auto_ascend_min_size_level = 0
+	auto_ascend_min_speed_level = 0
+	auto_ascend_min_boost_level = 0
 	auto_ascend_wait_seconds = 0.0
 	_auto_ascend_timer = 0.0
 
@@ -4743,6 +4928,8 @@ func reset_all_data() -> void:
 	amp_token_mult_level = 0
 	amp_token_mult_b_level = 0
 	amp_token_pow_level = 0
+
+	reset_equipment_filter_settings()
 
 	apply_auto_unlocked_skills()
 	_recalculate_all_cumulative_levels()

@@ -786,14 +786,14 @@ func _format_special_skill_bbcode(skill_id: String, skill_name: String, level: i
 	if level == 0:
 		raw_desc = "効果なし"
 	elif skill_id == "spec_diversity":
-		var m25 := pow(25.0, float(level))
-		var m50 := pow(50.0, float(level))
-		var s25 := GameData.format_num(m25)
-		var s50 := GameData.format_num(m50)
-		raw_desc = "装備レア度3種以上で%s倍、6種で%s倍" % [s25, s50]
+		var m2 := pow(2.0, float(level))
+		var m4 := pow(4.0, float(level))
+		var s2 := GameData.format_num(m2)
+		var s4 := GameData.format_num(m4)
+		raw_desc = "装備レア度3種以上で%s倍、6種で%s倍" % [s2, s4]
 	elif skill_id == "spec_accumulation":
-		var base_mult := int(pow(2.0, float(level)))
-		var s_val := GameData.format_num(float(base_mult))
+		var base_mult := pow(1.5, float(level))
+		var s_val := ("%.2f" % base_mult).rstrip("0").rstrip(".") if base_mult < 100.0 else GameData.format_num(base_mult)
 		raw_desc = "ゴールド、トークン入手量×%s 一定回数衝突するごとにさらに倍率+%s" % [s_val, s_val]
 	elif skill_id == "spec_trinity":
 		var mult_val := 2.0 + 0.2 * float(level - 1)

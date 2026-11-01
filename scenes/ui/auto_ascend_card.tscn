@@ -1,0 +1,221 @@
+[gd_scene load_steps=7 format=3 uid="uid://c_auto_ascend_card_001"]
+
+[ext_resource type="PackedScene" uid="uid://c_auto_card_base_001" path="res://scenes/ui/automation_card_base.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/ui/auto_ascend_card.gd" id="2_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lock_label"]
+bg_color = Color(0.22, 0.14, 0.15, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.20, 0.24, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_opt_normal"]
+bg_color = Color(0.26, 0.26, 0.30, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.38, 0.38, 0.44, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_opt_hover"]
+bg_color = Color(0.34, 0.34, 0.38, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.48, 0.48, 0.54, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_status_panel"]
+bg_color = Color(0.13, 0.13, 0.15, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.26, 0.26, 0.29, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="AutoAscendCard" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+card_title = "アセンション自動化"
+
+[node name="AutoAscendUnlockLabel" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer" index="0"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.55, 0.55, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_lock_label")
+text = "  スキルツリー「アセンション自動化」の習得で機能が解放されます"
+
+[node name="AutoAscendContent" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer" index="1"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="MainToggle" type="CheckBox" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 15
+text = "自動アセンションを有効化"
+
+[node name="DisableDuringChallengeCheck" type="CheckBox" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 14
+button_pressed = true
+text = "チャレンジ中の自動アセンションを無効化"
+
+[node name="HSeparator1" type="HSeparator" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent"]
+layout_mode = 2
+
+[node name="ConditionsSection" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ConditionsHeader" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.90, 0.94, 1)
+theme_override_font_sizes/font_size = 14
+text = "アセンション条件"
+
+[node name="ConditionsGrid" type="HBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TotalBox" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/TotalBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+text = "合計レベル"
+
+[node name="TotalLevelOpt" type="OptionButton" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/TotalBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_opt_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opt_hover")
+
+[node name="SizeBox" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/SizeBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+text = "ロゴサイズ"
+
+[node name="SizeLevelOpt" type="OptionButton" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/SizeBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_opt_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opt_hover")
+
+[node name="SpeedBox" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/SpeedBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+text = "速度"
+
+[node name="SpeedLevelOpt" type="OptionButton" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/SpeedBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_opt_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opt_hover")
+
+[node name="BoostBox" type="VBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="Label" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/BoostBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.77, 0.82, 1)
+theme_override_font_sizes/font_size = 13
+text = "ゴールド/トークン"
+
+[node name="BoostLevelOpt" type="OptionButton" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/ConditionsGrid/BoostBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_opt_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opt_hover")
+
+[node name="WaitTimeRow" type="HBoxContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PreLabel" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/WaitTimeRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "上記の条件を満たしてから"
+vertical_alignment = 1
+
+[node name="WaitTimeOpt" type="OptionButton" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/WaitTimeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_opt_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_opt_hover")
+
+[node name="PostLabel" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/ConditionsSection/WaitTimeRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.87, 0.92, 1)
+theme_override_font_sizes/font_size = 14
+text = "秒後にアセンション"
+vertical_alignment = 1
+
+[node name="StatusPanel" type="PanelContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_status_panel")
+
+[node name="StatusMargin" type="MarginContainer" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="AutoAscendStatusLabel" type="Label" parent="CardVBox/BodyPanel/BodyMargin/ContentContainer/AutoAscendContent/StatusPanel/StatusMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "判定待機中"
