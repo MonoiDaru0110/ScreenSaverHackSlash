@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3 uid="uid://bth5hfbmp82qx"]
+[gd_scene load_steps=43 format=3 uid="uid://bth5hfbmp82qx"]
 
 [ext_resource type="Script" uid="uid://bdfi457l7qh87" path="res://scripts/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" uid="uid://bqrkp61hpr2v6" path="res://scripts/skills/skill_tree_controller.gd" id="2_controller"]
@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://cfhojkdlop3c" path="res://scenes/ui/amplifier_window.tscn" id="12_amplifier_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_filter_window.tscn" id="13_inv_filter_scene"]
 [ext_resource type="PackedScene" path="res://scenes/ui/save_slot_window.tscn" id="14_save_slot_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/automation_settings_window.tscn" id="15_auto_settings_scene"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_save_panel"]
 bg_color = Color(0.1, 0.1, 0.16, 0.85)
@@ -59,6 +60,15 @@ corner_radius_bottom_right = 6
 corner_radius_bottom_left = 6
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_footer"]
+bg_color = Color(0.06, 0.06, 0.1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_btn_hover"]
+bg_color = Color(0.14, 0.16, 0.26, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_btn_pressed"]
+bg_color = Color(0.04, 0.04, 0.08, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_menu_btn_normal"]
 bg_color = Color(0.06, 0.06, 0.1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_top"]
@@ -800,6 +810,11 @@ unique_name_in_owner = true
 visible = false
 z_index = 10
 
+[node name="AutomationSettingsWindow" parent="." instance=ExtResource("15_auto_settings_scene")]
+unique_name_in_owner = true
+visible = false
+z_index = 15
+
 [node name="Sidebar" type="Control" parent="."]
 z_index = 10
 layout_mode = 3
@@ -825,13 +840,17 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_footer")
 
-[node name="CenterContainer" type="CenterContainer" parent="Sidebar/SidebarLayout/HeaderSection"]
+[node name="MenuSettingsBtn" type="Button" parent="Sidebar/SidebarLayout/HeaderSection"]
+unique_name_in_owner = true
 layout_mode = 2
-
-[node name="Label" type="Label" parent="Sidebar/SidebarLayout/HeaderSection/CenterContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.8, 1)
+focus_mode = 0
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_color = Color(0.75, 0.78, 0.9, 1)
+theme_override_colors/font_pressed_color = Color(0.6, 0.65, 0.8, 1)
 theme_override_font_sizes/font_size = 16
+theme_override_styles/hover = SubResource("StyleBoxFlat_menu_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_menu_btn_pressed")
+theme_override_styles/normal = SubResource("StyleBoxFlat_menu_btn_normal")
 text = "⚙️ メニュー / 設定"
 
 [node name="SeparatorHeader" type="ColorRect" parent="Sidebar/SidebarLayout"]

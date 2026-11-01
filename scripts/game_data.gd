@@ -189,6 +189,15 @@ func get_max_inventory_size() -> int:
 		sz += 10
 	return sz
 
+# --- Automation Settings ---
+var auto_status_buying_enabled: bool = true
+var auto_ascend_enabled: bool = true
+var auto_ascend_min_total_level: int = 100
+var auto_ascend_wait_seconds: float = 0.0
+var _auto_ascend_timer: float = 0.0
+signal auto_settings_changed
+signal auto_ascend_timer_updated(current_timer: float, wait_seconds: float)
+
 # --- Special Skill Settings & Definitions ---
 var special_skill_drop_chance: float = 0.03 # 基本確率 3%
 var special_skill_color: Color = Color(0.85, 0.45, 1.0, 1.0) # ソフトコーディング用カラー (紫/アストラル系)
@@ -251,27 +260,6 @@ var special_skill_defs: Dictionary = {
 		"desc_template": "ルーレットによってゴールド・トークン入手量がランダムに乗算(1倍~%s倍) 5分ごとにリセット",
 		"has_custom_ui": true,
 		"ui_title": "ギャンブル"
-	},
-	"spec_aura": {
-		"id": "spec_aura",
-		"name": "星輝のオーラ",
-		"desc_template": "転生後、自動でオーラを発動しゴールド・トークン獲得を常時アシスト",
-		"has_custom_ui": true,
-		"ui_title": "星輝のオーラ"
-	},
-	"spec_warp": {
-		"id": "spec_warp",
-		"name": "時空の歪み",
-		"desc_template": "壁バウンス時の基本速度と加速能力を永続的に底上げ",
-		"has_custom_ui": true,
-		"ui_title": "時空の歪み"
-	},
-	"spec_resonance": {
-		"id": "spec_resonance",
-		"name": "クリティカル共鳴",
-		"desc_template": "ダイレクトヒット時のトークン・装備ドロップ率を倍増",
-		"has_custom_ui": true,
-		"ui_title": "クリティカル共鳴"
 	}
 }
 
@@ -441,9 +429,9 @@ func get_diversity_multiplier() -> float:
 
 	var unique_rarity_count := get_equipped_unique_rarities().size()
 	if unique_rarity_count >= 6:
-		return pow(50.0, float(total_lvl))
+		return pow(4.0, float(total_lvl))
 	elif unique_rarity_count >= 3:
-		return pow(25.0, float(total_lvl))
+		return pow(2.0, float(total_lvl))
 	return 1.0
 
 
@@ -508,37 +496,37 @@ func set_trinity_sacrificed_stat(stat: String) -> void:
 func get_effective_size_level() -> int:
 	if is_base_stat_disabled_challenge_active():
 		return 0
-	var mult := get_c2_base_upgrade_multiplier()
-	var base := int(round(float(size_level) * mult))
-	if not is_trinity_active():
-		return base
-	if trinity_sacrificed_stat == "size":
+	if is_trinity_active() and trinity_sacrificed_stat == "size":
 		return 0
-	return int(round(float(base) * get_trinity_multiplier()))
+	var base := float(size_level)
+	if is_trinity_active():
+		base *= get_trinity_multiplier()
+	var bonus := get_base_upgrade_challenge_bonus()
+	return int(round(base)) + bonus
 
 
 func get_effective_speed_level() -> int:
 	if is_base_stat_disabled_challenge_active():
 		return 0
-	var mult := get_c2_base_upgrade_multiplier()
-	var base := int(round(float(speed_level) * mult))
-	if not is_trinity_active():
-		return base
-	if trinity_sacrificed_stat == "speed":
+	if is_trinity_active() and trinity_sacrificed_stat == "speed":
 		return 0
-	return int(round(float(base) * get_trinity_multiplier()))
+	var base := float(speed_level)
+	if is_trinity_active():
+		base *= get_trinity_multiplier()
+	var bonus := get_base_upgrade_challenge_bonus()
+	return int(round(base)) + bonus
 
 
 func get_effective_boost_level() -> int:
 	if is_base_stat_disabled_challenge_active():
 		return 0
-	var mult := get_c2_base_upgrade_multiplier()
-	var base := int(round(float(boost_level) * mult))
-	if not is_trinity_active():
-		return base
-	if trinity_sacrificed_stat == "boost":
+	if is_trinity_active() and trinity_sacrificed_stat == "boost":
 		return 0
-	return int(round(float(base) * get_trinity_multiplier()))
+	var base := float(boost_level)
+	if is_trinity_active():
+		base *= get_trinity_multiplier()
+	var bonus := get_base_upgrade_challenge_bonus()
+	return int(round(base)) + bonus
 
 
 func get_base_upgrade_stat_diff(stat_type: String) -> int:
@@ -1237,41 +1225,44 @@ func buy_logo_upgrade() -> bool:
 	return false
 
 
-func buy_speed_upgrade(count: int = 1) -> bool:
+func buy_speed_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_speed_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
-		gold_changed.emit(gold)
 		speed_level += count
-		upgrades_changed.emit()
+		if emit_signals:
+			gold_changed.emit(gold)
+			upgrades_changed.emit()
 		return true
 	return false
 
 
-func buy_boost_upgrade(count: int = 1) -> bool:
+func buy_boost_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_boost_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
-		gold_changed.emit(gold)
 		boost_level += count
-		upgrades_changed.emit()
+		if emit_signals:
+			gold_changed.emit(gold)
+			upgrades_changed.emit()
 		return true
 	return false
 
 
-func buy_size_upgrade(count: int = 1) -> bool:
+func buy_size_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_size_upgrade_cost(count)
 	if gold >= cost:
 		gold -= cost
-		gold_changed.emit(gold)
 		size_level += count
-		upgrades_changed.emit()
+		if emit_signals:
+			gold_changed.emit(gold)
+			upgrades_changed.emit()
 		return true
 	return false
 
@@ -1288,11 +1279,7 @@ func get_logo_size_multiplier() -> float:
 	var level_A := float(get_effective_size_level())
 	var contrib_A := half_C * (1.0 - exp(-0.02 * level_A))
 	
-	# 装備スキルレベル B (size_factor / size_boost) による収束寄与
-	var level_B := get_equipped_skill_total_val("size_factor") + get_equipped_skill_total_val("size_boost")
-	var contrib_B := half_C * (1.0 - exp(-0.03 * level_B))
-	
-	return 1.0 + contrib_A + contrib_B
+	return 1.0 + contrib_A
 
 
 func get_corner_conversion_chance() -> float:
@@ -1434,6 +1421,105 @@ func _process(delta: float) -> void:
 			fail_challenge()
 		else:
 			challenge_progress_updated.emit(challenge_current_val, challenge_target_val, challenge_time_left)
+
+	# --- 自動化処理 (Automation) ---
+	_process_automations(delta)
+
+
+func _process_automations(delta: float) -> void:
+	# 1. 基礎強化自動化
+	if auto_status_buying_enabled and get_skill_level("auto_status_buying") > 0:
+		_run_auto_status_buying()
+
+	# 2. アセンション自動化
+	if get_skill_level("auto_ascension") > 0:
+		_run_auto_ascension(delta)
+	else:
+		if _auto_ascend_timer > 0.0:
+			_auto_ascend_timer = 0.0
+			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+
+
+func _run_auto_status_buying() -> void:
+	var bought_count := 0
+	for _i in range(30):
+		var c_speed := get_speed_upgrade_cost(1)
+		var c_boost := get_boost_upgrade_cost(1)
+		var c_size := get_size_upgrade_cost(1)
+
+		var min_cost := INF
+		var target := ""
+
+		if gold >= c_speed and c_speed < min_cost:
+			min_cost = c_speed
+			target = "speed"
+		if gold >= c_boost and c_boost < min_cost:
+			min_cost = c_boost
+			target = "boost"
+		if gold >= c_size and c_size < min_cost:
+			min_cost = c_size
+			target = "size"
+
+		if target.is_empty():
+			break
+
+		var success := false
+		match target:
+			"speed":
+				success = buy_speed_upgrade(1, false)
+			"boost":
+				success = buy_boost_upgrade(1, false)
+			"size":
+				success = buy_size_upgrade(1, false)
+
+		if success:
+			bought_count += 1
+		else:
+			break
+
+	if bought_count > 0:
+		gold_changed.emit(gold)
+		upgrades_changed.emit()
+
+
+func _run_auto_ascension(delta: float) -> void:
+	if not auto_ascend_enabled:
+		if _auto_ascend_timer > 0.0:
+			_auto_ascend_timer = 0.0
+			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+		return
+
+	var total_lvl := get_base_upgrade_total_level()
+	if can_ascend() and total_lvl >= auto_ascend_min_total_level:
+		_auto_ascend_timer += delta
+		auto_ascend_timer_updated.emit(_auto_ascend_timer, auto_ascend_wait_seconds)
+		if _auto_ascend_timer >= auto_ascend_wait_seconds:
+			_auto_ascend_timer = 0.0
+			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+			perform_ascension()
+	else:
+		if _auto_ascend_timer > 0.0:
+			_auto_ascend_timer = 0.0
+			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+
+
+func get_auto_ascend_timer() -> float:
+	return _auto_ascend_timer
+
+
+func set_auto_ascend_settings(enabled: bool, min_total_lvl: int, wait_sec: float) -> void:
+	auto_ascend_enabled = enabled
+	auto_ascend_min_total_level = maxi(100, min_total_lvl)
+	auto_ascend_wait_seconds = maxf(0.0, wait_sec)
+	if not auto_ascend_enabled or get_base_upgrade_total_level() < auto_ascend_min_total_level:
+		_auto_ascend_timer = 0.0
+		auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
+	auto_settings_changed.emit()
+
+
+func set_auto_status_buying_enabled(enabled: bool) -> void:
+	auto_status_buying_enabled = enabled
+	auto_settings_changed.emit()
 
 
 func _on_equipment_changed_internal() -> void:
@@ -1903,9 +1989,9 @@ func format_equipment_skill_desc(sk_id: String, s_level: int, is_special: bool =
 		var spec_def: Dictionary = special_skill_defs.get(sk_id, {})
 		var desc_tmpl: String = spec_def.get("desc_template", "%s")
 		if sk_id == "spec_diversity":
-			var m25 := pow(25.0, float(s_level))
-			var m50 := pow(50.0, float(s_level))
-			return desc_tmpl % [format_num(m25), format_num(m50)]
+			var m2 := pow(2.0, float(s_level))
+			var m4 := pow(4.0, float(s_level))
+			return desc_tmpl % [format_num(m2), format_num(m4)]
 		elif sk_id == "spec_accumulation":
 			var base_mult := int(pow(2.0, float(s_level)))
 			var s_val := format_num(float(base_mult))
@@ -1973,8 +2059,8 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	var icon_num := (randi() % 2) + 1
 	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
 	
-	# Generate level: 10の倍数補正 (アセンション*乱数0.9~1.1 + ツリー補正+10/lvl)
-	var base_asc := float(maxi(1, ascension_level))
+	# Generate level: 10の倍数補正 (アセンション10刻み切り上げ*乱数0.9~1.1 + ツリー補正+10/lvl)
+	var base_asc := float(ceili(float(maxi(1, ascension_level)) / 10.0) * 10)
 	var rand_factor := randf_range(0.9, 1.1)
 	var tree_level_bonus := float(get_tree_equip_drop_level_bonus())
 	var reinc_level_bonus := float(get_base_equip_level_bonus())
@@ -2056,6 +2142,8 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	# スキルレベル配分 (平均 = 装備レベル/10 + 洗練レベル*0.1)
 	var refinement_total := get_equipped_skill_total_val("drop_skill_level") + get_equipped_skill_total_val("refinement")
 	var target_avg_skill_level := (float(level) / 10.0) + refinement_total
+	if rarity == "ミシック":
+		target_avg_skill_level *= 1.5
 	
 	var float_skill_levels: Array[float] = []
 	for i in range(normal_skill_count):
@@ -2108,7 +2196,14 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 		var spec_keys = special_skill_defs.keys()
 		var spec_id: String = spec_keys[randi() % spec_keys.size()]
 		var spec_def: Dictionary = special_skill_defs[spec_id]
-		var spec_lvl: int = maxi(1, int(ceil(float(level) / 100.0)))
+		var base_spec_lvl: float = ceil(float(level) / 100.0)
+		if rarity == "ミシック":
+			base_spec_lvl *= 1.5
+		var spec_int: int = int(base_spec_lvl)
+		var spec_frac: float = base_spec_lvl - float(spec_int)
+		if randf() < spec_frac:
+			spec_int += 1
+		var spec_lvl: int = maxi(1, spec_int)
 		var formatted_desc := format_equipment_skill_desc(spec_id, spec_lvl, true)
 
 		item_skills.append({
@@ -3440,19 +3535,19 @@ func get_c1_equipment_skill_bonus() -> int:
 	return int(round(apply_challenge_bonus_boost(ch_id, raw_val)))
 
 
-func get_c2_base_upgrade_multiplier() -> float:
+func get_base_upgrade_challenge_bonus() -> int:
 	if is_challenge_bonus_disabled_challenge_active():
-		return 1.0
+		return 0
 	var ch_id := get_challenge_id_by_name("基礎強化無効")
 	if ch_id.is_empty():
 		ch_id = get_challenge_id_by_name_contains("基礎")
 	if ch_id.is_empty():
-		return 1.0
+		return 0
 	var cleared_lvl := get_challenge_cleared_level(ch_id)
 	if cleared_lvl <= 0:
-		return 1.0
+		return 0
 	var lv_def := get_challenge_level_def(ch_id, cleared_lvl)
-	var raw_val := 1.0
+	var raw_val := 0.0
 	if lv_def.has("reward_val") and float(lv_def["reward_val"]) > 0.0:
 		raw_val = float(lv_def["reward_val"])
 	elif lv_def.has("reward_value") and float(lv_def["reward_value"]) > 0.0:
@@ -3460,13 +3555,17 @@ func get_c2_base_upgrade_multiplier() -> float:
 	else:
 		var desc: String = str(lv_def.get("reward_desc", ""))
 		var regex := RegEx.new()
-		if regex.compile(r"x([\d\.]+)") == OK:
+		if regex.compile(r"\+(\d+)") == OK:
 			var result := regex.search(desc)
 			if result:
 				raw_val = result.get_string(1).to_float()
-	if is_equal_approx(raw_val, 1.0):
-		return 1.0
-	return apply_challenge_bonus_boost(ch_id, raw_val)
+	if raw_val <= 0.0:
+		return 0
+	return int(round(apply_challenge_bonus_boost(ch_id, raw_val)))
+
+
+func get_c2_base_upgrade_multiplier() -> float:
+	return 1.0
 
 
 func get_c3_logo_count_bonus() -> int:
@@ -4274,7 +4373,12 @@ func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dic
 		"amp_token_base_unlocked": amp_token_base_unlocked,
 		"amp_token_mult_level": amp_token_mult_level,
 		"amp_token_mult_b_level": amp_token_mult_b_level,
-		"amp_token_pow_level": amp_token_pow_level
+		"amp_token_pow_level": amp_token_pow_level,
+		# 自動化設定
+		"auto_status_buying_enabled": auto_status_buying_enabled,
+		"auto_ascend_enabled": auto_ascend_enabled,
+		"auto_ascend_min_total_level": auto_ascend_min_total_level,
+		"auto_ascend_wait_seconds": auto_ascend_wait_seconds
 	}
 
 
@@ -4547,7 +4651,14 @@ func _apply_save_data(data: Dictionary) -> void:
 	amp_token_mult_b_level = int(data.get("amp_token_mult_b_level", 0))
 	amp_token_pow_level = int(data.get("amp_token_pow_level", 0))
 
-	# 8. 各種キャッシュの再計算 & シグナル通知
+	# 8. 自動化設定
+	auto_status_buying_enabled = bool(data.get("auto_status_buying_enabled", true))
+	auto_ascend_enabled = bool(data.get("auto_ascend_enabled", true))
+	auto_ascend_min_total_level = maxi(100, int(data.get("auto_ascend_min_total_level", 100)))
+	auto_ascend_wait_seconds = maxf(0.0, float(data.get("auto_ascend_wait_seconds", 0.0)))
+	_auto_ascend_timer = 0.0
+
+	# 9. 各種キャッシュの再計算 & シグナル通知
 	_recalculate_all_cumulative_levels()
 	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
@@ -4562,6 +4673,7 @@ func _apply_save_data(data: Dictionary) -> void:
 	inventory_updated.emit()
 	amplifier_changed.emit()
 	challenge_state_changed.emit()
+	auto_settings_changed.emit()
 	logo_reset_requested.emit()
 
 
@@ -4583,6 +4695,12 @@ func reset_all_data() -> void:
 	boost_level = 1
 	size_level = 1
 	ascension_level = 0
+
+	auto_status_buying_enabled = true
+	auto_ascend_enabled = true
+	auto_ascend_min_total_level = 100
+	auto_ascend_wait_seconds = 0.0
+	_auto_ascend_timer = 0.0
 
 	skill_levels = {"root_node": 1}
 	permanently_unlocked_skills = {"root_node": true}

@@ -63,20 +63,6 @@
 			"name": "ゴールド入手量",
 			"unit_value": 1.8
 		},
-		"move_speed": {
-			"desc_template": "ロゴ移動速度 +%.1f%%",
-			"id": "move_speed",
-			"memo": "ロゴ移動速度にパーセンテージ乗算補正 (+1.5% × Lv)",
-			"name": "ロゴ移動速度",
-			"unit_value": 1.5
-		},
-		"size_factor": {
-			"desc_template": "ロゴサイズ係数 +%d",
-			"id": "size_factor",
-			"memo": "ロゴサイズ計算の装備寄与係数 (+1 × Lv)",
-			"name": "ロゴサイズ係数",
-			"unit_value": 1.0
-		},
 		"token_cost": {
 			"desc_template": "消費トークン x%.2f",
 			"id": "token_cost",

@@ -1,0 +1,490 @@
+[gd_scene load_steps=12 format=3 uid="uid://bauto_settings_wnd001"]
+
+[ext_resource type="Script" path="res://scripts/ui/automation_settings_window.gd" id="1_auto_script"]
+[ext_resource type="PackedScene" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+bg_color = Color(0.18, 0.32, 0.52, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
+bg_color = Color(0.08, 0.09, 0.14, 1)
+border_width_left = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.32, 0.5, 0.85)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+shadow_color = Color(0, 0, 0, 0.65)
+shadow_size = 16
+shadow_offset = Vector2(0, 8)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.11, 0.13, 0.20, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.22, 0.28, 0.42, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_status_panel"]
+bg_color = Color(0.07, 0.08, 0.13, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.18, 0.24, 0.36, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset_btn"]
+bg_color = Color(0.16, 0.22, 0.34, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.38, 0.56, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset_btn_hover"]
+bg_color = Color(0.24, 0.32, 0.48, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.42, 0.54, 0.78, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_preset_btn_pressed"]
+bg_color = Color(0.12, 0.16, 0.26, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.28, 0.42, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lock_label"]
+bg_color = Color(0.2, 0.1, 0.12, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.45, 0.15, 0.2, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="AutomationSettingsWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -729.0
+offset_top = 124.0
+offset_right = 471.0
+offset_bottom = -95.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
+script = ExtResource("1_auto_script")
+window_title = "⚙️ 自動化設定"
+header_color = Color(0.18, 0.32, 0.52, 1)
+separator_color = Color(0.26, 0.42, 0.68, 1)
+
+[node name="WindowVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="WindowVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="WindowVBox/HeaderPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.94, 0.98, 1)
+theme_override_font_sizes/font_size = 20
+text = "⚙️ 自動化設定"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="CloseBtn" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("2_close_scene")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="WindowVBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.26, 0.42, 0.68, 1)
+
+[node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="WindowVBox/BodyPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="ScrollContainer" type="ScrollContainer" parent="WindowVBox/BodyPanel/BodyMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardsVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="AutoAscendCard" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="CardVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CardTitle" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.45, 0.55, 1)
+theme_override_font_sizes/font_size = 19
+text = "🚀 アセンション自動化"
+
+[node name="AutoAscendUnlockLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_lock_label")
+text = "  🔒 スキルツリー「アセンション自動化」の習得で機能が解放されます"
+
+[node name="AutoAscendContent" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ToggleRow" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ToggleLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/ToggleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 15
+text = "自動アセンション機能の有効化"
+
+[node name="AutoAscendToggle" type="CheckButton" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/ToggleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 14
+text = "有効"
+
+[node name="HSeparator1" type="HSeparator" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+
+[node name="LevelConditionRow" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/TitleHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 15
+text = "条件1: アセンション目標合計レベル"
+
+[node name="Desc" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "基礎強化（サイズ・速度・ブースト）の合計レベルがこの値に達するまでアセンションを保留します（最低: 100）。"
+
+[node name="InputHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AutoAscendLevelSpin" type="SpinBox" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 36)
+layout_mode = 2
+min_value = 100.0
+max_value = 1e+08
+value = 100.0
+rounded = true
+alignment = 1
+
+[node name="BtnLvlMinus100" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "-100"
+
+[node name="BtnLvlMinus10" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "-10"
+
+[node name="BtnLvlPlus10" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "+10"
+
+[node name="BtnLvlPlus100" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/LevelConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "+100"
+
+[node name="HSeparator2" type="HSeparator" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+
+[node name="WaitConditionRow" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/TitleHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 15
+text = "条件2: 条件達成後の待機時間 (最高効率キープ時間)"
+
+[node name="Desc" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "目標合計レベルに達した後、指定秒数の間エンジン全開の稼ぎ状態を維持した後にアセンションします (0秒で即アセンション)。"
+
+[node name="InputHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AutoAscendWaitSpin" type="SpinBox" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 36)
+layout_mode = 2
+min_value = 0.0
+max_value = 86400.0
+step = 1.0
+value = 0.0
+suffix = "秒"
+alignment = 1
+
+[node name="BtnWait0" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "即時 (0秒)"
+
+[node name="BtnWait30" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "30秒"
+
+[node name="BtnWait60" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "1分"
+
+[node name="BtnWait180" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "3分"
+
+[node name="BtnWait300" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/WaitConditionRow/InputHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_styles/normal = SubResource("StyleBoxFlat_preset_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_preset_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_preset_btn_pressed")
+text = "5分"
+
+[node name="StatusPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_status_panel")
+
+[node name="StatusMargin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/StatusPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 10
+
+[node name="AutoAscendStatusLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoAscendCard/Margin/CardVBox/AutoAscendContent/StatusPanel/StatusMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "📊 レベル条件判定中: 合計Lv 0 / 100"
+
+[node name="AutoBuyingCard" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="CardVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CardTitle" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.35, 0.8, 0.65, 1)
+theme_override_font_sizes/font_size = 19
+text = "🛒 基礎強化自動購入"
+
+[node name="AutoBuyingUnlockLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_lock_label")
+text = "  🔒 スキルツリー「基礎強化自動化」の習得で機能が解放されます"
+
+[node name="AutoBuyingContent" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ToggleRow" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox/AutoBuyingContent"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ToggleLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox/AutoBuyingContent/ToggleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 15
+text = "基礎強化の自動購入機能の有効化"
+
+[node name="AutoBuyingToggle" type="CheckButton" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox/AutoBuyingContent/ToggleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 14
+text = "有効"
+
+[node name="Desc" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ScrollContainer/CardsVBox/AutoBuyingCard/Margin/CardVBox/AutoBuyingContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.8, 1)
+theme_override_font_sizes/font_size = 13
+text = "購入可能な通常強化（サイズ・速度・ブースト）のうち最安値のものを自動で購入します。"

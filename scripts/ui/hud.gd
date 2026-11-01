@@ -54,6 +54,8 @@ func _get_current_buy_mode() -> int:
 @onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
 @onready var reincarnation_window: PanelContainer = %ReincarnationWindow
 @onready var save_slot_window: SaveSlotWindow = %SaveSlotWindow
+@onready var automation_settings_window: PanelContainer = %AutomationSettingsWindow
+@onready var btn_menu_settings: Button = %MenuSettingsBtn
 @onready var skill_tree_scroll: SkillTreeController = %SkillTreeScroll
 @onready var btn_close_window: Button = %CloseWindowBtn
 @onready var btn_toggle_skill_vis: Button = %ToggleSkillVisibilityBtn
@@ -108,6 +110,7 @@ var _is_reinc_tree_open: bool = false
 var _is_reinc_ability_open: bool = false
 var _is_reincarnation_open: bool = false
 var _is_save_slot_open: bool = false
+var _is_automation_settings_open: bool = false
 var _has_centered_on_startup: bool = false
 var _slot_buttons: Dictionary = {}
 var _corner_tween: Tween = null
@@ -619,6 +622,12 @@ func _ready() -> void:
 		if save_slot_window.has_signal("slot_deleted"):
 			save_slot_window.slot_deleted.connect(_on_slot_deleted)
 		save_slot_window.visible = false
+	if automation_settings_window:
+		if automation_settings_window.has_signal("closed"):
+			automation_settings_window.closed.connect(close_automation_settings)
+		automation_settings_window.visible = false
+	if btn_menu_settings:
+		btn_menu_settings.pressed.connect(_on_menu_settings_pressed)
 	if window_dimmer:
 		window_dimmer.visible = false
 		window_dimmer.modulate.a = 0.0
@@ -1173,6 +1182,13 @@ func _update_upgrade_buttons() -> void:
 	else:
 		btn_ascend.tooltip_text = "ロゴ追加まであと %d 回" % remaining
 
+	if GameData.get_skill_level("auto_ascension") > 0 and GameData.auto_ascend_enabled:
+		if total_base_lvl < GameData.auto_ascend_min_total_level:
+			btn_ascend.tooltip_text += "\n[自動アセンション待機: 目標Lv %d (現在 %d)]" % [GameData.auto_ascend_min_total_level, total_base_lvl]
+		elif GameData.auto_ascend_wait_seconds > 0.0:
+			var timer_left := maxf(0.0, GameData.auto_ascend_wait_seconds - GameData.get_auto_ascend_timer())
+			btn_ascend.tooltip_text += "\n[稼ぎキープ中: 残り %.1f秒]" % timer_left
+
 	if _lbl_diff_ascend:
 		var is_c4 := GameData.is_c4_active()
 		var ascend_diff := GameData.get_ascension_stat_diff()
@@ -1334,6 +1350,8 @@ func open_reincarnation() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 
 	reincarnation_window.visible = true
 	if reincarnation_window.has_method("update_ui"):
@@ -1372,6 +1390,8 @@ func _on_equipment_tab_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 	
 	if _is_inventory_open:
 		close_inventory()
@@ -1492,6 +1512,8 @@ func _on_skill_tree_tab_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 		
 	if _is_skill_tree_open:
 		close_skill_tree()
@@ -1552,6 +1574,8 @@ func _on_challenge_tab_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 		
 	if _is_challenge_open:
 		close_challenge()
@@ -1602,6 +1626,8 @@ func _on_blacksmith_tab_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 		
 	if _is_blacksmith_open:
 		close_blacksmith()
@@ -1654,6 +1680,8 @@ func _on_amplifier_tab_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 		
 	if _is_amplifier_open:
 		close_amplifier()
@@ -1702,6 +1730,8 @@ func _on_reinc_tab_1_pressed() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 	
 	if _is_reinc_tree_open:
 		close_reinc_tree()
@@ -1747,6 +1777,8 @@ func _on_reinc_tab_2_pressed() -> void:
 		close_reinc_tree()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 	
 	if _is_reinc_ability_open:
 		close_reinc_ability()
@@ -1807,8 +1839,42 @@ func close_save_slot_window() -> void:
 	_update_window_dimmer()
 
 
+func _on_menu_settings_pressed() -> void:
+	toggle_automation_settings()
+
+
+func toggle_automation_settings() -> void:
+	if _is_automation_settings_open:
+		close_automation_settings()
+	else:
+		open_automation_settings()
+
+
+func open_automation_settings() -> void:
+	if _is_automation_settings_open:
+		return
+	_close_all_subbar_windows()
+	_is_automation_settings_open = true
+	if automation_settings_window:
+		automation_settings_window.visible = true
+		if automation_settings_window.has_method("sync_from_data"):
+			automation_settings_window.sync_from_data()
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_automation_settings() -> void:
+	if not _is_automation_settings_open:
+		return
+	_is_automation_settings_open = false
+	if automation_settings_window:
+		automation_settings_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
 func _is_any_subbar_window_open() -> bool:
-	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open or _is_save_slot_open
+	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open or _is_save_slot_open or _is_automation_settings_open
 
 
 var _dimmer_tween: Tween = null
@@ -1859,6 +1925,8 @@ func _close_all_subbar_windows() -> void:
 		close_reinc_ability()
 	if _is_save_slot_open:
 		close_save_slot_window()
+	if _is_automation_settings_open:
+		close_automation_settings()
 
 
 func _setup_debug_free_skill_button() -> void:
@@ -2250,15 +2318,15 @@ func show_equipment_drop_pop(item_data: Dictionary) -> void:
 	var label := Label.new()
 	if is_discarded:
 		if discard_gold > 0.0 and discard_tokens > 0.0:
-			label.text = "[%s] %s (Lv.%d) を入手 (廃棄🪙+%s/💎+%s)" % [item_rarity, item_name, item_level, _format_number(discard_gold), _format_number(discard_tokens)]
+			label.text = "%s (Lv.%d) を入手 (廃棄🪙+%s/💎+%s)" % [item_name, item_level, _format_number(discard_gold), _format_number(discard_tokens)]
 		elif discard_gold > 0.0:
-			label.text = "[%s] %s (Lv.%d) を入手 (廃棄🪙+%s)" % [item_rarity, item_name, item_level, _format_number(discard_gold)]
+			label.text = "%s (Lv.%d) を入手 (廃棄🪙+%s)" % [item_name, item_level, _format_number(discard_gold)]
 		elif discard_tokens > 0.0:
-			label.text = "[%s] %s (Lv.%d) を入手 (廃棄💎+%s)" % [item_rarity, item_name, item_level, _format_number(discard_tokens)]
+			label.text = "%s (Lv.%d) を入手 (廃棄💎+%s)" % [item_name, item_level, _format_number(discard_tokens)]
 		else:
-			label.text = "[%s] %s (Lv.%d) を入手 (廃棄)" % [item_rarity, item_name, item_level]
+			label.text = "%s (Lv.%d) を入手 (廃棄)" % [item_name, item_level]
 	else:
-		label.text = "[%s] %s (Lv.%d) を入手" % [item_rarity, item_name, item_level]
+		label.text = "%s (Lv.%d) を入手" % [item_name, item_level]
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", rarity_color)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -289,7 +289,6 @@ func _play_bounce_effect(is_corner: bool) -> void:
 
 
 func _update_speed() -> void:
-	var speed_boost_val := GameData.get_equipped_skill_total_val("speed_boost")
-	var move_speed_mult := 1.0 + GameData.get_equipped_skill_total_val("move_speed") * 0.01
-	var current_speed := (base_speed + GameData.get_effective_speed_level() * 10.0 + GameData.get_skill_level("speed_boost") * 20.0 + speed_boost_val) * move_speed_mult * GameData.get_challenge_speed_multiplier()
+	var current_speed := (base_speed + GameData.get_effective_speed_level() * 10.0 + GameData.get_skill_level("speed_boost") * 20.0) * GameData.get_challenge_speed_multiplier()
+	current_speed = minf(current_speed, 2000.0)
 	velocity = velocity.normalized() * current_speed

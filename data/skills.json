@@ -40,30 +40,30 @@
 			"y": -960.0
 		},
 		"auto_ascension": {
-			"base_cost": 1.0,
+			"base_cost": 10000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "アセンションの自動化が解放される。",
 			"icon": "res://images/skill_icon/general/auto_ascension.png",
 			"is_unlimited": false,
 			"name": "アセンション自動化",
 			"prerequisites": [
-				"challange_time_extend_3"
+				"challange_gold_bonus"
 			],
-			"x": 800.0,
-			"y": 320.0
+			"x": 640.0,
+			"y": 160.0
 		},
 		"auto_status_buying": {
-			"base_cost": 1.0,
+			"base_cost": 10000000000000000000000.0,
 			"cost_multiplier": 1.5,
-			"description": "ステータス強化購入の自動化が解放される。",
+			"description": "基礎強化購入の自動化が解放される。",
 			"icon": "res://images/skill_icon/general/auto_status_buying.png",
 			"is_unlimited": false,
-			"name": "ステータス強化自動化",
+			"name": "基礎強化自動化",
 			"prerequisites": [
-				"challange_norma_onus_4"
+				"challange_gold_bonus"
 			],
-			"x": 800.0,
-			"y": -320.0
+			"x": 640.0,
+			"y": -160.0
 		},
 		"buying_expand": {
 			"base_cost": 5000000.0,
@@ -101,7 +101,7 @@
 			"prerequisites": [
 				"challange_time_extend_2"
 			],
-			"x": 640.0,
+			"x": 800.0,
 			"y": 320.0
 		},
 		"challange_bonus_boost_3": {
@@ -157,7 +157,7 @@
 			"y": 0.0
 		},
 		"challange_level_unlock_1": {
-			"base_cost": 500000000000000000.0,
+			"base_cost": 1000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジの最大レベル +1。",
 			"icon": "res://images/skill_icon/challange/challange_level_unlock.png",
@@ -229,9 +229,9 @@
 			"is_unlimited": false,
 			"name": "チャレンジノルマ緩和Ⅱ",
 			"prerequisites": [
-				"challange_gold_bonus"
+				"new_challange_unlock_2"
 			],
-			"x": 640.0,
+			"x": 800.0,
 			"y": -160.0
 		},
 		"challange_norma_onus_3": {
@@ -244,7 +244,7 @@
 			"prerequisites": [
 				"challange_norma_onus_2"
 			],
-			"x": 640.0,
+			"x": 800.0,
 			"y": -320.0
 		},
 		"challange_norma_onus_4": {
@@ -294,9 +294,9 @@
 			"is_unlimited": false,
 			"name": "チャレンジ制限時間緩和Ⅱ",
 			"prerequisites": [
-				"challange_gold_bonus"
+				"new_challange_unlock_2"
 			],
-			"x": 640.0,
+			"x": 800.0,
 			"y": 160.0
 		},
 		"challange_time_extend_3": {
@@ -664,7 +664,7 @@
 			"y": -1440.0
 		},
 		"equip_special_skill_unlock": {
-			"base_cost": 1000000000000000000.0,
+			"base_cost": 250000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "ドロップ装備への特殊スキル付与が解放される。",
 			"icon": "res://images/skill_icon/equip/equip_special_skill_unlock.png",
@@ -744,7 +744,7 @@
 		"mythic_unlock": {
 			"base_cost": 100000000000000000000.0,
 			"cost_multiplier": 1.5,
-			"description": "最高レアリティ[ミシック]が解放される。",
+			"description": "レアリティ[ミシック]を解放する(ミシック：ドロップ時スキルレベル x1.5)。",
 			"icon": "res://images/skill_icon/equip/mythic_unlock.png",
 			"is_unlimited": false,
 			"name": "ミシック解放",
@@ -777,7 +777,7 @@
 			"prerequisites": [
 				"challange_gold_bonus"
 			],
-			"x": 720.0,
+			"x": 800.0,
 			"y": 0.0
 		},
 		"new_challange_unlock_3": {
