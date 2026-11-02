@@ -33,6 +33,9 @@ const AUDIO_POOL_SIZE: int = 4
 
 # ポップアップ生成のソフト上限設定 (n=200)
 @export var max_popup_soft_limit: int = 200
+var _last_logo_size_mult: float = -1.0
+var _drop_label_pool: Array[Node2D] = []
+var _active_drop_label_count: int = 0
 
 
 func _ready() -> void:
@@ -90,12 +93,29 @@ func _on_logo_spawn_requested() -> void:
 
 
 func _on_logo_reset_requested() -> void:
-	# Clear all logo instances
-	for child in logo_container.get_children():
-		child.queue_free()
-	# Spawn logos based on current logo_count
-	for i in GameData.get_effective_logo_count():
-		_spawn_one_logo()
+	var target_count := GameData.get_effective_logo_count()
+	var current_logos := logo_container.get_children()
+	var current_count := current_logos.size()
+	var size_mult := GameData.get_logo_size_multiplier()
+	_last_logo_size_mult = size_mult
+
+	# 1. 既存ロゴの再利用（破棄・再生成せずサイズ・速度のみ更新）
+	for i in range(mini(current_count, target_count)):
+		var logo = current_logos[i]
+		if is_instance_valid(logo):
+			if logo.has_method("set_size_multiplier"):
+				logo.set_size_multiplier(size_mult)
+			if logo.has_method("_update_speed"):
+				logo._update_speed()
+
+	# 2. ロゴ数が不足している場合のみ新規生成して追加
+	if current_count < target_count:
+		for i in range(target_count - current_count):
+			_spawn_one_logo()
+	# 3. ロゴ数が過剰な場合（転生リセット等）のみ余剰分を破棄
+	elif current_count > target_count:
+		for i in range(target_count, current_count):
+			current_logos[i].queue_free()
 
 
 func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
@@ -164,7 +184,7 @@ func _on_wall_hit(pos: Vector2, is_corner: bool, direction: Vector2) -> void:
 
 func _spawn_drop_label(pos: Vector2, amount_or_text: Variant, prefix: String, color: Color, is_corner: bool, is_disabled: bool = false, is_crit: bool = false, is_direct: bool = false, crit_weight: int = 0) -> void:
 	if drop_container:
-		var count := drop_container.get_child_count()
+		var count := _active_drop_label_count
 		var n := float(max_popup_soft_limit)
 		if count > n:
 			# n個以下: 100%, 1.25n: 50%, 1.5n以上: 0%
@@ -181,9 +201,29 @@ func _spawn_drop_label(pos: Vector2, amount_or_text: Variant, prefix: String, co
 	else:
 		text_content = prefix + " +" + GameData.format_num(float(amount_or_text))
 
-	var label := _drop_label_scene.instantiate()
-	drop_container.add_child(label)
+	var label: Node2D = null
+	while not _drop_label_pool.is_empty():
+		var candidate = _drop_label_pool.pop_back()
+		if is_instance_valid(candidate):
+			label = candidate
+			break
+
+	if label == null:
+		label = _drop_label_scene.instantiate()
+		label.pool_return_callable = _return_drop_label_to_pool
+		drop_container.add_child(label)
+	else:
+		label.visible = true
+
+	_active_drop_label_count += 1
 	label.setup(text_content, pos, color, is_corner, is_crit, is_direct, crit_weight)
+
+
+func _return_drop_label_to_pool(label: Node2D) -> void:
+	_active_drop_label_count = maxi(0, _active_drop_label_count - 1)
+	if is_instance_valid(label):
+		label.visible = false
+		_drop_label_pool.append(label)
 
 
 func _start_shake(direction: Vector2, strength: float) -> void:
@@ -307,8 +347,11 @@ func _on_upgrades_changed() -> void:
 
 func _update_logo_sizes() -> void:
 	var mult := GameData.get_logo_size_multiplier()
+	if is_equal_approx(_last_logo_size_mult, mult):
+		return
+	_last_logo_size_mult = mult
 	for logo in logo_container.get_children():
-		if logo.has_method("set_size_multiplier"):
+		if is_instance_valid(logo) and logo.has_method("set_size_multiplier"):
 			logo.set_size_multiplier(mult)
 
 

@@ -8,11 +8,13 @@ extends Control
 var skill_level: int = 1
 var _rankup_tween: Tween = null
 var _flash_alpha: float = 0.0
+var _last_update_msec: int = 0
+var _last_rank: int = -1
+var _last_mult_val: float = -1.0
 
 
 func _ready() -> void:
 	GameData.accumulation_changed.connect(_on_accumulation_changed)
-	GameData.upgrades_changed.connect(update_ui)
 	GameData.equipment_changed.connect(update_ui)
 
 	if progress_bar_control:
@@ -78,14 +80,22 @@ func _draw() -> void:
 
 
 func set_skill_data(sk_data: Dictionary) -> void:
-	skill_level = int(sk_data.get("level", 1))
-	update_ui()
+	var new_lvl := int(sk_data.get("level", 1))
+	if skill_level != new_lvl or _last_rank == -1:
+		skill_level = new_lvl
+		update_ui()
 
 
 func _on_accumulation_changed(ranked_up: bool) -> void:
-	update_ui()
 	if ranked_up:
+		_last_update_msec = Time.get_ticks_msec()
+		update_ui()
 		_play_rankup_effect()
+	else:
+		var now := Time.get_ticks_msec()
+		if now - _last_update_msec >= 50:
+			_last_update_msec = now
+			update_ui()
 
 
 func update_ui() -> void:
@@ -97,10 +107,12 @@ func update_ui() -> void:
 	var cur: int = GameData.accumulation_bounces_in_rank
 	var mult: float = GameData.get_accumulation_multiplier()
 
-	if rank_label:
+	if rank_label and rank != _last_rank:
+		_last_rank = rank
 		rank_label.text = "Rank %d" % rank
 
-	if mult_label:
+	if mult_label and not is_equal_approx(mult, _last_mult_val):
+		_last_mult_val = mult
 		mult_label.text = "x" + GameData.format_num(mult)
 
 	if count_label:

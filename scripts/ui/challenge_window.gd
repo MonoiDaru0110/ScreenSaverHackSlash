@@ -293,8 +293,9 @@ func _update_active_progress_ui(cur: float, target: float, time_left: float) -> 
 	var pct := 0.0 if target <= 0.0 else (cur / target) * 100.0
 
 	if _banner_progress_bar:
-		_banner_progress_bar.max_value = target
-		_banner_progress_bar.value = minf(cur, target)
+		_banner_progress_bar.max_value = 100.0
+		_banner_progress_bar.step = 0.01
+		_banner_progress_bar.value = clampf(pct, 0.0, 100.0)
 
 	if _banner_progress_label:
 		_banner_progress_label.text = "%s %s / %s (%.0f%%)" % [

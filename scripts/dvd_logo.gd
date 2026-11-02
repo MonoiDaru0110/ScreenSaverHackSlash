@@ -288,7 +288,13 @@ func _play_bounce_effect(is_corner: bool) -> void:
 			.set_ease(Tween.EASE_OUT)
 
 
+var _last_speed: float = -1.0
+
+
 func _update_speed() -> void:
-	var current_speed := (base_speed + GameData.get_effective_speed_level() * 10.0 + GameData.get_skill_level("speed_boost") * 20.0) * GameData.get_challenge_speed_multiplier()
+	var current_speed := (base_speed + GameData.get_effective_speed_level() * 10.0 + GameData.get_skill_level("speed_boost") * 20.0) * GameData.get_challenge_speed_multiplier() * GameData.get_reactor_speed_multiplier()
 	current_speed = minf(current_speed, 2000.0)
+	if is_equal_approx(_last_speed, current_speed):
+		return
+	_last_speed = current_speed
 	velocity = velocity.normalized() * current_speed

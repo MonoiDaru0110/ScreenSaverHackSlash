@@ -10,6 +10,9 @@ var infused_tokens: float = 0.0
 var is_infusing_tokens: bool = false
 var star_level: int = 0
 var base_star_threshold: float = 1000.0
+var impact_energy: float = 0.0
+var total_impact_energy: float = 0.0
+var reactor_upgrades: Dictionary = {} # { "upgrade_id": level_int }
 
 
 static func add_commas(int_str: String) -> String:
@@ -28,6 +31,10 @@ static func add_commas(int_str: String) -> String:
 
 
 func format_num(val: float) -> String:
+	if is_nan(val):
+		return "0"
+	if is_inf(val):
+		return "-INF" if val < 0.0 else "INF"
 	var abs_v := absf(val)
 	if abs_v == 0.0:
 		return "0"
@@ -152,6 +159,15 @@ var _cached_token_over_time_boost_mult: float = 1.0
 var _cached_ascension_mult: float = 1.0
 var _cached_gold_amp_mult: float = 1.0
 var _cached_token_amp_mult: float = 1.0
+var _cached_special_skill_levels: Dictionary = {}
+var _cached_tree_equip_drop_prob_bonus: float = 0.0
+var _cached_tree_equip_drop_level_bonus: int = 0
+var _cached_tree_equip_drop_rarity_boost: int = 0
+var _cached_tree_equip_skill_level_bonus: int = 0
+var _regex_int_bonus: RegEx = null
+var _regex_percent_bonus: RegEx = null
+var _regex_mult_bonus: RegEx = null
+const MAX_BASE_UPGRADE_LEVEL: int = 2500
 
 # --- Equipment ---
 var inventories: Dictionary = {
@@ -203,11 +219,15 @@ var auto_ascend_min_speed_level: int = 0
 var auto_ascend_min_boost_level: int = 0
 var auto_ascend_wait_seconds: float = 0.0
 var _auto_ascend_timer: float = 0.0
+var _auto_ascend_cooldown: float = 0.0
+const AUTO_ASCEND_MIN_INTERVAL: float = 1.5
+var _auto_buy_timer: float = 0.0
+const AUTO_BUY_INTERVAL: float = 0.05
 signal auto_settings_changed
 signal auto_ascend_timer_updated(current_timer: float, wait_seconds: float)
 
 # --- Special Skill Settings & Definitions ---
-var special_skill_drop_chance: float = 0.03 # 基本確率 3%
+var special_skill_drop_chance: float = 0.50 # 基本確率 50% (特殊スキル入手性の緩和)
 var special_skill_color: Color = Color(0.85, 0.45, 1.0, 1.0) # ソフトコーディング用カラー (紫/アストラル系)
 
 # --- Accumulation Special Skill ---
@@ -413,7 +433,7 @@ func get_special_skill_active_level(skill_id: String) -> int:
 	return active_reincarnation_upgrades.get(skill_id, 0)
 
 
-func get_special_skill_total_level(skill_id: String) -> int:
+func _compute_special_skill_total_level(skill_id: String) -> int:
 	var total_lvl := get_special_skill_active_level(skill_id)
 	if is_equip_disabled_challenge_active():
 		return total_lvl
@@ -427,6 +447,14 @@ func get_special_skill_total_level(skill_id: String) -> int:
 			for sk in skills:
 				if sk is Dictionary and sk.get("id", "") == skill_id:
 					total_lvl += int(sk.get("level", 1)) + bonus_lvl
+	return total_lvl
+
+
+func get_special_skill_total_level(skill_id: String) -> int:
+	if _cached_special_skill_levels.has(skill_id):
+		return int(_cached_special_skill_levels[skill_id])
+	var total_lvl := _compute_special_skill_total_level(skill_id)
+	_cached_special_skill_levels[skill_id] = total_lvl
 	return total_lvl
 
 
@@ -707,6 +735,9 @@ func _load_equipment_skill_defs() -> void:
 func _recalculate_equipped_skill_levels() -> void:
 	equipped_skill_levels.clear()
 	_cached_equipped_skill_totals.clear()
+	_cached_special_skill_levels.clear()
+	for spec_id in special_skill_defs:
+		_cached_special_skill_levels[spec_id] = _compute_special_skill_total_level(spec_id)
 	if is_equip_disabled_challenge_active():
 		_recalculate_cached_multipliers()
 		return
@@ -791,8 +822,8 @@ func is_window_unlocked(window_id: String) -> bool:
 			return get_skill_level("equip_drop_unlock") > 0
 		"challenge":
 			return is_challenge_unlocked()
-		"blacksmith":
-			return get_skill_level("blacksmith_unlock") > 0
+		"reactor", "blacksmith":
+			return get_skill_level("blacksmith_unlock") > 0 or get_skill_level("reactor_unlock") > 0
 		"amplifier":
 			return true
 	return false
@@ -801,6 +832,8 @@ func is_window_unlocked(window_id: String) -> bool:
 signal gold_changed(new_amount: float)
 signal tokens_changed(new_amount: float)
 signal stars_changed(new_amount: int)
+signal impact_energy_changed(new_amount: float)
+signal reactor_upgraded(upgrade_id: String, new_level: int)
 signal infusion_changed()
 signal stats_changed()
 signal corner_hit_occurred()
@@ -1039,16 +1072,22 @@ func get_pending_reincarnation_multiplier() -> float:
 
 
 func use_tokens(amount: float) -> bool:
+	if is_inf(amount) or is_nan(amount):
+		return false
 	if tokens >= amount:
-		tokens -= amount
+		if not is_inf(tokens):
+			tokens -= amount
 		tokens_changed.emit(tokens)
 		return true
 	return false
 
 
 func use_gold(amount: float) -> bool:
+	if is_inf(amount) or is_nan(amount):
+		return false
 	if gold >= amount:
-		gold -= amount
+		if not is_inf(gold):
+			gold -= amount
 		gold_changed.emit(gold)
 		return true
 	return false
@@ -1059,10 +1098,157 @@ func record_bounce(is_corner: bool) -> void:
 	if is_corner and not is_corner_hit_disabled_challenge_active():
 		corner_hits += 1
 		corner_hit_occurred.emit()
+		add_impact_energy(get_corner_impact_energy_gain())
+	else:
+		add_impact_energy(get_bounce_impact_energy_gain())
 	stats_changed.emit()
 
 
-# --- Upgrade Logic ---
+# ==============================================================================
+# 衝撃炉システム (Impact Reactor System)
+# ==============================================================================
+
+const REACTOR_UPGRADES: Dictionary = {
+	"impact_gold_boost": {
+		"id": "impact_gold_boost",
+		"name": "衝撃増幅",
+		"desc": "通常衝突時のゴールド獲得量 +20%",
+		"base_cost": 10.0,
+		"cost_mult": 1.25,
+		"unit_value": 0.20
+	},
+	"kinetic_absorption": {
+		"id": "kinetic_absorption",
+		"name": "運動回収",
+		"desc": "1衝突ごとの獲得エネルギー +1",
+		"base_cost": 25.0,
+		"cost_mult": 1.35,
+		"unit_value": 1.0
+	},
+	"elastic_acceleration": {
+		"id": "elastic_acceleration",
+		"name": "弾性加速",
+		"desc": "ロゴの移動速度 +5%",
+		"base_cost": 50.0,
+		"cost_mult": 1.30,
+		"unit_value": 0.05
+	},
+	"resonance_tokens": {
+		"id": "resonance_tokens",
+		"name": "反響増殖",
+		"desc": "角ヒット時のトークン獲得量 +15%",
+		"base_cost": 100.0,
+		"cost_mult": 1.40,
+		"unit_value": 0.15
+	},
+	"critical_charge": {
+		"id": "critical_charge",
+		"name": "臨界チャージ",
+		"desc": "クリティカル発生確率 +1%",
+		"base_cost": 250.0,
+		"cost_mult": 1.45,
+		"unit_value": 1.0
+	},
+	"corner_yield": {
+		"id": "corner_yield",
+		"name": "衝撃波集積",
+		"desc": "角ヒット時のゴールド獲得量 +25%",
+		"base_cost": 500.0,
+		"cost_mult": 1.50,
+		"unit_value": 0.25
+	}
+}
+
+
+func add_impact_energy(amount: float) -> void:
+	if amount <= 0.0 or is_nan(amount) or is_inf(amount):
+		return
+	impact_energy += amount
+	total_impact_energy += amount
+	impact_energy_changed.emit(impact_energy)
+
+
+func use_impact_energy(amount: float) -> bool:
+	if is_inf(amount) or is_nan(amount) or amount <= 0.0:
+		return false
+	if impact_energy >= amount:
+		impact_energy -= amount
+		impact_energy_changed.emit(impact_energy)
+		return true
+	return false
+
+
+func get_bounce_impact_energy_gain() -> float:
+	var base := 1.0
+	var absorb_lvl := get_reactor_upgrade_level("kinetic_absorption")
+	return base + float(absorb_lvl) * 1.0
+
+
+func get_corner_impact_energy_gain() -> float:
+	return get_bounce_impact_energy_gain() * 50.0
+
+
+func get_reactor_upgrade_level(upgrade_id: String) -> int:
+	return reactor_upgrades.get(upgrade_id, 0)
+
+
+func get_reactor_upgrade_cost(upgrade_id: String, count: int = 1) -> float:
+	if not REACTOR_UPGRADES.has(upgrade_id) or count <= 0:
+		return 0.0
+	var def: Dictionary = REACTOR_UPGRADES[upgrade_id]
+	var base_cost: float = float(def.get("base_cost", 10.0))
+	var cost_mult: float = float(def.get("cost_mult", 1.25))
+	var cur_lvl := get_reactor_upgrade_level(upgrade_id)
+	return _calc_base_geometric_cost(base_cost, cost_mult, cur_lvl + 1, count, 1.0)
+
+
+func get_reactor_upgrade_max_count(upgrade_id: String) -> int:
+	if not REACTOR_UPGRADES.has(upgrade_id):
+		return 0
+	var def: Dictionary = REACTOR_UPGRADES[upgrade_id]
+	var base_cost: float = float(def.get("base_cost", 10.0))
+	var cost_mult: float = float(def.get("cost_mult", 1.25))
+	var cur_lvl := get_reactor_upgrade_level(upgrade_id)
+	return _calc_base_geometric_max_count(base_cost, cost_mult, cur_lvl + 1, impact_energy, 1.0)
+
+
+func buy_reactor_upgrade(upgrade_id: String, count: int = 1) -> bool:
+	if not REACTOR_UPGRADES.has(upgrade_id) or count <= 0:
+		return false
+	var cost := get_reactor_upgrade_cost(upgrade_id, count)
+	if use_impact_energy(cost):
+		var new_lvl := get_reactor_upgrade_level(upgrade_id) + count
+		reactor_upgrades[upgrade_id] = new_lvl
+		_recalculate_cached_multipliers()
+		upgrades_changed.emit()
+		reactor_upgraded.emit(upgrade_id, new_lvl)
+		return true
+	return false
+
+
+func get_reactor_gold_multiplier() -> float:
+	var lvl := get_reactor_upgrade_level("impact_gold_boost")
+	return 1.0 + float(lvl) * 0.20
+
+
+func get_reactor_token_multiplier() -> float:
+	var lvl := get_reactor_upgrade_level("resonance_tokens")
+	return 1.0 + float(lvl) * 0.15
+
+
+func get_reactor_corner_gold_multiplier() -> float:
+	var lvl := get_reactor_upgrade_level("corner_yield")
+	return 1.0 + float(lvl) * 0.25
+
+
+func get_reactor_speed_multiplier() -> float:
+	var lvl := get_reactor_upgrade_level("elastic_acceleration")
+	return 1.0 + float(lvl) * 0.05
+
+
+func get_reactor_crit_rate_bonus() -> float:
+	var lvl := get_reactor_upgrade_level("critical_charge")
+	return float(lvl) * 1.0
 
 func get_logo_upgrade_cost() -> float:
 	var base := 100.0 * pow(2.0, float(logo_count - 1))
@@ -1108,36 +1294,55 @@ func _calc_base_geometric_cost(base_init: float, ratio: float, current_level: in
 	var r := ratio
 	var start_lvl := maxi(1, current_level)
 	var first_cost := base_init * pow(r, float(start_lvl - 1)) * saving_mult
+	if is_inf(first_cost) or is_nan(first_cost):
+		return INF
 	if count == 1:
 		return first_cost
 	if absf(r - 1.0) < 0.0001:
 		return first_cost * float(count)
-	return first_cost * (pow(r, float(count)) - 1.0) / (r - 1.0)
+	var p := pow(r, float(count))
+	if is_inf(p) or is_nan(p):
+		return INF
+	return first_cost * (p - 1.0) / (r - 1.0)
 
 
 func _calc_base_geometric_max_count(base_init: float, ratio: float, current_level: int, currency: float, saving_mult: float) -> int:
-	if currency <= 0.0:
+	if currency <= 0.0 or is_nan(currency):
+		return 0
+	var max_add := MAX_BASE_UPGRADE_LEVEL - current_level
+	if max_add <= 0:
 		return 0
 	var r := ratio
 	var start_lvl := maxi(1, current_level)
 	var first_cost := base_init * pow(r, float(start_lvl - 1)) * saving_mult
-	if currency < first_cost:
+	if currency < first_cost or is_inf(first_cost) or is_nan(first_cost) or first_cost <= 0.0:
 		return 0
 	if absf(r - 1.0) < 0.0001:
-		return int(currency / first_cost)
+		return mini(max_add, int(minf(float(max_add), currency / first_cost)))
 
-	var val := 1.0 + currency * (r - 1.0) / first_cost
-	if val <= 0.0:
-		return 0
-	var n := int(floor(log(val) / log(r)))
-	n = maxi(0, n)
-
-	var actual_cost := _calc_base_geometric_cost(base_init, r, current_level, n, saving_mult)
-	if actual_cost > currency and n > 0:
-		n -= 1
+	var n := 0
+	var ratio_val := currency * (r - 1.0) / first_cost
+	if is_inf(ratio_val) or is_nan(ratio_val):
+		n = max_add
 	else:
+		var val := 1.0 + ratio_val
+		if val <= 1.0:
+			return 0
+		var raw_n: float = floorf(log(val) / log(r))
+		if is_inf(raw_n) or is_nan(raw_n) or raw_n >= float(max_add):
+			n = max_add
+		else:
+			n = maxi(0, int(raw_n))
+
+	n = mini(n, max_add)
+	while n > 0:
+		var actual_cost := _calc_base_geometric_cost(base_init, r, current_level, n, saving_mult)
+		if not is_inf(actual_cost) and not is_nan(actual_cost) and actual_cost <= currency:
+			break
+		n -= 1
+	if n < max_add:
 		var next_cost := _calc_base_geometric_cost(base_init, r, current_level, n + 1, saving_mult)
-		if next_cost <= currency:
+		if not is_inf(next_cost) and not is_nan(next_cost) and next_cost <= currency:
 			n += 1
 	return maxi(0, n)
 
@@ -1151,24 +1356,27 @@ func get_speed_upgrade_cost(count: int = 1) -> float:
 	return _calc_base_geometric_cost(10.0 * get_ascension_cost_multiplier(), 1.15, speed_level, count, get_equipped_saving_cost_multiplier())
 
 
-func get_speed_upgrade_max_count() -> int:
-	return _calc_base_geometric_max_count(10.0 * get_ascension_cost_multiplier(), 1.15, speed_level, gold, get_equipped_saving_cost_multiplier())
+func get_speed_upgrade_max_count(available_gold: float = -1.0) -> int:
+	var cur := gold if available_gold < 0.0 else available_gold
+	return _calc_base_geometric_max_count(10.0 * get_ascension_cost_multiplier(), 1.15, speed_level, cur, get_equipped_saving_cost_multiplier())
 
 
 func get_boost_upgrade_cost(count: int = 1) -> float:
 	return _calc_base_geometric_cost(20.0 * get_ascension_cost_multiplier(), 1.15, boost_level, count, get_equipped_saving_cost_multiplier())
 
 
-func get_boost_upgrade_max_count() -> int:
-	return _calc_base_geometric_max_count(20.0 * get_ascension_cost_multiplier(), 1.15, boost_level, gold, get_equipped_saving_cost_multiplier())
+func get_boost_upgrade_max_count(available_gold: float = -1.0) -> int:
+	var cur := gold if available_gold < 0.0 else available_gold
+	return _calc_base_geometric_max_count(20.0 * get_ascension_cost_multiplier(), 1.15, boost_level, cur, get_equipped_saving_cost_multiplier())
 
 
 func get_size_upgrade_cost(count: int = 1) -> float:
 	return _calc_base_geometric_cost(15.0 * get_ascension_cost_multiplier(), 1.15, size_level, count, get_equipped_saving_cost_multiplier())
 
 
-func get_size_upgrade_max_count() -> int:
-	return _calc_base_geometric_max_count(15.0 * get_ascension_cost_multiplier(), 1.15, size_level, gold, get_equipped_saving_cost_multiplier())
+func get_size_upgrade_max_count(available_gold: float = -1.0) -> int:
+	var cur := gold if available_gold < 0.0 else available_gold
+	return _calc_base_geometric_max_count(15.0 * get_ascension_cost_multiplier(), 1.15, size_level, cur, get_equipped_saving_cost_multiplier())
 
 
 func get_effective_ascension_multiplier_level() -> int:
@@ -1223,8 +1431,9 @@ func get_ascension_logos_next_remaining() -> int:
 
 func buy_logo_upgrade() -> bool:
 	var cost := get_logo_upgrade_cost()
-	if gold >= cost:
-		gold -= cost
+	if not is_inf(cost) and not is_nan(cost) and gold >= cost:
+		if not is_inf(gold):
+			gold -= cost
 		gold_changed.emit(gold)
 		logo_count += 1
 		upgrades_changed.emit()
@@ -1237,8 +1446,9 @@ func buy_speed_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_speed_upgrade_cost(count)
-	if gold >= cost:
-		gold -= cost
+	if not is_inf(cost) and not is_nan(cost) and gold >= cost:
+		if not is_inf(gold):
+			gold -= cost
 		speed_level += count
 		if emit_signals:
 			gold_changed.emit(gold)
@@ -1251,8 +1461,9 @@ func buy_boost_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_boost_upgrade_cost(count)
-	if gold >= cost:
-		gold -= cost
+	if not is_inf(cost) and not is_nan(cost) and gold >= cost:
+		if not is_inf(gold):
+			gold -= cost
 		boost_level += count
 		if emit_signals:
 			gold_changed.emit(gold)
@@ -1265,8 +1476,9 @@ func buy_size_upgrade(count: int = 1, emit_signals: bool = true) -> bool:
 	if count <= 0:
 		return false
 	var cost := get_size_upgrade_cost(count)
-	if gold >= cost:
-		gold -= cost
+	if not is_inf(cost) and not is_nan(cost) and gold >= cost:
+		if not is_inf(gold):
+			gold -= cost
 		size_level += count
 		if emit_signals:
 			gold_changed.emit(gold)
@@ -1305,6 +1517,7 @@ func perform_ascension() -> bool:
 		speed_level = 1
 		boost_level = 1
 		size_level = 1
+		_auto_ascend_cooldown = AUTO_ASCEND_MIN_INTERVAL
 		
 		_recalculate_cached_multipliers()
 		upgrades_changed.emit()
@@ -1339,7 +1552,7 @@ func calculate_crit_result(crit_factor: float) -> Dictionary:
 	var crit_bonus := get_c5_crit_bonus()
 	var equip_crit_rate := get_equipped_skill_total_val("crit_rate") + crit_bonus
 	var equip_crit_yield := get_equipped_skill_total_val("crit_yield") + crit_bonus
-	var chance_percent := 5.0 * crit_factor + equip_crit_rate
+	var chance_percent := 5.0 * crit_factor + equip_crit_rate + get_reactor_crit_rate_bonus()
 	if chance_percent <= 0.0:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 	
@@ -1435,9 +1648,15 @@ func _process(delta: float) -> void:
 
 
 func _process_automations(delta: float) -> void:
-	# 1. 基礎強化自動化
+	if _auto_ascend_cooldown > 0.0:
+		_auto_ascend_cooldown = maxf(0.0, _auto_ascend_cooldown - delta)
+
+	# 1. 基礎強化自動化（0.05秒間隔にスロットリングして計算とUI更新負荷を抑制）
 	if auto_status_buying_enabled and get_skill_level("auto_status_buying") > 0:
-		_run_auto_status_buying()
+		_auto_buy_timer += delta
+		if _auto_buy_timer >= AUTO_BUY_INTERVAL:
+			_auto_buy_timer = 0.0
+			_run_auto_status_buying()
 
 	# 2. アセンション自動化
 	if get_skill_level("auto_ascension") > 0:
@@ -1449,38 +1668,126 @@ func _process_automations(delta: float) -> void:
 
 
 func _run_auto_status_buying() -> void:
+	if not auto_buy_speed_enabled and not auto_buy_boost_enabled and not auto_buy_size_enabled:
+		return
+
 	var bought_count := 0
-	for _i in range(30):
-		var c_speed := get_speed_upgrade_cost(1)
-		var c_boost := get_boost_upgrade_cost(1)
-		var c_size := get_size_upgrade_cost(1)
 
-		var min_cost := INF
-		var target := ""
+	# 1. 有効な項目間のレベル差があればまず低い方を引き上げて揃える (最大3ステップ)
+	for _step in range(3):
+		var candidates: Array[Dictionary] = []
+		if auto_buy_speed_enabled:
+			candidates.append({"type": "speed", "level": speed_level, "cost": get_speed_upgrade_cost(1)})
+		if auto_buy_size_enabled:
+			candidates.append({"type": "size", "level": size_level, "cost": get_size_upgrade_cost(1)})
+		if auto_buy_boost_enabled:
+			candidates.append({"type": "boost", "level": boost_level, "cost": get_boost_upgrade_cost(1)})
 
-		if auto_buy_speed_enabled and gold >= c_speed and c_speed < min_cost:
-			min_cost = c_speed
-			target = "speed"
-		if auto_buy_boost_enabled and gold >= c_boost and c_boost < min_cost:
-			min_cost = c_boost
-			target = "boost"
-		if auto_buy_size_enabled and gold >= c_size and c_size < min_cost:
-			min_cost = c_size
-			target = "size"
-
-		if target.is_empty():
+		if candidates.size() <= 1:
 			break
 
-		var success := false
-		match target:
-			"speed":
-				success = buy_speed_upgrade(1, false)
-			"boost":
-				success = buy_boost_upgrade(1, false)
-			"size":
-				success = buy_size_upgrade(1, false)
+		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			if a["level"] != b["level"]:
+				return a["level"] < b["level"]
+			return a["cost"] < b["cost"]
+		)
 
-		if success:
+		var lowest: Dictionary = candidates[0]
+		var next_lowest: Dictionary = candidates[1]
+		var diff: int = int(next_lowest["level"]) - int(lowest["level"])
+		if diff <= 0:
+			break
+		if gold < float(lowest["cost"]):
+			break
+
+		var max_buyable := 0
+		match lowest["type"]:
+			"speed":
+				max_buyable = get_speed_upgrade_max_count()
+			"size":
+				max_buyable = get_size_upgrade_max_count()
+			"boost":
+				max_buyable = get_boost_upgrade_max_count()
+
+		if max_buyable <= 0:
+			break
+
+		var buy_amount := mini(max_buyable, diff)
+		var ok := false
+		match lowest["type"]:
+			"speed":
+				ok = buy_speed_upgrade(buy_amount, false)
+			"size":
+				ok = buy_size_upgrade(buy_amount, false)
+			"boost":
+				ok = buy_boost_upgrade(buy_amount, false)
+		if ok:
+			bought_count += buy_amount
+		else:
+			break
+
+	# 2. レベルが揃っている状態から、基礎コスト比率 (speed:10, size:15, boost:20) で予算配分して一括均等購入
+	var total_weight := 0.0
+	if auto_buy_speed_enabled:
+		total_weight += 10.0
+	if auto_buy_size_enabled:
+		total_weight += 15.0
+	if auto_buy_boost_enabled:
+		total_weight += 20.0
+
+	if total_weight > 0.0 and gold > 0.0:
+		var bulk_counts: Array[int] = []
+		if auto_buy_speed_enabled:
+			var b_gold := gold if total_weight == 10.0 else gold * (10.0 / total_weight)
+			bulk_counts.append(get_speed_upgrade_max_count(b_gold))
+		if auto_buy_size_enabled:
+			var b_gold := gold if total_weight == 15.0 else gold * (15.0 / total_weight)
+			bulk_counts.append(get_size_upgrade_max_count(b_gold))
+		if auto_buy_boost_enabled:
+			var b_gold := gold if total_weight == 20.0 else gold * (20.0 / total_weight)
+			bulk_counts.append(get_boost_upgrade_max_count(b_gold))
+
+		var min_bulk: int = int(bulk_counts.min()) if not bulk_counts.is_empty() else 0
+		if min_bulk > 0:
+			if auto_buy_speed_enabled and buy_speed_upgrade(min_bulk, false):
+				bought_count += min_bulk
+			if auto_buy_size_enabled and buy_size_upgrade(min_bulk, false):
+				bought_count += min_bulk
+			if auto_buy_boost_enabled and buy_boost_upgrade(min_bulk, false):
+				bought_count += min_bulk
+
+	# 3. 端数の残りゴールドで1レベルずつ買える分を購入 (最大3ステップ)
+	for _rem in range(3):
+		var candidates: Array[Dictionary] = []
+		if auto_buy_speed_enabled and speed_level < MAX_BASE_UPGRADE_LEVEL:
+			candidates.append({"type": "speed", "level": speed_level, "cost": get_speed_upgrade_cost(1)})
+		if auto_buy_size_enabled and size_level < MAX_BASE_UPGRADE_LEVEL:
+			candidates.append({"type": "size", "level": size_level, "cost": get_size_upgrade_cost(1)})
+		if auto_buy_boost_enabled and boost_level < MAX_BASE_UPGRADE_LEVEL:
+			candidates.append({"type": "boost", "level": boost_level, "cost": get_boost_upgrade_cost(1)})
+
+		if candidates.is_empty():
+			break
+
+		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			if a["level"] != b["level"]:
+				return a["level"] < b["level"]
+			return a["cost"] < b["cost"]
+		)
+
+		var target: Dictionary = candidates[0]
+		if gold < float(target["cost"]):
+			break
+
+		var ok := false
+		match target["type"]:
+			"speed":
+				ok = buy_speed_upgrade(1, false)
+			"size":
+				ok = buy_size_upgrade(1, false)
+			"boost":
+				ok = buy_boost_upgrade(1, false)
+		if ok:
 			bought_count += 1
 		else:
 			break
@@ -1513,7 +1820,7 @@ func _run_auto_ascension(delta: float) -> void:
 			auto_ascend_timer_updated.emit(0.0, auto_ascend_wait_seconds)
 		return
 
-	if is_auto_ascend_condition_met():
+	if is_auto_ascend_condition_met() and _auto_ascend_cooldown <= 0.0:
 		_auto_ascend_timer += delta
 		auto_ascend_timer_updated.emit(_auto_ascend_timer, auto_ascend_wait_seconds)
 		if _auto_ascend_timer >= auto_ascend_wait_seconds:
@@ -1609,11 +1916,12 @@ func _parse_skill_int_bonus(skill_id: String, fallback: int) -> int:
 	if not skill_tree_defs.has(skill_id):
 		return fallback
 	var desc: String = skill_tree_defs[skill_id].get("description", "")
-	var regex := RegEx.new()
-	if regex.compile("\\+(\\d+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_int()
+	if _regex_int_bonus == null:
+		_regex_int_bonus = RegEx.new()
+		_regex_int_bonus.compile("\\+(\\d+)")
+	var result := _regex_int_bonus.search(desc)
+	if result:
+		return result.get_string(1).to_int()
 	return fallback
 
 
@@ -1621,11 +1929,12 @@ func _parse_skill_percent_bonus(skill_id: String, fallback: float) -> float:
 	if not skill_tree_defs.has(skill_id):
 		return fallback
 	var desc: String = skill_tree_defs[skill_id].get("description", "")
-	var regex := RegEx.new()
-	if regex.compile("(\\d+)(?:%|％)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return float(result.get_string(1)) * 0.01
+	if _regex_percent_bonus == null:
+		_regex_percent_bonus = RegEx.new()
+		_regex_percent_bonus.compile("(\\d+)(?:%|％)")
+	var result := _regex_percent_bonus.search(desc)
+	if result:
+		return float(result.get_string(1)) * 0.01
 	return fallback
 
 
@@ -1633,15 +1942,16 @@ func _parse_skill_multiplier_bonus(skill_id: String, fallback: float) -> float:
 	if not skill_tree_defs.has(skill_id):
 		return fallback
 	var desc: String = skill_tree_defs[skill_id].get("description", "")
-	var regex := RegEx.new()
-	if regex.compile(r"[x×]([\d\.]+)") == OK:
-		var result := regex.search(desc)
-		if result:
-			return result.get_string(1).to_float()
+	if _regex_mult_bonus == null:
+		_regex_mult_bonus = RegEx.new()
+		_regex_mult_bonus.compile(r"[x×]([\d\.]+)")
+	var result := _regex_mult_bonus.search(desc)
+	if result:
+		return result.get_string(1).to_float()
 	return fallback
 
 
-func get_tree_equip_drop_probability_bonus() -> float:
+func _compute_tree_equip_drop_probability_bonus() -> float:
 	var bonus := 0.0
 	for i in range(1, 100):
 		var s_id := "equip_drop_probability_boost_%d" % i
@@ -1653,7 +1963,11 @@ func get_tree_equip_drop_probability_bonus() -> float:
 	return bonus
 
 
-func get_tree_equip_drop_level_bonus() -> int:
+func get_tree_equip_drop_probability_bonus() -> float:
+	return _cached_tree_equip_drop_prob_bonus
+
+
+func _compute_tree_equip_drop_level_bonus() -> int:
 	var bonus := 0
 	for i in range(1, 100):
 		var s_id := "equip_drop_level_boost_%d" % i
@@ -1665,7 +1979,11 @@ func get_tree_equip_drop_level_bonus() -> int:
 	return bonus
 
 
-func get_total_equip_drop_rarity_boost() -> int:
+func get_tree_equip_drop_level_bonus() -> int:
+	return _cached_tree_equip_drop_level_bonus
+
+
+func _compute_total_equip_drop_rarity_boost() -> int:
 	var boost := 0
 	for i in range(1, 100):
 		var s_id := "equip_drop_rarity_boost_%d" % i
@@ -1677,7 +1995,11 @@ func get_total_equip_drop_rarity_boost() -> int:
 	return boost
 
 
-func get_tree_equip_skill_level_bonus() -> int:
+func get_total_equip_drop_rarity_boost() -> int:
+	return _cached_tree_equip_drop_rarity_boost
+
+
+func _compute_tree_equip_skill_level_bonus() -> int:
 	var bonus := 0
 	for i in range(1, 100):
 		var s_id := "equip_skill_boost_%d" % i
@@ -1687,6 +2009,10 @@ func get_tree_equip_skill_level_bonus() -> int:
 			var default_val := i
 			bonus += _parse_skill_int_bonus(s_id, default_val)
 	return bonus
+
+
+func get_tree_equip_skill_level_bonus() -> int:
+	return _cached_tree_equip_skill_level_bonus
 
 
 func calculate_corner_hit_gold() -> Dictionary:
@@ -1703,7 +2029,7 @@ func calculate_corner_hit_gold() -> Dictionary:
 	if is_corner_hit_disabled_challenge_active():
 		gold_amount = 0.0
 	else:
-		gold_amount *= get_c7_corner_multiplier()
+		gold_amount *= get_c7_corner_multiplier() * get_reactor_corner_gold_multiplier()
 
 	return {
 		"amount": gold_amount,
@@ -1848,6 +2174,10 @@ func _recalculate_all_cumulative_levels() -> void:
 	total_equip_skill_boost_level = _recalculate_total_level("equip_skill_boost_")
 	total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 	total_challenge_bonus_boost_level = _recalculate_total_level("challange_bonus_boost_") + _recalculate_total_level("challenge_bonus_boost_")
+	_cached_tree_equip_drop_prob_bonus = _compute_tree_equip_drop_probability_bonus()
+	_cached_tree_equip_drop_rarity_boost = _compute_total_equip_drop_rarity_boost()
+	_cached_tree_equip_drop_level_bonus = _compute_tree_equip_drop_level_bonus()
+	_cached_tree_equip_skill_level_bonus = _compute_tree_equip_skill_level_bonus()
 	_recalculate_cached_multipliers()
 
 
@@ -1907,8 +2237,16 @@ func _recalculate_cached_multipliers() -> void:
 			tree_gold_mult *= max_lvl_mult
 			tree_token_mult *= max_lvl_mult
 
-	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_gold_mult * tree_gold_mult
-	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_token_mult * tree_token_mult
+	# 装備の合計合成回数ボーナス
+	var equipped_forge_count := get_total_equipped_forge_count()
+	if equipped_forge_count > 0:
+		if get_blacksmith_skill_level("blacksmith_gold_boost") > 0:
+			tree_gold_mult *= pow(1.5, float(equipped_forge_count))
+		if get_blacksmith_skill_level("blacksmith_token_boost") > 0:
+			tree_token_mult *= pow(1.5, float(equipped_forge_count))
+
+	_cached_gold_skill_mult = pow(1.1, total_gold_boost_level) * gold_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_gold_mult * tree_gold_mult * get_reactor_gold_multiplier()
+	_cached_token_skill_mult = pow(1.1, total_token_boost_level) * token_equip_mult * div_mult * accum_mult * reinc_mult * gamble_mult * switch_token_mult * tree_token_mult * get_reactor_token_multiplier()
 	_cached_gold_over_time_boost_mult = pow(1.1, total_get_gold_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_gold_mult * tree_gold_mult
 	_cached_token_over_time_boost_mult = pow(1.1, total_get_token_over_time_boost_level) * accum_mult * reinc_mult * gamble_mult * switch_token_mult * tree_token_mult
 	_cached_ascension_mult = get_ascension_multiplier()
@@ -1957,12 +2295,16 @@ func _update_cumulative_levels(skill_id: String) -> void:
 		total_token_direct_boost_level = _recalculate_total_level("token_direct_hit_boost_")
 	elif _check_and_update_cumulative(skill_id, "equip_drop_probability_boost_"):
 		total_equip_drop_probability_boost_level = _recalculate_total_level("equip_drop_probability_boost_")
+		_cached_tree_equip_drop_prob_bonus = _compute_tree_equip_drop_probability_bonus()
 	elif _check_and_update_cumulative(skill_id, "equip_drop_rarity_boost_"):
 		total_equip_drop_rarity_boost_level = _recalculate_total_level("equip_drop_rarity_boost_")
+		_cached_tree_equip_drop_rarity_boost = _compute_total_equip_drop_rarity_boost()
 	elif _check_and_update_cumulative(skill_id, "equip_drop_level_boost_"):
 		total_equip_drop_level_boost_level = _recalculate_total_level("equip_drop_level_boost_")
+		_cached_tree_equip_drop_level_bonus = _compute_tree_equip_drop_level_bonus()
 	elif _check_and_update_cumulative(skill_id, "equip_skill_boost_"):
 		total_equip_skill_boost_level = _recalculate_total_level("equip_skill_boost_")
+		_cached_tree_equip_skill_level_bonus = _compute_tree_equip_skill_level_bonus()
 	elif _check_and_update_cumulative(skill_id, "accessory_slot_unlock_"):
 		total_accessory_slot_unlock_level = _recalculate_total_level("accessory_slot_unlock_")
 		equipment_changed.emit()
@@ -2056,10 +2398,108 @@ func get_rarity_index(rarity: String) -> int:
 		_: return 1
 
 
+func get_blacksmith_skill_level(key: String) -> int:
+	var lvl := get_skill_level(key)
+	if lvl > 0:
+		return lvl
+	if key.begins_with("blacksmith/"):
+		var stripped := key.trim_prefix("blacksmith/")
+		lvl = get_skill_level(stripped)
+		if lvl > 0:
+			return lvl
+	else:
+		lvl = get_skill_level("blacksmith/" + key)
+		if lvl > 0:
+			return lvl
+	return 0
+
+
+func get_forge_material_slot_count() -> int:
+	var slots := 3
+	if get_blacksmith_skill_level("blacksmith_slot_boost_1") > 0:
+		slots += 1
+	if get_blacksmith_skill_level("blacksmith_slot_boost_2") > 0:
+		slots += 1
+	if get_blacksmith_skill_level("blacksmith_slot_boost_3") > 0:
+		slots += 1
+	if get_blacksmith_skill_level("blacksmith_slot_boost_4") > 0:
+		slots += 1
+	if get_blacksmith_skill_level("blacksmith_slot_boost_5") > 0:
+		slots += 2
+	return mini(9, slots)
+
+
 func get_forge_max_special_skills() -> int:
-	var base_limit := 1
-	# 将来スキルツリーやチャレンジで上限が上がる場合の拡張ポイント
-	return base_limit
+	var limit := 1
+	if get_blacksmith_skill_level("blacksmith_special_skill_plus") > 0:
+		limit += 1
+	return limit
+
+
+func get_forge_max_pick_skills() -> int:
+	if get_blacksmith_skill_level("blacksmith_skill_pick_unlock") <= 0:
+		return 0
+	var picks := 1
+	if get_blacksmith_skill_level("blacksmith_skill_pick_boost_1") > 0:
+		picks += 1
+	if get_blacksmith_skill_level("blacksmith_skill_pick_boost_2") > 0:
+		picks += 1
+	return picks
+
+
+func get_blacksmith_rarity_boost() -> int:
+	var boost := 0
+	if get_blacksmith_skill_level("blacksmith_rarity_boost_1") > 0:
+		boost += 1
+	if get_blacksmith_skill_level("blacksmith_rarity_boost_2") > 0:
+		boost += 1
+	if get_blacksmith_skill_level("blacksmith_rarity_boost_3") > 0:
+		boost += 1
+	return boost
+
+
+func is_forge_condition_deregulated() -> bool:
+	return get_blacksmith_skill_level("blacksmith_rarity_condition_deregulation") > 0
+
+
+func get_blacksmith_recycle_chance() -> float:
+	var chance := 0.0
+	for i in range(1, 6):
+		if get_blacksmith_skill_level("blacksmith_recycle_" + str(i)) > 0:
+			chance += 0.05
+	return chance
+
+
+func get_forge_critical_chance() -> float:
+	if get_blacksmith_skill_level("blacksmith_critical_unlock") <= 0:
+		return 0.0
+	var chance := 0.10
+	for i in range(1, 5):
+		if get_blacksmith_skill_level("blacksmith_critical_capability_boost_" + str(i)) > 0:
+			chance += 0.05
+	return chance
+
+
+func get_forge_critical_multiplier() -> float:
+	if get_blacksmith_skill_level("blacksmith_critical_unlock") <= 0:
+		return 1.0
+	var mult := 1.05
+	if get_blacksmith_skill_level("blacksmith_critical_effect_boost") > 0:
+		mult += 0.05
+	if get_blacksmith_skill_level("blacksmith_critical_effect_boost_1") > 0:
+		mult += 0.05
+	if get_blacksmith_skill_level("blacksmith_critical_effect_boost_2") > 0:
+		mult += 0.05
+	return mult
+
+
+func get_total_equipped_forge_count() -> int:
+	var total := 0
+	for slot_key in equipped_items:
+		var item = equipped_items[slot_key]
+		if item != null and item is Dictionary:
+			total += int(item.get("forge_count", 0))
+	return total
 
 
 func get_rarity_bg_path(rarity: String) -> String:
@@ -2353,6 +2793,7 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 
 ## 鍛冶の事前プレビュー情報（合算スキル候補リスト、レア度抽選確率、レベル候補など）を計算する純粋関数
 func calculate_forge_preview(materials: Array) -> Dictionary:
+	var slot_limit: int = get_forge_material_slot_count()
 	if materials.is_empty():
 		return {
 			"can_forge": false,
@@ -2364,19 +2805,32 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 		}
 
 	var first_type: String = materials[0].get("type", "")
-	var first_forge_count: int = materials[0].get("forge_count", 0)
+	var is_deregulated: bool = is_forge_condition_deregulated()
+	var fc_list: Array[int] = []
 
 	for mat in materials:
 		if mat == null or not mat is Dictionary:
 			return { "can_forge": false, "reason": "無効な素材が含まれています", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
 		if mat.get("type", "") != first_type:
 			return { "can_forge": false, "reason": "装備の種類が一致していません", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
-		if mat.get("forge_count", 0) != first_forge_count:
-			return { "can_forge": false, "reason": "鍛冶回数が一致していません", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+		fc_list.append(int(mat.get("forge_count", 0)))
 
-	# スキルの合算
+	var min_fc: int = fc_list.min() if not fc_list.is_empty() else 0
+	var max_fc: int = fc_list.max() if not fc_list.is_empty() else 0
+
+	if is_deregulated:
+		if max_fc - min_fc > 1:
+			return { "can_forge": false, "reason": "合成回数の差が1を超えています", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+	else:
+		if min_fc != max_fc:
+			return { "can_forge": false, "reason": "合成回数が一致していません", "skills": [], "rarity_probs": {}, "forge_count": 0, "levels": [] }
+
+	# スキル候補のレベル算出
+	# 通常スキル: 素材中の最大値 + 素材数 (materials.size())
+	# 特殊スキル: 素材中の最大値 + 1
 	var aggregated_map: Dictionary = {}
 	var levels: Array[int] = []
+	var total_material_count: int = materials.size()
 
 	for mat in materials:
 		levels.append(int(mat.get("level", 10)))
@@ -2387,7 +2841,7 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 				continue
 			var sk_lvl: int = int(sk.get("level", 1))
 			if aggregated_map.has(sk_id):
-				aggregated_map[sk_id]["level"] += sk_lvl
+				aggregated_map[sk_id]["max_level"] = maxi(aggregated_map[sk_id]["max_level"], sk_lvl)
 			else:
 				var is_spec: bool = sk.get("is_special", false) or special_skill_defs.has(sk_id)
 				var sk_name: String = sk.get("name", "")
@@ -2399,11 +2853,23 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 				aggregated_map[sk_id] = {
 					"id": sk_id,
 					"name": sk_name,
-					"level": sk_lvl,
+					"max_level": sk_lvl,
 					"is_special": is_spec,
 					"has_custom_ui": sk.get("has_custom_ui", false),
 					"ui_title": sk.get("ui_title", "")
 				}
+
+	for sk_id in aggregated_map:
+		var sk_entry: Dictionary = aggregated_map[sk_id]
+		var max_lvl: int = int(sk_entry.get("max_level", 1))
+		if sk_entry["is_special"]:
+			sk_entry["level"] = max_lvl + 1
+			sk_entry["base_level"] = max_lvl
+			sk_entry["forge_bonus_level"] = 1
+		else:
+			sk_entry["level"] = max_lvl + total_material_count
+			sk_entry["base_level"] = max_lvl
+			sk_entry["forge_bonus_level"] = total_material_count
 
 	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
 	var normal_skills: Array[Dictionary] = []
@@ -2433,11 +2899,11 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 	var r_min: int = mat_r_indices.min() if not mat_r_indices.is_empty() else 1
 	var r_max: int = mat_r_indices.max() if not mat_r_indices.is_empty() else 1
 
-	# 2. 基本範囲: [r_min - 1, r_max + 1] (1~6の範囲、ミシック未解放時は最大5)
+	# 2. 範囲: 投入した素材レアリティの最小値〜最大値 [r_min, r_max] (投入素材の範囲外にはみ出さない)
 	var is_mythic_unlocked := get_skill_level("mythic_unlock") > 0
 	var max_allowed_r := 6 if is_mythic_unlocked else 5
-	var base_min_r: int = maxi(1, r_min - 1)
-	var base_max_r: int = mini(max_allowed_r, r_max + 1)
+	var base_min_r: int = clampi(r_min, 1, max_allowed_r)
+	var base_max_r: int = clampi(r_max, 1, max_allowed_r)
 
 	# 3. スキル数制約による実現可能性チェック
 	# 特殊スキルの付与上限初期値 = 1 (get_forge_max_special_skills())
@@ -2454,15 +2920,21 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 	if valid_rarities.is_empty():
 		valid_rarities.append(base_min_r)
 
-	# 4. 正規分布（中央が太め）に従う確率算出
+	# 4. 正規分布に従う確率算出（レアリティ係数による高レア度への偏り）
 	var K: int = valid_rarities.size()
 	var center: float = float(K - 1) / 2.0
+	var rarity_boost: int = get_blacksmith_rarity_boost() # 0〜3
+	if rarity_boost > 0 and K > 1:
+		center += float(rarity_boost) * 0.35
+
 	var sigma: float = maxf(0.8, float(K) * 0.25)
 	var weights: Array[float] = []
 	var total_weight: float = 0.0
 	for i in range(K):
 		var diff: float = float(i) - center
 		var w: float = exp(-(diff * diff) / (2.0 * sigma * sigma))
+		# 最低レアリティが完全に消えないよう微小下限を設定
+		w = maxf(w, 0.05)
 		weights.append(w)
 		total_weight += w
 
@@ -2496,16 +2968,24 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 		if not possible_levels.has(max_level):
 			possible_levels.append(max_level)
 
+	var can_forge: bool = materials.size() >= 2 and materials.size() <= slot_limit
+	var reason := ""
+	if materials.size() < 2:
+		reason = "素材が2つ以上必要です"
+	elif materials.size() > slot_limit:
+		reason = "素材スロットの上限（" + str(slot_limit) + "個）を超えています"
+
 	return {
-		"can_forge": materials.size() >= 2 and materials.size() <= 9,
-		"reason": "" if materials.size() >= 2 else "素材が2つ以上必要です",
+		"can_forge": can_forge,
+		"reason": reason,
 		"skills": all_skills,
 		"normal_skills": normal_skills,
 		"special_skills": special_skills,
 		"valid_rarities": valid_rarities,
 		"rarity_probs": rarity_probs,
 		"possible_rarity_range": [min_r, max_r],
-		"forge_count": first_forge_count + 1,
+		"forge_count": max_fc + 1,
+		"material_max_forge_count": max_fc,
 		"levels": levels,
 		"min_level": min_level,
 		"max_level": max_level,
@@ -2515,12 +2995,13 @@ func calculate_forge_preview(materials: Array) -> Dictionary:
 
 
 ## 鍛冶合成を実行する
-func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictionary:
+func forge_equipment(type: String, material_inv_indices: Array[int], picked_skill_ids: Array = []) -> Dictionary:
 	_ensure_inventory_sizes()
 	if not inventories.has(type):
 		return {}
 	var inv_arr: Array = inventories[type]
-	if material_inv_indices.size() < 2 or material_inv_indices.size() > 9:
+	var slot_limit: int = get_forge_material_slot_count()
+	if material_inv_indices.size() < 2 or material_inv_indices.size() > slot_limit:
 		return {}
 
 	# 重複インデックスの除去と検証
@@ -2545,7 +3026,15 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 	if not preview.get("can_forge", false):
 		return {}
 
+	# クリティカル抽選
+	var is_critical: bool = randf() < get_forge_critical_chance()
+	var crit_mult: float = get_forge_critical_multiplier() if is_critical else 1.0
+
+	# 合成回数：クリティカル時は増えない（素材の最大forge_countを引き継ぐ）
 	var forge_count: int = preview["forge_count"]
+	if is_critical:
+		forge_count = int(preview.get("material_max_forge_count", 0))
+
 	var possible_levels: Array = preview.get("possible_levels", [10])
 	var chosen_level: int = possible_levels[randi() % possible_levels.size()]
 	var normal_candidates: Array = preview.get("normal_skills", []).duplicate(true)
@@ -2566,36 +3055,70 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 			break
 	var chosen_rarity: String = rarity_names[rolled_r_idx - 1]
 
-	# 2. スキルの選出（特殊スキル候補が存在する場合は必ず付与 → 残り枠を通常スキルで埋める）
+	# 2. スキルの選出
+	# レア度（num_slots）をあらかじめ計算した上で、
+	# ① 可能な数だけ選択したスキルから選出（レア度が足りない場合は選択スキルからランダム）
+	# ② 特殊スキルをレア度と通常スキル数に従い上限まで付与
+	# ③ それでも足りない場合に通常スキルをランダムに付与
 	var num_slots: int = rolled_r_idx
-	var chosen_spec_count: int = mini(num_slots, mini(special_candidates.size(), get_forge_max_special_skills()))
+	var selected_norm_skills: Array[Dictionary] = []
+	var selected_spec_skills: Array[Dictionary] = []
 
-	# 特殊スキルの選出
-	special_candidates.shuffle()
-	var selected_spec_skills: Array = special_candidates.slice(0, chosen_spec_count)
+	var picked_norm_candidates: Array[Dictionary] = []
+	var other_norm_candidates: Array[Dictionary] = []
+	for sk in normal_candidates:
+		if picked_skill_ids.has(sk["id"]):
+			picked_norm_candidates.append(sk)
+		else:
+			other_norm_candidates.append(sk)
 
-	# 残り枠数の通常スキルの選出
-	var needed_norm_count: int = num_slots - chosen_spec_count
-	normal_candidates.shuffle()
-	var selected_norm_skills: Array = normal_candidates.slice(0, mini(needed_norm_count, normal_candidates.size()))
+	if picked_norm_candidates.size() > num_slots:
+		picked_norm_candidates.shuffle()
+		selected_norm_skills.append_array(picked_norm_candidates.slice(0, num_slots))
+	else:
+		selected_norm_skills.append_array(picked_norm_candidates)
 
-	# スキル説明文を生成
-	var normal_list: Array[Dictionary] = []
-	var special_list: Array[Dictionary] = []
+	var remaining_slots: int = num_slots - selected_norm_skills.size()
+
+	# 特殊スキルの付与
+	var max_spec_count: int = get_forge_max_special_skills()
+	var spec_to_add: int = mini(remaining_slots, mini(special_candidates.size(), max_spec_count))
+	if spec_to_add > 0:
+		special_candidates.shuffle()
+		selected_spec_skills.append_array(special_candidates.slice(0, spec_to_add))
+		remaining_slots -= spec_to_add
+
+	# 足りないスロットを他の通常スキルからランダムに付与
+	if remaining_slots > 0:
+		other_norm_candidates.shuffle()
+		var extra_norm := other_norm_candidates.slice(0, mini(remaining_slots, other_norm_candidates.size()))
+		selected_norm_skills.append_array(extra_norm)
+		remaining_slots -= extra_norm.size()
+
+	# クリティカル倍率の適用とスキル説明文の生成
 	for sk in selected_norm_skills:
+		if is_critical:
+			var orig_lvl: int = int(sk.get("level", 1))
+			var boosted_lvl: int = maxi(1, int(round(float(orig_lvl) * crit_mult)))
+			sk["crit_bonus_lvl"] = boosted_lvl - orig_lvl
+			sk["level"] = boosted_lvl
 		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], false)
-		normal_list.append(sk)
-	for sk in selected_spec_skills:
-		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], true)
-		special_list.append(sk)
 
-	# スキルを「通常スキル（Lv降順） → 特殊スキル（Lv降順）」でソート
-	normal_list.sort_custom(func(a, b): return a["level"] > b["level"])
-	special_list.sort_custom(func(a, b): return a["level"] > b["level"])
+	for sk in selected_spec_skills:
+		if is_critical:
+			var orig_lvl: int = int(sk.get("level", 1))
+			var boosted_lvl: int = maxi(1, int(round(float(orig_lvl) * crit_mult)))
+			sk["crit_bonus_lvl"] = boosted_lvl - orig_lvl
+			sk["level"] = boosted_lvl
+		sk["desc"] = format_equipment_skill_desc(sk["id"], sk["level"], true)
+
+	# ソート
+	selected_norm_skills.sort_custom(func(a, b): return a["level"] > b["level"])
+	selected_spec_skills.sort_custom(func(a, b): return a["level"] > b["level"])
 
 	var final_skills: Array[Dictionary] = []
-	final_skills.append_array(normal_list)
-	final_skills.append_array(special_list)
+	final_skills.append_array(selected_norm_skills)
+	final_skills.append_array(selected_spec_skills)
 
 	# ベースアイテム（素材の中からランダムに選択）
 	var base_item: Dictionary = material_items[randi() % material_items.size()]
@@ -2615,17 +3138,39 @@ func forge_equipment(type: String, material_inv_indices: Array[int]) -> Dictiona
 		"obtain_order": get_next_item_obtain_order()
 	}
 
-	# インベントリ配置: 素材の中でインデックス最小の位置に新アイテムを配置し、残りは消滅
-	var min_idx: int = unique_indices[0]
-	for idx in unique_indices:
-		if idx < min_idx:
-			min_idx = idx
+	# 装備リサイクル判定
+	var recycle_chance: float = get_blacksmith_recycle_chance()
+	var recycled_indices: Array[int] = []
+	if recycle_chance > 0.0:
+		for idx in unique_indices:
+			if randf() < recycle_chance:
+				recycled_indices.append(idx)
 
+	# 全素材がリサイクルされた場合、空き枠確保のためランダムに1つ強制消費
+	if recycled_indices.size() == unique_indices.size():
+		var forced_consume_idx: int = unique_indices[randi() % unique_indices.size()]
+		recycled_indices.erase(forced_consume_idx)
+
+	var consumed_indices: Array[int] = []
 	for idx in unique_indices:
+		if not recycled_indices.has(idx):
+			consumed_indices.append(idx)
+
+	var target_slot_idx: int = consumed_indices.min()
+
+	for idx in consumed_indices:
 		inv_arr[idx] = null
 
-	inv_arr[min_idx] = new_item
+	inv_arr[target_slot_idx] = new_item
 	equipment_changed.emit()
+
+	new_item["_forge_result"] = {
+		"is_critical": is_critical,
+		"crit_mult": crit_mult,
+		"recycled_indices": recycled_indices,
+		"consumed_indices": consumed_indices,
+		"target_slot_idx": target_slot_idx
+	}
 
 	return new_item
 
@@ -4233,29 +4778,51 @@ func _calc_geometric_cost(base: float, growth: float, current_level: int, count:
 	if count <= 0:
 		return 0.0
 	var first_cost := base * pow(growth, float(current_level)) * saving_mult
+	if is_inf(first_cost) or is_nan(first_cost):
+		return INF
 	if count == 1:
 		return first_cost
 	if is_equal_approx(growth, 1.0):
 		return first_cost * float(count)
-	return first_cost * (pow(growth, float(count)) - 1.0) / (growth - 1.0)
+	var p := pow(growth, float(count))
+	if is_inf(p) or is_nan(p):
+		return INF
+	return first_cost * (p - 1.0) / (growth - 1.0)
 
 
 func _calc_geometric_max_count(base: float, growth: float, current_level: int, currency: float, saving_mult: float) -> int:
+	if currency <= 0.0 or is_nan(currency):
+		return 0
 	var first_cost := base * pow(growth, float(current_level)) * saving_mult
-	if currency < first_cost:
+	if currency < first_cost or is_inf(first_cost) or is_nan(first_cost) or first_cost <= 0.0:
 		return 0
 	if is_equal_approx(growth, 1.0):
-		return int(currency / first_cost)
-	var term := 1.0 + currency * (growth - 1.0) / first_cost
-	if term <= 1.0:
+		return int(minf(1000.0, currency / first_cost))
+	var max_add := maxi(0, 1500 - current_level)
+	if max_add <= 0:
 		return 0
-	var n := int(floor(log(term) / log(growth)))
-	var actual_cost := _calc_geometric_cost(base, growth, current_level, n, saving_mult)
-	if actual_cost > currency and n > 0:
+	var n := 0
+	var ratio_val := currency * (growth - 1.0) / first_cost
+	if is_inf(ratio_val) or is_nan(ratio_val):
+		n = max_add
+	else:
+		var term := 1.0 + ratio_val
+		if term <= 1.0:
+			return 0
+		var raw_n: float = floorf(log(term) / log(growth))
+		if is_inf(raw_n) or is_nan(raw_n) or raw_n >= float(max_add):
+			n = max_add
+		else:
+			n = maxi(0, int(raw_n))
+	n = mini(n, max_add)
+	while n > 0:
+		var actual_cost := _calc_geometric_cost(base, growth, current_level, n, saving_mult)
+		if not is_inf(actual_cost) and not is_nan(actual_cost) and actual_cost <= currency:
+			break
 		n -= 1
-	elif n >= 0:
+	if n < max_add:
 		var next_cost := _calc_geometric_cost(base, growth, current_level, n + 1, saving_mult)
-		if next_cost <= currency:
+		if not is_inf(next_cost) and not is_nan(next_cost) and next_cost <= currency:
 			n += 1
 	return maxi(0, n)
 
@@ -4605,7 +5172,11 @@ func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dic
 		"auto_ascend_min_boost_level": auto_ascend_min_boost_level,
 		"auto_ascend_wait_seconds": auto_ascend_wait_seconds,
 		# 装備ドロップフィルター
-		"equipment_filter_settings": equipment_filter_settings.duplicate(true)
+		"equipment_filter_settings": equipment_filter_settings.duplicate(true),
+		# 衝撃炉
+		"impact_energy": impact_energy,
+		"total_impact_energy": total_impact_energy,
+		"reactor_upgrades": reactor_upgrades.duplicate()
 	}
 
 
@@ -4788,7 +5359,11 @@ func delete_save_data() -> bool:
 func _apply_save_data(data: Dictionary) -> void:
 	# 1. 通貨・統計
 	gold = float(data.get("gold", 0.0))
+	if is_nan(gold) or gold < 0.0:
+		gold = 0.0
 	tokens = float(data.get("tokens", 0.0))
+	if is_nan(tokens) or tokens < 0.0:
+		tokens = 0.0
 	stars = int(data.get("stars", 0))
 	infused_tokens = float(data.get("infused_tokens", 0.0))
 	is_infusing_tokens = bool(data.get("is_infusing_tokens", false))
@@ -4801,9 +5376,9 @@ func _apply_save_data(data: Dictionary) -> void:
 
 	# 2. 基礎強化
 	logo_count = maxi(1, int(data.get("logo_count", 1)))
-	speed_level = int(data.get("speed_level", 1))
-	boost_level = int(data.get("boost_level", 1))
-	size_level = int(data.get("size_level", 1))
+	speed_level = clampi(int(data.get("speed_level", 1)), 1, MAX_BASE_UPGRADE_LEVEL)
+	boost_level = clampi(int(data.get("boost_level", 1)), 1, MAX_BASE_UPGRADE_LEVEL)
+	size_level = clampi(int(data.get("size_level", 1)), 1, MAX_BASE_UPGRADE_LEVEL)
 	ascension_level = int(data.get("ascension_level", 0))
 
 	# 3. スキルツリー・転生スキル（マスターデータと照合して安全にロード）
@@ -4899,7 +5474,17 @@ func _apply_save_data(data: Dictionary) -> void:
 	else:
 		reset_equipment_filter_settings()
 
-	# 10. 各種キャッシュの再計算 & シグナル通知
+	# 10. 衝撃炉
+	impact_energy = float(data.get("impact_energy", 0.0))
+	total_impact_energy = float(data.get("total_impact_energy", 0.0))
+	var raw_reactor_upgrades = data.get("reactor_upgrades", {})
+	if raw_reactor_upgrades is Dictionary:
+		reactor_upgrades = raw_reactor_upgrades.duplicate()
+	else:
+		reactor_upgrades.clear()
+	impact_energy_changed.emit(impact_energy)
+
+	# 11. 各種キャッシュの再計算 & シグナル通知
 	_recalculate_all_cumulative_levels()
 	_recalculate_equipped_skill_levels()
 	_recalculate_cached_multipliers()
@@ -4993,6 +5578,10 @@ func reset_all_data() -> void:
 	amp_token_pow_level = 0
 
 	reset_equipment_filter_settings()
+
+	impact_energy = 0.0
+	total_impact_energy = 0.0
+	reactor_upgrades.clear()
 
 	apply_auto_unlocked_skills()
 	_recalculate_all_cumulative_levels()

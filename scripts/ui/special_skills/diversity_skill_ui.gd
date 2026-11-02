@@ -11,10 +11,12 @@ const ANGLES_DEG := [-30.0, 30.0, 90.0, 150.0, -150.0, -90.0]
 
 var skill_level: int = 1
 var is_mult_active: bool = false
+var _cached_active_rarities: Array[String] = []
+var _last_shadow_size: int = -1
+var _last_glow_msec: int = 0
 
 
 func _ready() -> void:
-	GameData.upgrades_changed.connect(update_ui)
 	GameData.equipment_changed.connect(update_ui)
 	if hex_draw_control:
 		hex_draw_control.draw.connect(_on_hex_draw)
@@ -26,24 +28,36 @@ func _process(_delta: float) -> void:
 	if is_mult_active and is_inside_tree() and is_visible_in_tree():
 		if hex_draw_control:
 			hex_draw_control.queue_redraw()
-		_update_text_glow_effect()
+		var now := Time.get_ticks_msec()
+		if now - _last_glow_msec >= 50:
+			_last_glow_msec = now
+			_update_text_glow_effect()
 
 
 func set_skill_data(sk_data: Dictionary) -> void:
-	skill_level = int(sk_data.get("level", 1))
-	update_ui()
+	var new_lvl := int(sk_data.get("level", 1))
+	if skill_level != new_lvl:
+		skill_level = new_lvl
+		update_ui()
 
 
 func update_ui() -> void:
 	if not is_inside_tree():
 		return
 
+	_cached_active_rarities = GameData.get_equipped_unique_rarities()
 	var mult := GameData.get_diversity_multiplier()
 	is_mult_active = (mult > 1.0)
+	_last_shadow_size = -1
 
 	if multiplier_label:
 		if is_mult_active:
 			multiplier_label.text = "x" + GameData.format_num(mult)
+			multiplier_label.add_theme_color_override("font_color", Color(1.0, 0.93, 0.35, 1.0))
+			multiplier_label.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.12, 0.95))
+			multiplier_label.add_theme_constant_override("outline_size", 3)
+			multiplier_label.add_theme_constant_override("shadow_offset_x", 0)
+			multiplier_label.add_theme_constant_override("shadow_offset_y", 0)
 		else:
 			multiplier_label.text = "x1"
 			# 未発動時のシックなフォントスタイル
@@ -67,22 +81,15 @@ func _update_text_glow_effect() -> void:
 	var time := Time.get_ticks_msec() * 0.001
 	var glow_pulse := 0.5 + 0.5 * sin(time * 2.2) # 0.0 ~ 1.0
 
-	# 文字が潰れないクッキリ白金ゴールド色 ＋ シャープな黒フチ
-	var core_color := Color(1.0, 0.93, 0.35, 1.0)
-	var sharp_outline := Color(0.08, 0.04, 0.12, 0.95)
-
 	# 優しく透過する裏側ネオングロー
 	var glow_shadow_color := Color(1.0, 0.65, 0.1, 0.4 + 0.3 * glow_pulse)
-
-	multiplier_label.add_theme_color_override("font_color", core_color)
-	multiplier_label.add_theme_color_override("font_outline_color", sharp_outline)
 	multiplier_label.add_theme_color_override("font_shadow_color", glow_shadow_color)
-	
-	multiplier_label.add_theme_constant_override("outline_size", 3)
-	multiplier_label.add_theme_constant_override("shadow_offset_x", 0)
-	multiplier_label.add_theme_constant_override("shadow_offset_y", 0)
+
 	# 2倍サイズに合わせてグローシャドウ幅調整 (5px ~ 9px)
-	multiplier_label.add_theme_constant_override("shadow_outline_size", int(5 + 4 * glow_pulse))
+	var new_shadow_size := int(5 + 4 * glow_pulse)
+	if new_shadow_size != _last_shadow_size:
+		_last_shadow_size = new_shadow_size
+		multiplier_label.add_theme_constant_override("shadow_outline_size", new_shadow_size)
 
 
 func _on_hex_draw() -> void:
@@ -128,7 +135,7 @@ func _on_hex_draw() -> void:
 	hex_draw_control.draw_arc(center, bg_radius, 0, TAU, 64, border_color, 3.0)
 
 	# --- 3. レア度別ベースカラーによる玉（宝石アイコン）の描画 ---
-	var active_rarities := GameData.get_equipped_unique_rarities()
+	var active_rarities := _cached_active_rarities
 
 	for i in range(RARITY_ORDER.size()):
 		var rarity: String = RARITY_ORDER[i]

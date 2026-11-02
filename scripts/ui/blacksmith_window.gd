@@ -13,6 +13,8 @@ const MAX_MATERIALS := 9
 @onready var result_top_spacer: Control = %ResultTopSpacer
 @onready var preview_tooltip: EquipmentTooltip = %PreviewTooltip
 @onready var btn_forge: Button = %ForgeButton
+@onready var btn_sort: Button = %SortButton
+@onready var btn_filter: Button = %FilterButton
 
 # 選択中の装備タイプ: "main", "sub", "accessory"
 var current_type: String = "main"
@@ -24,6 +26,7 @@ var _current_target_forge_count: int = 0
 var _is_forging: bool = false
 var _is_showing_result: bool = false
 var _hidden_inv_index: int = -1
+var picked_skill_ids: Array[String] = []
 
 
 func _ready() -> void:
@@ -31,6 +34,7 @@ func _ready() -> void:
 	_setup_ui()
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	GameData.inventory_updated.connect(_on_equipment_changed)
+	GameData.inventory_filter_changed.connect(_on_inventory_filter_changed)
 
 
 func _notification(what: int) -> void:
@@ -43,6 +47,9 @@ func _notification(what: int) -> void:
 			_hidden_inv_index = -1
 			if btn_forge:
 				btn_forge.modulate = Color.WHITE
+			var hud = get_parent()
+			if hud and hud.has_method("_clear_inventory_selection"):
+				hud._clear_inventory_selection()
 
 
 func _process(_delta: float) -> void:
@@ -71,6 +78,8 @@ func _setup_ui() -> void:
 
 	# プレビューカードの初期化（初期状態はダミー表示）
 	if preview_tooltip:
+		if not preview_tooltip.skill_pick_changed.is_connected(_on_preview_skill_pick_changed):
+			preview_tooltip.skill_pick_changed.connect(_on_preview_skill_pick_changed)
 		preview_tooltip.setup({
 			"name": "完成予想",
 			"show_question": true,
@@ -88,8 +97,83 @@ func _setup_ui() -> void:
 		btn_forge.pressed.connect(_on_forge_pressed)
 		_style_forge_button()
 
+	# 並び替え・フィルタボタンの設定（装備ウィンドウと同等のスタイル・動作）
+	_setup_sort_filter_buttons()
+
 	# 初期描画
 	update_all()
+
+
+func _setup_sort_filter_buttons() -> void:
+	var style_gear_normal := StyleBoxFlat.new()
+	style_gear_normal.bg_color = Color(0.16, 0.16, 0.24, 0.9)
+	style_gear_normal.border_width_left = 1
+	style_gear_normal.border_width_top = 1
+	style_gear_normal.border_width_right = 1
+	style_gear_normal.border_width_bottom = 1
+	style_gear_normal.border_color = Color(0.32, 0.32, 0.44, 0.9)
+	style_gear_normal.set_corner_radius_all(4)
+
+	var style_gear_hover := StyleBoxFlat.new()
+	style_gear_hover.bg_color = Color(0.24, 0.24, 0.36, 1.0)
+	style_gear_hover.border_width_left = 1
+	style_gear_hover.border_width_top = 1
+	style_gear_hover.border_width_right = 1
+	style_gear_hover.border_width_bottom = 1
+	style_gear_hover.border_color = Color(0.55, 0.55, 0.72, 1.0)
+	style_gear_hover.set_corner_radius_all(4)
+
+	var style_gear_pressed := StyleBoxFlat.new()
+	style_gear_pressed.bg_color = Color(0.10, 0.10, 0.16, 1.0)
+	style_gear_pressed.border_width_left = 1
+	style_gear_pressed.border_width_top = 1
+	style_gear_pressed.border_width_right = 1
+	style_gear_pressed.border_width_bottom = 1
+	style_gear_pressed.border_color = Color(0.22, 0.22, 0.32, 1.0)
+	style_gear_pressed.set_corner_radius_all(4)
+
+	for btn in [btn_sort, btn_filter]:
+		if btn:
+			btn.custom_minimum_size = Vector2(28, 28)
+			btn.focus_mode = Control.FOCUS_NONE
+			btn.add_theme_stylebox_override("normal", style_gear_normal)
+			btn.add_theme_stylebox_override("hover", style_gear_hover)
+			btn.add_theme_stylebox_override("pressed", style_gear_pressed)
+			btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+			btn.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+			btn.add_theme_color_override("font_hover_color", Color.WHITE)
+
+	if btn_sort:
+		btn_sort.tooltip_text = "並び替え"
+		if not btn_sort.pressed.is_connected(_on_sort_pressed):
+			btn_sort.pressed.connect(_on_sort_pressed)
+
+	if btn_filter:
+		btn_filter.tooltip_text = "インベントリ設定"
+		if not btn_filter.pressed.is_connected(_on_filter_pressed):
+			btn_filter.pressed.connect(_on_filter_pressed)
+
+
+func _on_sort_pressed() -> void:
+	if _is_forging:
+		return
+	GameData.sort_and_filter_inventory(current_type)
+	_update_inventory_grid()
+
+
+func _on_filter_pressed() -> void:
+	if _is_forging:
+		return
+	var hud = get_parent()
+	if hud and hud.has_method("_open_inventory_filter"):
+		hud._open_inventory_filter(current_type)
+	elif hud and "inventory_filter_window" in hud and hud.inventory_filter_window:
+		hud.inventory_filter_window.open_for_type(current_type)
+
+
+func _on_inventory_filter_changed(target_type: String) -> void:
+	if target_type == current_type or target_type.is_empty():
+		_update_inventory_grid()
 
 
 func _style_forge_button() -> void:
@@ -153,6 +237,9 @@ func _on_type_selected(index: int) -> void:
 	_is_showing_result = false
 	_hidden_inv_index = -1
 	placed_materials.clear()
+	var hud = get_parent()
+	if hud and hud.has_method("_clear_inventory_selection"):
+		hud._clear_inventory_selection()
 	update_all()
 
 
@@ -171,14 +258,27 @@ func _on_equipment_changed() -> void:
 	var item_modified: bool = false
 	for slot_idx in placed_materials:
 		var entry: Dictionary = placed_materials[slot_idx]
+		var target_id: String = entry["item"].get("id", "")
 		var inv_idx: int = entry.get("inv_index", -1)
-		if inv_idx < 0 or inv_idx >= inv.size() or inv[inv_idx] == null:
+
+		# まず現在の inv_idx に同一アイテムがあるか確認
+		var found_idx: int = -1
+		if inv_idx >= 0 and inv_idx < inv.size() and inv[inv_idx] != null and inv[inv_idx].get("id") == target_id:
+			found_idx = inv_idx
+		else:
+			# ソート等でインベントリ位置が移動した場合は全体から再探索して追従
+			for i in range(inv.size()):
+				if inv[i] != null and inv[i].get("id") == target_id:
+					found_idx = i
+					break
+
+		if found_idx == -1:
+			# インベントリから消失した場合は素材枠から除去
 			keys_to_remove.append(slot_idx)
 		else:
-			var curr_item = inv[inv_idx]
-			if curr_item.get("id") != entry["item"].get("id"):
-				keys_to_remove.append(slot_idx)
-			elif curr_item != entry["item"]:
+			entry["inv_index"] = found_idx
+			var curr_item = inv[found_idx]
+			if curr_item != entry["item"]:
 				entry["item"] = curr_item
 				item_modified = true
 
@@ -248,11 +348,43 @@ func _init_material_slots() -> void:
 func _update_material_slots() -> void:
 	if not material_grid:
 		return
+	var unlocked_slots: int = GameData.get_forge_material_slot_count()
 	for i in range(MAX_MATERIALS):
 		var mat_slot = material_grid.get_child(i) as ForgeMaterialSlot
 		if mat_slot:
+			var is_locked: bool = (i >= unlocked_slots)
 			var entry = placed_materials.get(i, null)
-			mat_slot.update_display(entry)
+			mat_slot.update_display(entry, is_locked)
+
+
+## 指定のアイテムが対象スロットに配置可能か判定する
+func can_place_material_item(item_to_place: Dictionary, target_slot_idx: int) -> bool:
+	var unlocked_slots: int = GameData.get_forge_material_slot_count()
+	if target_slot_idx < 0 or target_slot_idx >= unlocked_slots:
+		return false
+	if item_to_place.get("type", "") != current_type:
+		return false
+
+	var target_fc: int = item_to_place.get("forge_count", 0)
+	var is_deregulated: bool = GameData.is_forge_condition_deregulated()
+
+	var existing_fcs: Array[int] = []
+	for s in placed_materials:
+		if s == target_slot_idx:
+			continue
+		existing_fcs.append(int(placed_materials[s]["item"].get("forge_count", 0)))
+
+	if existing_fcs.is_empty():
+		return true
+
+	existing_fcs.append(target_fc)
+	var min_fc: int = existing_fcs.min()
+	var max_fc: int = existing_fcs.max()
+
+	if is_deregulated:
+		return (max_fc - min_fc) <= 1
+	else:
+		return min_fc == max_fc
 
 
 ## 素材投入枠へアイテムを配置する
@@ -265,21 +397,12 @@ func place_material(slot_idx: int, inv_idx: int) -> bool:
 		return false
 
 	var item_to_place: Dictionary = inv[inv_idx]
-	if item_to_place.get("type", "") != current_type:
+	if not can_place_material_item(item_to_place, slot_idx):
 		return false
 
 	# 既にいずれかの3×3スロットに同じインベントリ位置のアイテムが入っているかチェック
 	for s in placed_materials:
 		if placed_materials[s]["inv_index"] == inv_idx and s != slot_idx:
-			return false
-
-	# 鍛冶回数の一致チェック
-	var target_forge_count: int = item_to_place.get("forge_count", 0)
-	for s in placed_materials:
-		if s == slot_idx:
-			continue
-		var existing_fc: int = placed_materials[s]["item"].get("forge_count", 0)
-		if existing_fc != target_forge_count:
 			return false
 
 	_is_showing_result = false
@@ -305,7 +428,8 @@ func remove_material(slot_idx: int) -> void:
 
 ## 空いている最初の投入スロットインデックスを取得
 func get_first_empty_material_slot() -> int:
-	for i in range(MAX_MATERIALS):
+	var unlocked_slots: int = GameData.get_forge_material_slot_count()
+	for i in range(mini(MAX_MATERIALS, unlocked_slots)):
 		if not placed_materials.has(i):
 			return i
 	return -1
@@ -331,6 +455,7 @@ func _update_preview_and_candidates() -> void:
 
 	if materials.is_empty():
 		_current_target_forge_count = 0
+		picked_skill_ids.clear()
 
 		if preview_tooltip:
 			preview_tooltip.setup({
@@ -347,6 +472,7 @@ func _update_preview_and_candidates() -> void:
 		var single_lvl: int = single_mat.get("level", 1)
 		var single_rar: String = single_mat.get("rarity", "コモン")
 		_current_target_forge_count = single_mat.get("forge_count", 0) + 1
+		picked_skill_ids.clear()
 
 		var col: Color = GameData.get_rarity_color(single_rar)
 		var rarity_bbcode := "[color=#%s]%s[/color]" % [col.to_html(false), single_rar]
@@ -388,6 +514,24 @@ func _update_preview_and_candidates() -> void:
 		_current_target_forge_count = preview.get("forge_count", 1)
 		var icon_path: String = materials[0].get("icon", "")
 
+		var max_picks: int = GameData.get_forge_max_pick_skills()
+		var normal_skills: Array = preview.get("normal_skills", [])
+
+		# 現在の通常スキル候補に含まれるIDのみ保持（スマート維持）
+		var valid_ids: Array[String] = []
+		var avail_id_set := {}
+		for sk in normal_skills:
+			var sid: String = sk.get("id", "")
+			if not sid.is_empty():
+				avail_id_set[sid] = true
+
+		for id in picked_skill_ids:
+			if avail_id_set.has(id):
+				valid_ids.append(id)
+				if valid_ids.size() >= max_picks:
+					break
+		picked_skill_ids = valid_ids
+
 		if preview_tooltip:
 			preview_tooltip.setup({
 				"name": "完成予想",
@@ -397,7 +541,10 @@ func _update_preview_and_candidates() -> void:
 				"level_str": level_str,
 				"forge_count": _current_target_forge_count,
 				"show_question": true,
-				"equip_skill": preview.get("skills", [])
+				"equip_skill": preview.get("skills", []),
+				"can_pick_skills": (max_picks > 0),
+				"max_pick_count": max_picks,
+				"picked_skill_ids": picked_skill_ids
 			})
 
 	_adjust_result_position.call_deferred()
@@ -443,19 +590,32 @@ func _adjust_result_position() -> void:
 			preview_tooltip.set_max_skill_height(max_skill_h)
 
 
-# --- 合成ボタン押下時 ＆ 演出 ---
+func _on_preview_skill_pick_changed(new_picked_ids: Array[String]) -> void:
+	picked_skill_ids = new_picked_ids.duplicate()
+
 
 func _on_forge_pressed() -> void:
 	if _is_forging:
 		return
 
 	var mat_indices: Array[int] = []
+	var materials: Array = []
 	for slot_idx in placed_materials:
 		mat_indices.append(placed_materials[slot_idx]["inv_index"])
+		materials.append(placed_materials[slot_idx]["item"])
 
 	if mat_indices.size() < 2:
 		return
 
+	var preview := GameData.calculate_forge_preview(materials)
+	if not preview.get("can_forge", false):
+		return
+
+	# モーダルは挟まず、プレビューカードで選択済みのスキルIDを渡して即時合成実行
+	_execute_forge(mat_indices, picked_skill_ids)
+
+
+func _execute_forge(mat_indices: Array[int], p_picked_skill_ids: Array = []) -> void:
 	_is_forging = true
 	_is_showing_result = false
 
@@ -464,30 +624,76 @@ func _on_forge_pressed() -> void:
 		btn_forge.disabled = true
 		btn_forge.modulate = Color.WHITE
 
-	# 合成後の配置先インデックス（最小インデックス）を特定
-	var target_inv_idx: int = mat_indices[0]
-	for idx in mat_indices:
-		if idx < target_inv_idx:
-			target_inv_idx = idx
-
-	# 合成実行（内部的にはこの瞬間に装備が消滅し、target_inv_idx に新装備が配置される）
-	var result_item := GameData.forge_equipment(current_type, mat_indices)
+	# 合成実行
+	var result_item := GameData.forge_equipment(current_type, mat_indices, p_picked_skill_ids)
 	if result_item.is_empty():
 		_is_forging = false
 		_hidden_inv_index = -1
 		update_all()
 		return
 
+	var forge_res: Dictionary = result_item.get("_forge_result", {})
+	var target_inv_idx: int = forge_res.get("target_slot_idx", mat_indices[0])
+
 	# 配置された新装備は演出完了まで不可視＆操作不可にする
 	_hidden_inv_index = target_inv_idx
 
 	# 素材スロットをクリアしてインベントリ表示を更新（新アイテムは不可視）
 	placed_materials.clear()
+	picked_skill_ids.clear()
 	_update_inventory_grid()
 	_update_material_slots()
 
+	# 合成ボタンを押したタイミングで、リサイクルされた装備をほわっと発光
+	var recycled_indices: Array = forge_res.get("recycled_indices", [])
+	_play_recycled_glow_animation(recycled_indices)
+
 	# 演出開始
 	await _play_forge_success_animation(result_item, target_inv_idx)
+
+
+func _play_recycled_glow_animation(recycled_indices: Array) -> void:
+	if recycled_indices.is_empty() or not inventory_grid:
+		return
+
+	for rec_idx in recycled_indices:
+		if rec_idx >= 0 and rec_idx < inventory_grid.get_child_count():
+			var slot_node = inventory_grid.get_child(rec_idx) as Control
+			if is_instance_valid(slot_node):
+				_spawn_slot_glow_effect(slot_node)
+
+
+func _spawn_slot_glow_effect(slot_node: Control) -> void:
+	# 発光用の加算合成マテリアル（HDRやクランプに依存せず確実にほわっと光らせる）
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+
+	# 発光オーバーレイパネル
+	var glow := Panel.new()
+	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	glow.custom_minimum_size = Vector2(64, 64)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.material = mat
+	glow.z_index = 10
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.25, 0.85, 0.40, 0.45) # 柔らかく優しいエメラルドグリーンの光
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.border_color = Color(0.55, 1.0, 0.65, 0.85) # 明るい光の縁取り
+	style.set_corner_radius_all(6)
+	glow.add_theme_stylebox_override("panel", style)
+
+	glow.modulate = Color(1.0, 1.0, 1.0, 0.0)
+	slot_node.add_child(glow)
+
+	# ほんの少しほわっと発光（0.24秒でじんわり出現、0.56秒で自然にフェードアウト）
+	var tween := create_tween()
+	tween.tween_property(glow, "modulate:a", 1.0, 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(glow, "modulate:a", 0.0, 0.56).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tween.tween_callback(glow.queue_free)
 
 
 func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int) -> void:
@@ -497,12 +703,17 @@ func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int)
 		_update_inventory_grid()
 		return
 
+	var forge_res: Dictionary = result_item.get("_forge_result", {})
+	var is_crit: bool = forge_res.get("is_critical", false)
+	var recycled_indices: Array = forge_res.get("recycled_indices", [])
+
 	var orig_pos: Vector2 = preview_tooltip.position
 	preview_tooltip.pivot_offset = preview_tooltip.size * 0.5
 
-	# 1. 溜め・発光フェーズ（約0.42秒、白熱発光しながら小刻みに振動）
+	# 1. 溜め・発光フェーズ（約0.42秒、白熱/黄金発光しながら小刻みに振動）
+	var charge_color := Color(3.8, 3.2, 0.8, 1.0) if is_crit else Color(3.2, 2.7, 1.8, 1.0)
 	var charge_tween := create_tween()
-	charge_tween.tween_property(preview_tooltip, "modulate", Color(3.2, 2.7, 1.8, 1.0), 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	charge_tween.tween_property(preview_tooltip, "modulate", charge_color, 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
 	var elapsed := 0.0
 	var shake_duration := 0.42
@@ -521,9 +732,9 @@ func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int)
 	var rar_str: String = result_item.get("rarity", "コモン")
 	var rar_color: Color = GameData.get_rarity_color(rar_str)
 
-	# フラッシュ（閃光ホワイトアウト）
+	# フラッシュ（閃光ホワイトアウト、クリティカル時は琥珀・黄金寄り）
 	var flash := ColorRect.new()
-	flash.color = Color(1.0, 1.0, 1.0, 0.88)
+	flash.color = Color(1.0, 0.95, 0.8, 0.95) if is_crit else Color(1.0, 1.0, 1.0, 0.88)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
 	right_frame.add_child(flash)
@@ -533,55 +744,91 @@ func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int)
 	flash_tween.tween_property(flash, "color:a", 0.0, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	flash_tween.tween_callback(flash.queue_free)
 
-	# ショックウェーブリング
+	# ショックウェーブリング（クリティカル時は黄金の光輪）
 	var shockwave := ForgeShockwaveRing.new()
 	shockwave.position = effect_center
-	shockwave.ring_color = Color(1.0, 0.96, 0.85, 0.95)
+	shockwave.ring_color = Color(1.0, 0.88, 0.3, 0.98) if is_crit else Color(1.0, 0.96, 0.85, 0.95)
 	right_frame.add_child(shockwave)
 
 	var sw_tween := create_tween().set_parallel(true)
-	sw_tween.tween_property(shockwave, "radius", 260.0, 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	sw_tween.tween_property(shockwave, "radius", 280.0, 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	sw_tween.tween_property(shockwave, "width", 1.0, 0.42)
 	sw_tween.tween_property(shockwave, "ring_color:a", 0.0, 0.42).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	sw_tween.chain().tween_callback(shockwave.queue_free)
 
-	# 星屑・火花パーティクル
+	# 星屑・火花パーティクル（クリティカル時は金色の煌めき・粒子増量）
 	var particles := CPUParticles2D.new()
 	particles.position = effect_center
 	particles.emitting = false
 	particles.one_shot = true
 	particles.explosiveness = 0.92
-	particles.amount = 45
-	particles.lifetime = 0.65
+	particles.amount = 65 if is_crit else 45
+	particles.lifetime = 0.7
 	particles.spread = 180.0
 	particles.gravity = Vector2(0, 140)
-	particles.initial_velocity_min = 160.0
-	particles.initial_velocity_max = 340.0
+	particles.initial_velocity_min = 180.0
+	particles.initial_velocity_max = 380.0
 	particles.scale_amount_min = 3.0
-	particles.scale_amount_max = 5.5
+	particles.scale_amount_max = 6.0
 	var grad := Gradient.new()
-	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
-	grad.add_point(0.25, rar_color.lightened(0.25))
-	grad.set_color(grad.get_point_count() - 1, Color(rar_color.r, rar_color.g, rar_color.b, 0.0))
+	if is_crit:
+		grad.set_color(0, Color(1.0, 1.0, 0.8, 1.0))
+		grad.add_point(0.3, Color(1.0, 0.85, 0.2, 1.0))
+		grad.set_color(grad.get_point_count() - 1, Color(0.9, 0.5, 0.1, 0.0))
+	else:
+		grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+		grad.add_point(0.25, rar_color.lightened(0.25))
+		grad.set_color(grad.get_point_count() - 1, Color(rar_color.r, rar_color.g, rar_color.b, 0.0))
 	particles.color_ramp = grad
 	right_frame.add_child(particles)
 	particles.restart()
 
+	# クリティカル時の「Critical!」ポップアップエフェクト
+	if is_crit:
+		var crit_label := Label.new()
+		crit_label.text = "Critical!"
+		crit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		crit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		crit_label.add_theme_font_size_override("font_size", 34)
+		crit_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.45, 1.0))
+		crit_label.add_theme_color_override("font_outline_color", Color(0.35, 0.12, 0.0, 1.0))
+		crit_label.add_theme_constant_override("outline_size", 8)
+		crit_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		crit_label.top_level = true
+
+		var label_w := 260.0
+		var label_h := 50.0
+		crit_label.custom_minimum_size = Vector2(label_w, label_h)
+		crit_label.size = Vector2(label_w, label_h)
+		crit_label.pivot_offset = Vector2(label_w * 0.5, label_h * 0.5)
+		crit_label.global_position = Vector2(card_center_global.x - label_w * 0.5, card_center_global.y - label_h * 0.5 - 50.0)
+		crit_label.scale = Vector2(0.2, 0.2)
+		crit_label.modulate = Color(2.5, 2.2, 1.0, 1.0)
+		crit_label.z_index = 60
+		right_frame.add_child(crit_label)
+
+		var crit_tween := create_tween().set_parallel(true)
+		crit_tween.tween_property(crit_label, "scale", Vector2(1.25, 1.25), 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		crit_tween.tween_property(crit_label, "global_position:y", crit_label.global_position.y - 36.0, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		crit_tween.chain().tween_property(crit_label, "modulate:a", 0.0, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		crit_tween.chain().tween_callback(crit_label.queue_free)
+
 	# 3. 結果カードのセットアップ ＆ ポップイン
 	var result_data := result_item.duplicate(true)
 	result_data["is_result"] = true
-	preview_tooltip.setup(result_data, "完成！")
+	var header_title := "CRITICAL 完成！" if is_crit else "完成！"
+	preview_tooltip.setup(result_data, header_title)
 	_adjust_result_position.call_deferred()
 
 	preview_tooltip.scale = Vector2(0.85, 0.85)
-	preview_tooltip.modulate = Color(2.5, 2.3, 1.8, 1.0)
+	preview_tooltip.modulate = Color(3.0, 2.7, 1.5, 1.0) if is_crit else Color(2.5, 2.3, 1.8, 1.0)
 
 	var pop_tween := create_tween().set_parallel(true)
 	pop_tween.tween_property(preview_tooltip, "scale", Vector2(1.0, 1.0), 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	pop_tween.tween_property(preview_tooltip, "modulate", Color.WHITE, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 	# パーティクルの後片付け
-	get_tree().create_timer(0.65).timeout.connect(particles.queue_free)
+	get_tree().create_timer(0.7).timeout.connect(particles.queue_free)
 
 	# 4. 合成演出終了後、約1秒の余韻時間
 	await get_tree().create_timer(1.0).timeout
@@ -632,6 +879,7 @@ func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int)
 		land_tween.tween_property(target_slot_node, "scale", Vector2(1.06, 1.06), 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		land_tween.tween_property(target_slot_node, "scale", Vector2(1.0, 1.0), 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
+
 	# HUDのドロップ通知
 	var hud = get_tree().root.find_child("HUD", true, false)
 	if hud and hud.has_method("show_equipment_drop_pop"):
@@ -639,6 +887,8 @@ func _play_forge_success_animation(result_item: Dictionary, target_inv_idx: int)
 
 	_is_showing_result = true
 	_is_forging = false
+
+
 
 
 # ==============================================================================
@@ -717,14 +967,70 @@ class BlacksmithInventorySlot extends Control:
 				child_item_ui = item_scene.instantiate() as InventoryItemUI
 				add_child(child_item_ui)
 				child_item_ui.setup(item_data)
+				child_item_ui.item_clicked.connect(_on_item_clicked)
 			else:
 				child_item_ui.setup(item_data)
+				if not child_item_ui.item_clicked.is_connected(_on_item_clicked):
+					child_item_ui.item_clicked.connect(_on_item_clicked)
 
-			# 3×3投入中なら半透明＆ロック
-			if is_placed_in_forge:
-				child_item_ui.modulate = Color(0.4, 0.4, 0.4, 0.5)
-			else:
-				child_item_ui.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			# selection_toggled の接続
+			var hud = parent_wnd.get_parent() if parent_wnd else null
+			if hud and hud.has_method("_on_inventory_item_selection_toggled"):
+				if not child_item_ui.selection_toggled.is_connected(hud._on_inventory_item_selection_toggled):
+					child_item_ui.selection_toggled.connect(hud._on_inventory_item_selection_toggled)
+
+			# 選択状態の同期
+			if hud and "_selected_inventory_items" in hud:
+				child_item_ui.set_selected(hud._selected_inventory_items.has(new_id))
+
+			# フィルター一致判定とグレーアウト表示
+			var is_matched: bool = GameData.is_item_matched_inventory_filter(item_data, slot_type)
+			child_item_ui.set_grayed_out(not is_matched)
+
+			# 3×3投入中フラグの設定（投入中はオレンジ枠＆ハンマーマーク表示、右クリック・スライド選択不可）
+			child_item_ui.set_placed_in_forge(is_placed_in_forge)
+			if is_placed_in_forge and child_item_ui.is_selected:
+				child_item_ui.set_selected(false)
+				child_item_ui.selection_toggled.emit(child_item_ui, false)
+
+			child_item_ui.modulate = Color(1.0, 1.0, 1.0, 1.0)
+
+	func _on_item_clicked(_ui: InventoryItemUI, btn_idx: int) -> void:
+		if btn_idx != MOUSE_BUTTON_LEFT:
+			return
+		if not parent_wnd or parent_wnd._is_forging or parent_wnd._hidden_inv_index == slot_index:
+			return
+
+		var hud = parent_wnd.get_parent()
+
+		# 右クリック選択中の装備なら、鍛冶への投入は無効化し、「廃棄」ポップアップを表示！
+		if _ui.is_selected:
+			if hud and hud.has_method("_show_sell_popup"):
+				hud._show_sell_popup(_ui)
+			return
+
+		# 未選択の装備をクリックしたとき、既に選択中の装備があれば選択解除
+		if hud and "_selected_inventory_items" in hud and not hud._selected_inventory_items.is_empty():
+			if hud.has_method("_hide_sell_popup"):
+				hud._hide_sell_popup()
+			if hud.has_method("_clear_inventory_selection"):
+				hud._clear_inventory_selection()
+
+		# 既に投入されているかチェック
+		var placed_slot: int = -1
+		for s in parent_wnd.placed_materials:
+			if parent_wnd.placed_materials[s]["inv_index"] == slot_index:
+				placed_slot = s
+				break
+
+		if placed_slot != -1:
+			# すでに投入されている場合は解除（取り出し）
+			parent_wnd.remove_material(placed_slot)
+		else:
+			# 未投入の場合は空きスロットを探して配置
+			var empty_slot: int = parent_wnd.get_first_empty_material_slot()
+			if empty_slot != -1:
+				parent_wnd.place_material(empty_slot, slot_index)
 
 	func _clear_children() -> void:
 		for child in get_children():
@@ -770,6 +1076,8 @@ class ForgeMaterialSlot extends Control:
 	var slot_panel: Panel = null
 	var icon_node: EquipmentIcon = null
 	var grid_overlay: Panel = null
+	var lock_overlay: Panel = null
+	var is_locked: bool = false
 	var _custom_tooltip: EquipmentTooltip = null
 
 	func setup(p_wnd: BlacksmithWindow, p_index: int) -> void:
@@ -789,12 +1097,12 @@ class ForgeMaterialSlot extends Control:
 		slot_panel.anchors_preset = Control.PRESET_FULL_RECT
 		slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.04, 0.04, 0.07, 0.95) # 合成プレビュー背景と同色
+		style.bg_color = Color(0.04, 0.04, 0.07, 0.95)
 		style.border_width_left = 2
 		style.border_width_top = 2
 		style.border_width_right = 2
 		style.border_width_bottom = 2
-		style.border_color = Color(0.65, 0.38, 0.18, 0.9) # 合成プレビュー枠と同色
+		style.border_color = Color(0.90, 0.47, 0.14, 1.0) # 右のレビュー枠と同色のオレンジ
 		style.set_corner_radius_all(6)
 		slot_panel.add_theme_stylebox_override("panel", style)
 		add_child(slot_panel)
@@ -806,7 +1114,7 @@ class ForgeMaterialSlot extends Control:
 		add_child(icon_node)
 		icon_node.update_item({})
 
-		# 3. 前面グリッド枠（アイテム投入後でもグリッド枠線が上に表示される）
+		# 3. 前面グリッド枠
 		grid_overlay = Panel.new()
 		grid_overlay.custom_minimum_size = Vector2(64, 64)
 		grid_overlay.anchors_preset = Control.PRESET_FULL_RECT
@@ -817,13 +1125,53 @@ class ForgeMaterialSlot extends Control:
 		overlay_style.border_width_top = 2
 		overlay_style.border_width_right = 2
 		overlay_style.border_width_bottom = 2
-		overlay_style.border_color = Color(0.65, 0.38, 0.18, 0.9) # 合成プレビュー枠と同色
+		overlay_style.border_color = Color(0.90, 0.47, 0.14, 1.0) # 右のレビュー枠と同色のオレンジ
 		overlay_style.set_corner_radius_all(6)
 		grid_overlay.add_theme_stylebox_override("panel", overlay_style)
 		add_child(grid_overlay)
 
-	func update_display(entry: Variant) -> void:
+		# 4. ロックオーバーレイ（対角線を結ぶ大きな×マーク）
+		lock_overlay = Panel.new()
+		lock_overlay.custom_minimum_size = Vector2(64, 64)
+		lock_overlay.anchors_preset = Control.PRESET_FULL_RECT
+		lock_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var lock_style := StyleBoxFlat.new()
+		lock_style.bg_color = Color(0.05, 0.04, 0.07, 0.90)
+		lock_style.border_width_left = 1
+		lock_style.border_width_top = 1
+		lock_style.border_width_right = 1
+		lock_style.border_width_bottom = 1
+		lock_style.border_color = Color(0.35, 0.25, 0.35, 0.6)
+		lock_style.set_corner_radius_all(6)
+		lock_overlay.add_theme_stylebox_override("panel", lock_style)
+		lock_overlay.draw.connect(_on_lock_overlay_draw)
+		add_child(lock_overlay)
+		lock_overlay.visible = false
+
+	func _on_lock_overlay_draw() -> void:
+		if not is_instance_valid(lock_overlay):
+			return
+		var pad := 14.0
+		var col := Color(0.78, 0.25, 0.25, 0.85) # ロックを明確に示す赤の×マーク
+		lock_overlay.draw_line(Vector2(pad, pad), Vector2(64 - pad, 64 - pad), col, 3.5, true)
+		lock_overlay.draw_line(Vector2(64 - pad, pad), Vector2(pad, 64 - pad), col, 3.5, true)
+
+	func update_display(entry: Variant, locked: bool = false) -> void:
+		is_locked = locked
 		placed_entry = entry
+		if lock_overlay:
+			lock_overlay.visible = is_locked
+			if is_locked:
+				lock_overlay.queue_redraw()
+
+		if is_locked:
+			_remove_tooltip()
+			icon_node.update_item({})
+			icon_node.visible = false
+			mouse_filter = Control.MOUSE_FILTER_IGNORE
+			return
+
+		mouse_filter = Control.MOUSE_FILTER_STOP
 		if entry != null and entry is Dictionary:
 			var it: Dictionary = entry.get("item", {})
 			icon_node.update_item(it)
@@ -834,7 +1182,7 @@ class ForgeMaterialSlot extends Control:
 			icon_node.visible = false
 
 	func _on_mouse_entered() -> void:
-		if Engine.is_editor_hint():
+		if is_locked or Engine.is_editor_hint():
 			return
 		if not is_visible_in_tree():
 			return
@@ -906,60 +1254,52 @@ class ForgeMaterialSlot extends Control:
 				_update_tooltip_position()
 
 	func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+		if is_locked:
+			return false
 		if parent_wnd and parent_wnd._is_forging:
 			return false
 		if not data is Dictionary:
 			return false
-		# 右側装備スロット(from_slot)からの直接ドラッグは禁止！
 		if data.has("from_slot"):
 			return false
-		# 5×10インベントリからのドラッグであること
 		if not data.has("from_inventory"):
 			return false
-
 		if not parent_wnd:
 			return false
 
-		# 装備タイプチェック
-		var incoming_type: String = data.get("type", "")
-		if incoming_type != parent_wnd.current_type:
+		var incoming_inv_idx: int = data.get("item_index", -1)
+		var inv: Array = GameData.inventories.get(parent_wnd.current_type, [])
+		if incoming_inv_idx < 0 or incoming_inv_idx >= inv.size() or inv[incoming_inv_idx] == null:
 			return false
 
-		var incoming_inv_idx: int = data.get("item_index", -1)
-		# 既に他の3×3スロットに入っているかチェック
 		for s in parent_wnd.placed_materials:
 			if s != slot_index and parent_wnd.placed_materials[s]["inv_index"] == incoming_inv_idx:
 				return false
 
-		# 鍛冶回数チェック
-		var incoming_fc: int = data.get("forge_count", 0)
-		for s in parent_wnd.placed_materials:
-			if s == slot_index:
-				continue
-			var existing_fc: int = parent_wnd.placed_materials[s]["item"].get("forge_count", 0)
-			if existing_fc != incoming_fc:
-				return false
-
-		return true
+		var item_to_place: Dictionary = inv[incoming_inv_idx]
+		return parent_wnd.can_place_material_item(item_to_place, slot_index)
 
 	func _drop_data(_at_position: Vector2, data: Variant) -> void:
-		if not data is Dictionary:
+		if is_locked or not data is Dictionary:
 			return
 		var inv_idx: int = data.get("item_index", -1)
 		if parent_wnd and inv_idx >= 0:
 			parent_wnd.place_material(slot_index, inv_idx)
 
 	func _gui_input(event: InputEvent) -> void:
+		if is_locked:
+			return
 		if event is InputEventMouseButton and event.pressed:
 			_remove_tooltip()
 			if parent_wnd and parent_wnd._is_forging:
 				return
 			if event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT:
-				# クリックで素材取り出し
 				if placed_entry != null and parent_wnd:
 					parent_wnd.remove_material(slot_index)
 
 	func _get_drag_data(_at_position: Vector2) -> Variant:
+		if is_locked:
+			return null
 		_remove_tooltip()
 		if parent_wnd and parent_wnd._is_forging:
 			return null

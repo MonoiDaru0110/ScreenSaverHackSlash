@@ -23,7 +23,6 @@ var skill_level: int = 1
 
 func _ready() -> void:
 	GameData.trinity_changed.connect(queue_redraw)
-	GameData.upgrades_changed.connect(queue_redraw)
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	queue_redraw()
 
@@ -35,8 +34,10 @@ func _process(_delta: float) -> void:
 
 
 func set_skill_data(sk_data: Dictionary) -> void:
-	skill_level = int(sk_data.get("level", 1))
-	queue_redraw()
+	var new_lvl := int(sk_data.get("level", 1))
+	if skill_level != new_lvl:
+		skill_level = new_lvl
+		queue_redraw()
 
 
 func _on_equipment_changed() -> void:

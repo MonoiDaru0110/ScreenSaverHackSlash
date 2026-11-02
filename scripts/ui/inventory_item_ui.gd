@@ -14,6 +14,7 @@ var item_equip_skill: Array = []
 var item_forge_count: int = 0
 var is_grayed_out: bool = false
 var is_selected: bool = false
+var is_placed_in_forge: bool = false
 var _is_dragging: bool = false
 static var drag_select_mode: int = -1 # -1: 未開始, 0: 選択解除モード, 1: 選択モード
 
@@ -37,6 +38,40 @@ func setup(item_data: Dictionary) -> void:
 		update_ui_display()
 
 
+static var _normal_border_style: StyleBoxFlat = null
+static var _forge_border_style: StyleBoxFlat = null
+
+static func _get_border_style(is_forge: bool) -> StyleBoxFlat:
+	if is_forge:
+		if _forge_border_style == null:
+			_forge_border_style = StyleBoxFlat.new()
+			_forge_border_style.draw_center = false
+			_forge_border_style.corner_radius_top_left = 6
+			_forge_border_style.corner_radius_top_right = 6
+			_forge_border_style.corner_radius_bottom_right = 6
+			_forge_border_style.corner_radius_bottom_left = 6
+		_forge_border_style.border_width_left = 3
+		_forge_border_style.border_width_top = 3
+		_forge_border_style.border_width_right = 3
+		_forge_border_style.border_width_bottom = 3
+		_forge_border_style.border_color = Color(0.90, 0.47, 0.14, 1.0)
+		return _forge_border_style
+	else:
+		if _normal_border_style == null:
+			_normal_border_style = StyleBoxFlat.new()
+			_normal_border_style.draw_center = false
+			_normal_border_style.border_width_left = 3
+			_normal_border_style.border_width_top = 3
+			_normal_border_style.border_width_right = 3
+			_normal_border_style.border_width_bottom = 3
+			_normal_border_style.border_color = Color(1.0, 0.85, 0.2, 1.0)
+			_normal_border_style.corner_radius_top_left = 6
+			_normal_border_style.corner_radius_top_right = 6
+			_normal_border_style.corner_radius_bottom_right = 6
+			_normal_border_style.corner_radius_bottom_left = 6
+		return _normal_border_style
+
+
 func set_grayed_out(grayed: bool) -> void:
 	is_grayed_out = grayed
 	_update_grayed_out_visual()
@@ -47,27 +82,67 @@ func set_selected(selected: bool) -> void:
 	_update_selection_visual()
 
 
+func set_placed_in_forge(placed: bool) -> void:
+	is_placed_in_forge = placed
+	_update_selection_visual()
+
+
 func _update_selection_visual() -> void:
+	var show_visual: bool = is_selected or is_placed_in_forge
 	if selected_border:
-		selected_border.visible = is_selected
+		selected_border.visible = show_visual
+		if show_visual:
+			selected_border.add_theme_stylebox_override("panel", _get_border_style(is_placed_in_forge))
 	if check_mark:
-		check_mark.visible = is_selected
-		if is_selected:
+		check_mark.visible = show_visual
+		if show_visual:
 			check_mark.queue_redraw()
 
 
 func _on_check_mark_draw() -> void:
 	if not check_mark:
 		return
-	var pts := PackedVector2Array([
-		Vector2(4.0, 12.0),
-		Vector2(9.0, 17.0),
-		Vector2(19.0, 5.0)
-	])
-	# 外枠の黒縁取り
-	check_mark.draw_polyline(pts, Color(0.0, 0.0, 0.0, 1.0), 5.0, true)
-	# 鮮やかな純黄色
-	check_mark.draw_polyline(pts, Color(1.0, 0.90, 0.05, 1.0), 3.0, true)
+	if is_placed_in_forge:
+		# 鍛冶投入中: レビュー枠と同色のオレンジハンマーマークを描画
+		var local_points := PackedVector2Array([
+			Vector2(-7.0, -9.0),
+			Vector2(7.0, -9.0),
+			Vector2(7.0, -4.0),
+			Vector2(2.0, -4.0),
+			Vector2(2.0, 9.5),
+			Vector2(-2.0, 9.5),
+			Vector2(-2.0, -4.0),
+			Vector2(-7.0, -4.0),
+		])
+		var xform := Transform2D(PI / 4.0, Vector2(11.5, 12.5))
+		var world_points := PackedVector2Array()
+		for pt in local_points:
+			world_points.append(xform * pt)
+		
+		# 1. 背面の黒縁取り（外側に広がるよう太さ2.0pxで描画）
+		var outline_points := world_points.duplicate()
+		outline_points.append(world_points[0])
+		check_mark.draw_polyline(outline_points, Color(0.0, 0.0, 0.0, 1.0), 2.0, true)
+		
+		# 2. 前面をレビューUIと同一のオレンジ（Color(0.90, 0.47, 0.14, 1.0)）で塗りつぶし
+		var hammer_color := Color(0.90, 0.47, 0.14, 1.0)
+		check_mark.draw_colored_polygon(world_points, hammer_color)
+		
+		# 3. ヘッドと柄の境界仕切り線（細い黒ライン）
+		var sep_start: Vector2 = xform * Vector2(-2.0, -4.0)
+		var sep_end: Vector2 = xform * Vector2(2.0, -4.0)
+		check_mark.draw_line(sep_start, sep_end, Color(0.0, 0.0, 0.0, 0.8), 1.0, true)
+	else:
+		# 通常選択: 黄色のチェックマークを描画
+		var pts := PackedVector2Array([
+			Vector2(4.0, 12.0),
+			Vector2(9.0, 17.0),
+			Vector2(19.0, 5.0)
+		])
+		# 外枠の黒縁取り
+		check_mark.draw_polyline(pts, Color(0.0, 0.0, 0.0, 1.0), 5.0, true)
+		# 鮮やかな純黄色
+		check_mark.draw_polyline(pts, Color(1.0, 0.90, 0.05, 1.0), 3.0, true)
 
 
 func _update_grayed_out_visual() -> void:
@@ -153,6 +228,8 @@ func _on_mouse_entered() -> void:
 	# 右クリックホールド中のなぞり選択（開始時の状態で揃える）
 	if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
 		_remove_tooltip()
+		if is_placed_in_forge:
+			return
 		if drag_select_mode != -1 and GameData.is_item_equipped(item_id) == "":
 			var target_state := (drag_select_mode == 1)
 			if is_selected != target_state:
@@ -338,6 +415,9 @@ func _gui_input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if event.pressed:
 				_remove_tooltip()
+				if is_placed_in_forge:
+					accept_event()
+					return
 				if GameData.is_item_equipped(item_id) == "":
 					var target_state := not is_selected
 					drag_select_mode = 1 if target_state else 0
@@ -346,10 +426,8 @@ func _gui_input(event: InputEvent) -> void:
 				accept_event()
 			else:
 				drag_select_mode = -1
-		elif event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			if event.double_click:
-				_auto_equip()
-			else:
+		elif event.button_index == MOUSE_BUTTON_LEFT:
+			if not event.pressed and not _is_dragging:
 				item_clicked.emit(self, event.button_index)
 
 
@@ -358,26 +436,6 @@ func _discard_self() -> void:
 		return
 	_remove_tooltip()
 	GameData.discard_inventory_item(item_type, get_slot_index())
-
-
-func _auto_equip() -> void:
-	if item_type == "main":
-		if GameData.is_slot_unlocked("main"):
-			GameData.equip_item_by_id(item_id, "main")
-	elif item_type == "sub":
-		if GameData.is_slot_unlocked("sub"):
-			GameData.equip_item_by_id(item_id, "sub")
-	elif item_type == "accessory":
-		var target_slot := ""
-		for i in range(1, 5):
-			var slot_key := "accessory_%d" % i
-			if GameData.is_slot_unlocked(slot_key) and GameData.equipped_items.get(slot_key) == null:
-				target_slot = slot_key
-				break
-		if target_slot == "" and GameData.is_slot_unlocked("accessory_1"):
-			target_slot = "accessory_1"
-		if target_slot != "":
-			GameData.equip_item_by_id(item_id, target_slot)
 
 
 func _remove_tooltip() -> void:

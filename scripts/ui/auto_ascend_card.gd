@@ -167,14 +167,19 @@ func _on_timer_updated(current_timer: float, wait_seconds: float) -> void:
 	_update_timer_label(current_timer, wait_seconds)
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and is_visible_in_tree():
+		_update_status_display()
+
+
 func _update_status_display() -> void:
-	if not GameData:
+	if not GameData or not is_visible_in_tree():
 		return
 	_update_timer_label(GameData.get_auto_ascend_timer(), GameData.auto_ascend_wait_seconds)
 
 
 func _update_timer_label(current_timer: float, wait_seconds: float) -> void:
-	if not status_label or not GameData:
+	if not status_label or not GameData or not is_visible_in_tree():
 		return
 
 	if GameData.get_skill_level("auto_ascension") <= 0:

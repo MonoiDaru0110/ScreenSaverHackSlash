@@ -37,7 +37,7 @@ func _get_current_buy_mode() -> int:
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
 @onready var btn_challenge_tab: Button = %ChallengeTabBtn
-@onready var btn_blacksmith_tab: Button = %BlacksmithTabBtn
+@onready var btn_reactor_tab: Button = %ReactorTabBtn
 @onready var btn_amplifier_tab: Button = %AmplifierTabBtn
 @onready var reinc_sub_nav_container: PanelContainer = %ReincarnationSubNavContainer
 @onready var btn_reinc_tab_1: Button = %ReincDummyTabBtn1
@@ -48,7 +48,7 @@ func _get_current_buy_mode() -> int:
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
 @onready var challenge_window: PanelContainer = %ChallengeWindow
-@onready var blacksmith_window: PanelContainer = %BlacksmithWindow
+@onready var reactor_window: PanelContainer = %ReactorWindow
 @onready var amplifier_window: PanelContainer = %AmplifierWindow
 @onready var reinc_tree_window: PanelContainer = %ReincTreeWindow
 @onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
@@ -104,7 +104,7 @@ var _reinc_subtab_index: int = 0
 var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
 var _is_challenge_open: bool = false
-var _is_blacksmith_open: bool = false
+var _is_reactor_open: bool = false
 var _is_amplifier_open: bool = false
 var _is_reinc_tree_open: bool = false
 var _is_reinc_ability_open: bool = false
@@ -430,9 +430,9 @@ func _ready() -> void:
 	if btn_challenge_tab:
 		btn_challenge_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_challenge_tab.pressed.connect(_on_challenge_tab_pressed)
-	if btn_blacksmith_tab:
-		btn_blacksmith_tab.add_theme_stylebox_override("focus", style_focus)
-		btn_blacksmith_tab.pressed.connect(_on_blacksmith_tab_pressed)
+	if btn_reactor_tab:
+		btn_reactor_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_reactor_tab.pressed.connect(_on_reactor_tab_pressed)
 	if btn_amplifier_tab:
 		btn_amplifier_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_amplifier_tab.pressed.connect(_on_amplifier_tab_pressed)
@@ -593,10 +593,10 @@ func _ready() -> void:
 		if challenge_window.has_signal("closed"):
 			challenge_window.closed.connect(close_challenge)
 		challenge_window.visible = false
-	if blacksmith_window:
-		if blacksmith_window.has_signal("closed"):
-			blacksmith_window.closed.connect(close_blacksmith)
-		blacksmith_window.visible = false
+	if reactor_window:
+		if reactor_window.has_signal("closed"):
+			reactor_window.closed.connect(close_reactor)
+		reactor_window.visible = false
 	if amplifier_window:
 		if amplifier_window.has_signal("closed"):
 			amplifier_window.closed.connect(close_amplifier)
@@ -682,6 +682,9 @@ func _on_upgrade_update_timer() -> void:
 	if _upgrade_buttons_dirty:
 		_upgrade_buttons_dirty = false
 		_update_upgrade_buttons()
+		_update_sidebar_star_progress()
+		_update_special_skill_custom_ui()
+		_update_tab_button_styles()
 
 
 func _on_tokens_changed(_amount: float) -> void:
@@ -719,16 +722,18 @@ func _update_debug_and_stats_info() -> void:
 		var node_count := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 		var orphan_count := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
 
-		_debug_label.text = "FPS: %d\nCPU Proc: %.2f ms\nPhysics: %.2f ms\nNodes: %d (Orphans: %d)\nLogos: %d" % [
-			fps, cpu_proc, cpu_phys, node_count, orphan_count, GameData.logo_count
+		_debug_label.text = "FPS: %d [F3]\nCPU Proc: %.2f ms\nPhysics: %.2f ms\nNodes: %d (Orphans: %d)\nLogos: %d\nAscension: Lv.%d (Base: %d)" % [
+			fps, cpu_proc, cpu_phys, node_count, orphan_count, GameData.logo_count, GameData.ascension_level, GameData.get_base_upgrade_total_level()
 		]
 
 
 func _on_upgrades_changed() -> void:
-	_update_upgrade_buttons()
-	_update_sidebar_star_progress()
-	_update_special_skill_custom_ui()
-	_update_tab_button_styles()
+	if not _upgrade_buttons_dirty:
+		_upgrade_buttons_dirty = true
+		if _upgrade_update_timer:
+			_upgrade_update_timer.start()
+		else:
+			_on_upgrade_update_timer()
 
 
 func _on_reincarnation_performed() -> void:
@@ -924,6 +929,31 @@ func _on_trinity_changed() -> void:
 	_update_upgrade_buttons()
 
 
+var _cached_trinity_btn_styles: Dictionary = {}
+var _cached_trinity_btn_modes: Dictionary = {}
+
+
+func _get_or_create_trinity_style(btn: Button, state_name: String, default_bg: Color) -> StyleBoxFlat:
+	if not _cached_trinity_btn_styles.has(btn):
+		_cached_trinity_btn_styles[btn] = {}
+	var btn_dict: Dictionary = _cached_trinity_btn_styles[btn]
+	if btn_dict.has(state_name) and btn_dict[state_name] != null:
+		return btn_dict[state_name]
+	var defaults: Dictionary = _default_upgrade_btn_styles.get(btn, {})
+	var def_style = defaults.get(state_name, null)
+	var style := StyleBoxFlat.new()
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_right = 3
+	style.corner_radius_bottom_left = 3
+	if def_style is StyleBoxFlat:
+		style.bg_color = def_style.bg_color
+	else:
+		style.bg_color = default_bg
+	btn_dict[state_name] = style
+	return style
+
+
 func _apply_trinity_button_styles() -> void:
 	var is_c2 := GameData.is_base_stat_disabled_challenge_active()
 	var is_c4 := GameData.is_ascension_disabled_challenge_active()
@@ -944,88 +974,69 @@ func _apply_trinity_button_styles() -> void:
 	]
 
 	var is_trinity := GameData.is_trinity_active()
+	var states := ["normal", "hover", "pressed", "disabled"]
 
 	for entry in stat_btns:
 		var stat_id: String = entry["stat"]
 		var btn: Button = entry["btn"]
+		if not btn:
+			continue
 		var defaults: Dictionary = _default_upgrade_btn_styles.get(btn, {})
-		var states := ["normal", "hover", "pressed", "disabled"]
 
 		if is_c2 or (is_trinity and active_stat == stat_id):
-			# 赤枠 (基礎強化無効 または トリニティ生贄)
-			for state_name in states:
-				var def_style: StyleBoxFlat = defaults.get(state_name, null)
-				var style := StyleBoxFlat.new()
-				style.corner_radius_top_left = 3
-				style.corner_radius_top_right = 3
-				style.corner_radius_bottom_right = 3
-				style.corner_radius_bottom_left = 3
-				if def_style:
-					style.bg_color = def_style.bg_color
-				else:
-					style.bg_color = Color(0.33, 0.15, 0.85, 1)
-
-				style.border_color = red_border_hover if state_name == "hover" else red_border
-				style.border_width_left = 2
-				style.border_width_top = 2
-				style.border_width_right = 2
-				style.border_width_bottom = 2
-				btn.add_theme_stylebox_override(state_name, style)
-		elif is_trinity:
-			# トリニティ強化枠 (黄色・金色)
-			for state_name in states:
-				var def_style: StyleBoxFlat = defaults.get(state_name, null)
-				var style := StyleBoxFlat.new()
-				style.corner_radius_top_left = 3
-				style.corner_radius_top_right = 3
-				style.corner_radius_bottom_right = 3
-				style.corner_radius_bottom_left = 3
-				if def_style:
-					style.bg_color = def_style.bg_color
-				else:
-					style.bg_color = Color(0.33, 0.15, 0.85, 1)
-
-				style.border_color = glow_gold_hover if state_name == "hover" else glow_gold
-				style.border_width_left = 3
-				style.border_width_top = 3
-				style.border_width_right = 3
-				style.border_width_bottom = 3
-				btn.add_theme_stylebox_override(state_name, style)
-		else:
-			# トリニティも c2 も無効な場合 (c4 等のみ発動中) はデフォルトスタイルを維持
-			if not defaults.is_empty():
+			if _cached_trinity_btn_modes.get(btn, "") != "red":
+				_cached_trinity_btn_modes[btn] = "red"
 				for state_name in states:
-					if defaults.has(state_name) and defaults[state_name]:
-						btn.add_theme_stylebox_override(state_name, defaults[state_name])
+					var style := _get_or_create_trinity_style(btn, state_name, Color(0.33, 0.15, 0.85, 1))
+					style.border_color = red_border_hover if state_name == "hover" else red_border
+					style.border_width_left = 2
+					style.border_width_top = 2
+					style.border_width_right = 2
+					style.border_width_bottom = 2
+					btn.add_theme_stylebox_override(state_name, style)
+		elif is_trinity:
+			var mode_changed: bool = (_cached_trinity_btn_modes.get(btn, "") != "gold")
+			_cached_trinity_btn_modes[btn] = "gold"
+			for state_name in states:
+				var style := _get_or_create_trinity_style(btn, state_name, Color(0.33, 0.15, 0.85, 1))
+				style.border_color = glow_gold_hover if state_name == "hover" else glow_gold
+				if mode_changed:
+					style.border_width_left = 3
+					style.border_width_top = 3
+					style.border_width_right = 3
+					style.border_width_bottom = 3
+					btn.add_theme_stylebox_override(state_name, style)
+		else:
+			if _cached_trinity_btn_modes.get(btn, "") != "default":
+				_cached_trinity_btn_modes[btn] = "default"
+				if not defaults.is_empty():
+					for state_name in states:
+						if defaults.has(state_name) and defaults[state_name]:
+							btn.add_theme_stylebox_override(state_name, defaults[state_name])
 
 	if btn_ascend:
 		var defaults_ascend: Dictionary = _default_upgrade_btn_styles.get(btn_ascend, {})
-		var states := ["normal", "hover", "pressed", "disabled"]
 		if is_c4:
-			for state_name in states:
-				var def_style = defaults_ascend.get(state_name, null)
-				var style := StyleBoxFlat.new()
-				style.corner_radius_top_left = 3
-				style.corner_radius_top_right = 3
-				style.corner_radius_bottom_right = 3
-				style.corner_radius_bottom_left = 3
-				if def_style is StyleBoxFlat:
-					style.bg_color = def_style.bg_color
-				else:
-					style.bg_color = Color(0.24, 0.14, 0.42, 1)
-				style.border_color = red_border_hover if state_name == "hover" else red_border
-				style.border_width_left = 2
-				style.border_width_top = 2
-				style.border_width_right = 2
-				style.border_width_bottom = 2
-				btn_ascend.add_theme_stylebox_override(state_name, style)
-		elif not defaults_ascend.is_empty():
-			for state_name in states:
-				if defaults_ascend.has(state_name) and defaults_ascend[state_name]:
-					btn_ascend.add_theme_stylebox_override(state_name, defaults_ascend[state_name])
+			if _cached_trinity_btn_modes.get(btn_ascend, "") != "red":
+				_cached_trinity_btn_modes[btn_ascend] = "red"
+				for state_name in states:
+					var style := _get_or_create_trinity_style(btn_ascend, state_name, Color(0.24, 0.14, 0.42, 1))
+					style.border_color = red_border_hover if state_name == "hover" else red_border
+					style.border_width_left = 2
+					style.border_width_top = 2
+					style.border_width_right = 2
+					style.border_width_bottom = 2
+					btn_ascend.add_theme_stylebox_override(state_name, style)
+		elif _cached_trinity_btn_modes.get(btn_ascend, "") != "default":
+			_cached_trinity_btn_modes[btn_ascend] = "default"
+			if not defaults_ascend.is_empty():
+				for state_name in states:
+					if defaults_ascend.has(state_name) and defaults_ascend[state_name]:
+						btn_ascend.add_theme_stylebox_override(state_name, defaults_ascend[state_name])
 
 
 func _restore_upgrade_button_styles() -> void:
+	_cached_trinity_btn_modes.clear()
 	for btn in [btn_size, btn_speed, btn_boost, btn_ascend]:
 		if _default_upgrade_btn_styles.has(btn):
 			var defaults: Dictionary = _default_upgrade_btn_styles[btn]
@@ -1251,9 +1262,12 @@ func _on_stars_changed(new_amount: int) -> void:
 
 func _update_sidebar_star_progress() -> void:
 	if sidebar_star_progress_bar:
-		var next_cost = GameData.get_next_star_cost()
-		sidebar_star_progress_bar.max_value = next_cost
-		sidebar_star_progress_bar.value = min(GameData.infused_tokens, next_cost)
+		var next_cost: float = float(GameData.get_next_star_cost())
+		var cur_infused: float = float(GameData.infused_tokens)
+		var pct := 0.0 if next_cost <= 0.0 else (cur_infused / next_cost) * 100.0
+		sidebar_star_progress_bar.max_value = 100.0
+		sidebar_star_progress_bar.step = 0.01
+		sidebar_star_progress_bar.value = clampf(pct, 0.0, 100.0)
 
 
 func _apply_tab_style(btn: Button, is_active: bool, is_subtab: bool = false) -> void:
@@ -1311,7 +1325,7 @@ func _update_tab_button_styles() -> void:
 	_apply_subtab_button(btn_skill_tree_tab, _is_skill_tree_open, true, "🌳 スキル", "🌳 スキル")
 	_apply_subtab_button(btn_equipment_tab, _is_inventory_open, GameData.is_window_unlocked("equipment"), "🎒 装備", "🔒 装備")
 	_apply_subtab_button(btn_challenge_tab, _is_challenge_open, GameData.is_window_unlocked("challenge"), "🏆 チャレンジ", "🔒 チャレンジ")
-	_apply_subtab_button(btn_blacksmith_tab, _is_blacksmith_open, GameData.is_window_unlocked("blacksmith"), "🔨 鍛冶", "🔒 鍛冶")
+	_apply_subtab_button(btn_reactor_tab, _is_reactor_open, GameData.is_window_unlocked("reactor"), "衝撃炉", "衝撃炉")
 	_apply_subtab_button(btn_amplifier_tab, _is_amplifier_open, GameData.is_window_unlocked("amplifier"), "⚡ 融合", "🔒 融合")
 
 	_apply_tab_style(btn_reinc_tab_1, _is_reinc_tree_open, true)
@@ -1340,8 +1354,8 @@ func open_reincarnation() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -1380,8 +1394,8 @@ func _on_equipment_tab_pressed() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -1502,8 +1516,8 @@ func _on_skill_tree_tab_pressed() -> void:
 		close_inventory()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -1564,8 +1578,8 @@ func _on_challenge_tab_pressed() -> void:
 		close_inventory()
 	if _is_skill_tree_open:
 		close_skill_tree()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -1607,8 +1621,8 @@ func close_challenge() -> void:
 	_update_window_dimmer()
 
 
-func _on_blacksmith_tab_pressed() -> void:
-	if not GameData.is_window_unlocked("blacksmith"):
+func _on_reactor_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("reactor"):
 		return
 	if _is_reincarnation_open:
 		close_reincarnation()
@@ -1629,36 +1643,47 @@ func _on_blacksmith_tab_pressed() -> void:
 	if _is_automation_settings_open:
 		close_automation_settings()
 		
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	else:
-		open_blacksmith()
+		open_reactor()
 
+
+func open_reactor() -> void:
+	if not GameData.is_window_unlocked("reactor"):
+		return
+	if _is_reactor_open:
+		return
+	
+	_is_reactor_open = true
+	if reactor_window:
+		reactor_window.visible = true
+		if reactor_window.has_method("_update_all_ui"):
+			reactor_window._update_all_ui()
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+func close_reactor() -> void:
+	if not _is_reactor_open:
+		return
+	
+	_is_reactor_open = false
+	if reactor_window:
+		reactor_window.visible = false
+	_update_tab_button_styles()
+	_update_window_dimmer()
+
+
+# 互換用エイリアス
+func _on_blacksmith_tab_pressed() -> void:
+	_on_reactor_tab_pressed()
 
 func open_blacksmith() -> void:
-	if not GameData.is_window_unlocked("blacksmith"):
-		return
-	if _is_blacksmith_open:
-		return
-	
-	_is_blacksmith_open = true
-	if blacksmith_window:
-		blacksmith_window.visible = true
-		if blacksmith_window.has_method("update_all"):
-			blacksmith_window.update_all()
-	_update_tab_button_styles()
-	_update_window_dimmer()
-
+	open_reactor()
 
 func close_blacksmith() -> void:
-	if not _is_blacksmith_open:
-		return
-	
-	_is_blacksmith_open = false
-	if blacksmith_window:
-		blacksmith_window.visible = false
-	_update_tab_button_styles()
-	_update_window_dimmer()
+	close_reactor()
 
 
 func _on_amplifier_tab_pressed() -> void:
@@ -1672,8 +1697,8 @@ func _on_amplifier_tab_pressed() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_reinc_tree_open:
 		close_reinc_tree()
 	if _is_reinc_ability_open:
@@ -1722,8 +1747,8 @@ func _on_reinc_tab_1_pressed() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_ability_open:
@@ -1769,8 +1794,8 @@ func _on_reinc_tab_2_pressed() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -1874,7 +1899,7 @@ func close_automation_settings() -> void:
 
 
 func _is_any_subbar_window_open() -> bool:
-	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_blacksmith_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open or _is_save_slot_open or _is_automation_settings_open
+	return _is_inventory_open or _is_skill_tree_open or _is_challenge_open or _is_reactor_open or _is_amplifier_open or _is_reinc_tree_open or _is_reinc_ability_open or _is_save_slot_open or _is_automation_settings_open
 
 
 var _dimmer_tween: Tween = null
@@ -1915,8 +1940,8 @@ func _close_all_subbar_windows() -> void:
 		close_skill_tree()
 	if _is_challenge_open:
 		close_challenge()
-	if _is_blacksmith_open:
-		close_blacksmith()
+	if _is_reactor_open:
+		close_reactor()
 	if _is_amplifier_open:
 		close_amplifier()
 	if _is_reinc_tree_open:
@@ -2473,8 +2498,9 @@ func _update_challenge_mini_progress(cur: float, target: float, time_left: float
 
 	_challenge_mini_time.text = "⏳ %.1fs" % maxf(0.0, time_left)
 	if _challenge_mini_bar:
-		_challenge_mini_bar.max_value = target
-		_challenge_mini_bar.value = minf(cur, target)
+		_challenge_mini_bar.max_value = 100.0
+		_challenge_mini_bar.step = 0.01
+		_challenge_mini_bar.value = clampf(pct, 0.0, 100.0)
 	if _challenge_mini_progress:
 		_challenge_mini_progress.text = "%s %s / %s (%.0f%%)" % [
 			cur_sym,
@@ -2666,7 +2692,13 @@ func _clear_discard_pop() -> void:
 
 
 func show_inventory_discard_pop(count: int, rewards: Dictionary) -> void:
-	if not inventory_window:
+	var target_wnd: Control = null
+	if _is_inventory_open and inventory_window and inventory_window.visible:
+		target_wnd = inventory_window
+	elif inventory_window:
+		target_wnd = inventory_window
+
+	if not target_wnd:
 		return
 	_clear_discard_pop()
 
@@ -2726,8 +2758,8 @@ func show_inventory_discard_pop(count: int, rewards: Dictionary) -> void:
 	add_child(pop)
 	pop.z_index = 70
 
-	# 右下に配置（インベントリ最大サイズ時でも下部余白に収まりスロットと干渉しない）
-	var inv_rect := inventory_window.get_global_rect()
+	# 右下に配置（対象ウィンドウの右下余白に収まるように配置）
+	var inv_rect := target_wnd.get_global_rect()
 	var pop_size := pop.get_combined_minimum_size()
 	pop.global_position = Vector2(
 		inv_rect.end.x - pop_size.x - 20,
@@ -2760,7 +2792,6 @@ func _update_all_inventory_item_selection_visuals() -> void:
 				var it_id: String = child.child_item_ui.item_id
 				child.child_item_ui.set_selected(_selected_inventory_items.has(it_id))
 
-
 func _on_inventory_item_selection_toggled(item_ui: InventoryItemUI, is_selected: bool) -> void:
 	if is_selected:
 		_selected_inventory_items[item_ui.item_id] = {
@@ -2792,7 +2823,12 @@ func _on_inventory_item_clicked(item_ui: InventoryItemUI, button_index: int) -> 
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F5:
+		if event.keycode == KEY_F3:
+			if _debug_label:
+				_debug_label.visible = not _debug_label.visible
+			get_viewport().set_input_as_handled()
+			return
+		elif event.keycode == KEY_F5:
 			_on_quick_save_pressed()
 			get_viewport().set_input_as_handled()
 			return
@@ -2838,6 +2874,7 @@ func _get_selected_item_uis() -> Array[InventoryItemUI]:
 			if child is InventorySlotWrapper and child.child_item_ui:
 				if child.child_item_ui.is_selected:
 					result.append(child.child_item_ui)
+
 	return result
 
 
@@ -2915,8 +2952,8 @@ func _force_refresh_all_hud() -> void:
 		_skill_tree_instance.refresh_all_nodes()
 	if is_instance_valid(challenge_window) and challenge_window.has_method("_update_all_ui"):
 		challenge_window._update_all_ui()
-	if is_instance_valid(blacksmith_window) and blacksmith_window.has_method("refresh_ui"):
-		blacksmith_window.refresh_ui()
+	if is_instance_valid(reactor_window) and reactor_window.has_method("_update_all_ui"):
+		reactor_window._update_all_ui()
 	if is_instance_valid(amplifier_window) and amplifier_window.has_method("refresh_ui"):
 		amplifier_window.refresh_ui()
 	if is_instance_valid(reinc_tree_window) and reinc_tree_window.has_method("refresh_tree"):

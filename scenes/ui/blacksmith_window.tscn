@@ -38,7 +38,7 @@ border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.65, 0.38, 0.18, 0.9)
+border_color = Color(0.90, 0.47, 0.14, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
@@ -49,9 +49,9 @@ content_margin_right = 4.0
 content_margin_bottom = 4.0
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_right_frame"]
-content_margin_left = 16.0
+content_margin_left = 12.0
 content_margin_top = 16.0
-content_margin_right = 16.0
+content_margin_right = 12.0
 content_margin_bottom = 16.0
 
 [node name="BlacksmithWindow" type="PanelContainer"]
@@ -139,9 +139,9 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="TypeHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection"]
-custom_minimum_size = Vector2(0, 26)
+custom_minimum_size = Vector2(350, 28)
 layout_mode = 2
-alignment = 1
+size_flags_horizontal = 4
 theme_override_constants/separation = 8
 
 [node name="TypeLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
@@ -153,9 +153,27 @@ vertical_alignment = 1
 
 [node name="TypeOptionButton" type="OptionButton" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 26)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
+
+[node name="SortButton" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 14
+text = "⇅"
+tooltip_text = "並び替え"
+
+[node name="FilterButton" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection/TypeHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 14
+text = "⚙"
+tooltip_text = "インベントリ設定"
 
 [node name="InventoryFrame" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/LeftSection"]
 layout_mode = 2
@@ -194,7 +212,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 alignment = 1
-theme_override_constants/separation = 24
+theme_override_constants/separation = 16
 
 [node name="MaterialSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
 layout_mode = 2
@@ -218,7 +236,7 @@ theme_override_constants/v_separation = 6
 columns = 3
 
 [node name="CenterSection" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_constants/separation = 16
@@ -230,14 +248,14 @@ layout_mode = 2
 [node name="ArrowLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/CenterSection"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.5, 0.2, 1)
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 32
 text = "→"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="ForgeButton" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/ContentHBox/RightFrame/RightVBox/WorkbenchHBox/CenterSection"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 44)
+custom_minimum_size = Vector2(110, 44)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0

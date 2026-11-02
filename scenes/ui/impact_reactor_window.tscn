@@ -1,0 +1,200 @@
+[gd_scene load_steps=7 format=3 uid="uid://c_impact_reactor_window_001"]
+
+[ext_resource type="Script" path="res://scripts/ui/impact_reactor_window.gd" id="1_reactor_script"]
+[ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="2_close_scene"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_root"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_header"]
+bg_color = Color(0.12, 0.58, 0.72, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_body"]
+bg_color = Color(0.08, 0.1, 0.14, 1)
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_topbar"]
+bg_color = Color(0.06, 0.08, 0.12, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.15, 0.25, 0.35, 0.6)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 16.0
+content_margin_top = 10.0
+content_margin_right = 16.0
+content_margin_bottom = 10.0
+
+[node name="ImpactReactorWindow" type="PanelContainer"]
+custom_minimum_size = Vector2(1200, 861)
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -729.0
+offset_top = 124.0
+offset_right = 471.0
+offset_bottom = -95.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_root")
+script = ExtResource("1_reactor_script")
+window_title = "衝撃炉"
+header_color = Color(0.12, 0.58, 0.72, 1)
+body_color = Color(0.08, 0.1, 0.14, 1)
+separator_color = Color(0.18, 0.68, 0.82, 0.8)
+
+[node name="WindowVBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPanel" type="PanelContainer" parent="WindowVBox"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_header")
+
+[node name="HeaderMargin" type="MarginContainer" parent="WindowVBox/HeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92, 0.92, 0.96, 1)
+theme_override_font_sizes/font_size = 20
+text = "衝撃炉"
+vertical_alignment = 1
+
+[node name="HeaderControls" type="HBoxContainer" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
+
+[node name="CloseBtn" parent="WindowVBox/HeaderPanel/HeaderMargin/HeaderHBox" instance=ExtResource("2_close_scene")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Separator" type="ColorRect" parent="WindowVBox"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.18, 0.68, 0.82, 0.8)
+
+[node name="BodyPanel" type="PanelContainer" parent="WindowVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_body")
+
+[node name="BodyMargin" type="MarginContainer" parent="WindowVBox/BodyPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
+
+[node name="MainVBox" type="VBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="TopBarPanel" type="PanelContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_topbar")
+
+[node name="TopBarHBox" type="HBoxContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="EnergyLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.85, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "所持エネルギー: 0"
+vertical_alignment = 1
+
+[node name="GainLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.9, 0.95, 1)
+theme_override_font_sizes/font_size = 15
+text = "獲得/衝突: 1"
+vertical_alignment = 1
+
+[node name="BounceLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.82, 1)
+theme_override_font_sizes/font_size = 15
+text = "総衝突数: 0"
+vertical_alignment = 1
+
+[node name="TopSpacer" type="Control" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BuyModeLabel" type="Label" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.85, 1)
+theme_override_font_sizes/font_size = 14
+text = "一括購入:"
+vertical_alignment = 1
+
+[node name="BtnBuy1" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "x1"
+
+[node name="BtnBuy5" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "x5"
+
+[node name="BtnBuy10" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "x10"
+
+[node name="BtnBuyMax" type="Button" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/TopBarPanel/TopBarHBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "MAX"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="CardsGrid" type="GridContainer" parent="WindowVBox/BodyPanel/BodyMargin/MainVBox/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 2

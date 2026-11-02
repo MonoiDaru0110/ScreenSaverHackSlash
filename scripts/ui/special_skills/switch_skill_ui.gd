@@ -18,7 +18,6 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	
 	GameData.switch_changed.connect(queue_redraw)
-	GameData.upgrades_changed.connect(_on_upgrades_changed)
 	GameData.equipment_changed.connect(_on_equipment_changed)
 	_update_level()
 	queue_redraw()
@@ -31,17 +30,14 @@ func _process(_delta: float) -> void:
 
 
 func set_skill_data(sk_data: Dictionary) -> void:
-	skill_level = int(sk_data.get("level", 1))
-	queue_redraw()
+	var new_lvl := int(sk_data.get("level", 1))
+	if skill_level != new_lvl:
+		skill_level = new_lvl
+		queue_redraw()
 
 
 func _update_level() -> void:
 	skill_level = GameData.get_special_skill_total_level("spec_switch")
-
-
-func _on_upgrades_changed() -> void:
-	_update_level()
-	queue_redraw()
 
 
 func _on_equipment_changed() -> void:
