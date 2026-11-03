@@ -37,7 +37,8 @@ func _get_current_buy_mode() -> int:
 @onready var btn_equipment_tab: Button = %EquipmentTabBtn
 @onready var btn_skill_tree_tab: Button = %SkillTreeTabBtn
 @onready var btn_challenge_tab: Button = %ChallengeTabBtn
-@onready var btn_reactor_tab: Button = %ReactorTabBtn
+@onready var btn_infuser_tab: Button = %InfuserTabBtn if has_node("%InfuserTabBtn") else %ReactorTabBtn
+@onready var btn_reactor_tab: Button = btn_infuser_tab
 @onready var btn_amplifier_tab: Button = %AmplifierTabBtn
 @onready var reinc_sub_nav_container: PanelContainer = %ReincarnationSubNavContainer
 @onready var btn_reinc_tab_1: Button = %ReincDummyTabBtn1
@@ -48,7 +49,8 @@ func _get_current_buy_mode() -> int:
 @onready var skill_tree_viewport: Control = %SkillTreeViewport
 @onready var skill_tree_window: PanelContainer = %SkillTreeWindow
 @onready var challenge_window: PanelContainer = %ChallengeWindow
-@onready var reactor_window: PanelContainer = %ReactorWindow
+@onready var infuser_window: PanelContainer = %InfuserWindow if has_node("%InfuserWindow") else %ReactorWindow
+@onready var reactor_window: PanelContainer = infuser_window
 @onready var amplifier_window: PanelContainer = %AmplifierWindow
 @onready var reinc_tree_window: PanelContainer = %ReincTreeWindow
 @onready var reinc_ability_window: PanelContainer = %ReincAbilityWindow
@@ -104,7 +106,12 @@ var _reinc_subtab_index: int = 0
 var _is_skill_tree_open: bool = false
 var _is_inventory_open: bool = false
 var _is_challenge_open: bool = false
-var _is_reactor_open: bool = false
+var _is_infuser_open: bool = false
+var _is_reactor_open: bool:
+	get:
+		return _is_infuser_open
+	set(value):
+		_is_infuser_open = value
 var _is_amplifier_open: bool = false
 var _is_reinc_tree_open: bool = false
 var _is_reinc_ability_open: bool = false
@@ -430,9 +437,9 @@ func _ready() -> void:
 	if btn_challenge_tab:
 		btn_challenge_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_challenge_tab.pressed.connect(_on_challenge_tab_pressed)
-	if btn_reactor_tab:
-		btn_reactor_tab.add_theme_stylebox_override("focus", style_focus)
-		btn_reactor_tab.pressed.connect(_on_reactor_tab_pressed)
+	if btn_infuser_tab:
+		btn_infuser_tab.add_theme_stylebox_override("focus", style_focus)
+		btn_infuser_tab.pressed.connect(_on_infuser_tab_pressed)
 	if btn_amplifier_tab:
 		btn_amplifier_tab.add_theme_stylebox_override("focus", style_focus)
 		btn_amplifier_tab.pressed.connect(_on_amplifier_tab_pressed)
@@ -593,10 +600,10 @@ func _ready() -> void:
 		if challenge_window.has_signal("closed"):
 			challenge_window.closed.connect(close_challenge)
 		challenge_window.visible = false
-	if reactor_window:
-		if reactor_window.has_signal("closed"):
-			reactor_window.closed.connect(close_reactor)
-		reactor_window.visible = false
+	if infuser_window:
+		if infuser_window.has_signal("closed"):
+			infuser_window.closed.connect(close_infuser)
+		infuser_window.visible = false
 	if amplifier_window:
 		if amplifier_window.has_signal("closed"):
 			amplifier_window.closed.connect(close_amplifier)
@@ -1325,7 +1332,7 @@ func _update_tab_button_styles() -> void:
 	_apply_subtab_button(btn_skill_tree_tab, _is_skill_tree_open, true, "🌳 スキル", "🌳 スキル")
 	_apply_subtab_button(btn_equipment_tab, _is_inventory_open, GameData.is_window_unlocked("equipment"), "🎒 装備", "🔒 装備")
 	_apply_subtab_button(btn_challenge_tab, _is_challenge_open, GameData.is_window_unlocked("challenge"), "🏆 チャレンジ", "🔒 チャレンジ")
-	_apply_subtab_button(btn_reactor_tab, _is_reactor_open, GameData.is_window_unlocked("reactor"), "衝撃炉", "衝撃炉")
+	_apply_subtab_button(btn_infuser_tab, _is_infuser_open, GameData.is_window_unlocked("infuser"), "注入器", "注入器")
 	_apply_subtab_button(btn_amplifier_tab, _is_amplifier_open, GameData.is_window_unlocked("amplifier"), "⚡ 融合", "🔒 融合")
 
 	_apply_tab_style(btn_reinc_tab_1, _is_reinc_tree_open, true)
@@ -1621,8 +1628,8 @@ func close_challenge() -> void:
 	_update_window_dimmer()
 
 
-func _on_reactor_tab_pressed() -> void:
-	if not GameData.is_window_unlocked("reactor"):
+func _on_infuser_tab_pressed() -> void:
+	if not GameData.is_window_unlocked("infuser"):
 		return
 	if _is_reincarnation_open:
 		close_reincarnation()
@@ -1643,47 +1650,58 @@ func _on_reactor_tab_pressed() -> void:
 	if _is_automation_settings_open:
 		close_automation_settings()
 		
-	if _is_reactor_open:
-		close_reactor()
+	if _is_infuser_open:
+		close_infuser()
 	else:
-		open_reactor()
+		open_infuser()
 
 
-func open_reactor() -> void:
-	if not GameData.is_window_unlocked("reactor"):
+func open_infuser() -> void:
+	if not GameData.is_window_unlocked("infuser"):
 		return
-	if _is_reactor_open:
+	if _is_infuser_open:
 		return
 	
-	_is_reactor_open = true
-	if reactor_window:
-		reactor_window.visible = true
-		if reactor_window.has_method("_update_all_ui"):
-			reactor_window._update_all_ui()
+	_is_infuser_open = true
+	if infuser_window:
+		infuser_window.visible = true
+		if infuser_window.has_method("_update_all_ui"):
+			infuser_window._update_all_ui()
+		elif infuser_window.has_method("update_ui"):
+			infuser_window.update_ui()
 	_update_tab_button_styles()
 	_update_window_dimmer()
 
 
-func close_reactor() -> void:
-	if not _is_reactor_open:
+func close_infuser() -> void:
+	if not _is_infuser_open:
 		return
 	
-	_is_reactor_open = false
-	if reactor_window:
-		reactor_window.visible = false
+	_is_infuser_open = false
+	if infuser_window:
+		infuser_window.visible = false
 	_update_tab_button_styles()
 	_update_window_dimmer()
 
 
 # 互換用エイリアス
+func _on_reactor_tab_pressed() -> void:
+	_on_infuser_tab_pressed()
+
+func open_reactor() -> void:
+	open_infuser()
+
+func close_reactor() -> void:
+	close_infuser()
+
 func _on_blacksmith_tab_pressed() -> void:
-	_on_reactor_tab_pressed()
+	_on_infuser_tab_pressed()
 
 func open_blacksmith() -> void:
-	open_reactor()
+	open_infuser()
 
 func close_blacksmith() -> void:
-	close_reactor()
+	close_infuser()
 
 
 func _on_amplifier_tab_pressed() -> void:

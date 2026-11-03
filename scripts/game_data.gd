@@ -822,8 +822,8 @@ func is_window_unlocked(window_id: String) -> bool:
 			return get_skill_level("equip_drop_unlock") > 0
 		"challenge":
 			return is_challenge_unlocked()
-		"reactor", "blacksmith":
-			return get_skill_level("blacksmith_unlock") > 0 or get_skill_level("reactor_unlock") > 0
+		"reactor", "blacksmith", "infuser":
+			return true
 		"amplifier":
 			return true
 	return false
@@ -834,6 +834,9 @@ signal tokens_changed(new_amount: float)
 signal stars_changed(new_amount: int)
 signal impact_energy_changed(new_amount: float)
 signal reactor_upgraded(upgrade_id: String, new_level: int)
+signal infuser_cp_gained(amount: float, is_corner: bool)
+signal infuser_updated()
+signal infuser_leveled_up(slot_id: String, new_level: int)
 signal infusion_changed()
 signal stats_changed()
 signal corner_hit_occurred()
@@ -1095,160 +1098,298 @@ func use_gold(amount: float) -> bool:
 
 func record_bounce(is_corner: bool) -> void:
 	total_bounces += 1
+	var cp_amount := get_corner_cp_gain() if is_corner else get_bounce_cp_gain()
 	if is_corner and not is_corner_hit_disabled_challenge_active():
 		corner_hits += 1
 		corner_hit_occurred.emit()
-		add_impact_energy(get_corner_impact_energy_gain())
-	else:
-		add_impact_energy(get_bounce_impact_energy_gain())
+	inject_infuser_cp(cp_amount, is_corner)
 	stats_changed.emit()
 
 
 # ==============================================================================
-# 衝撃炉システム (Impact Reactor System)
+# 注入器システム (Infuser System)
 # ==============================================================================
 
-const REACTOR_UPGRADES: Dictionary = {
-	"impact_gold_boost": {
-		"id": "impact_gold_boost",
-		"name": "衝撃増幅",
-		"desc": "通常衝突時のゴールド獲得量 +20%",
-		"base_cost": 10.0,
-		"cost_mult": 1.25,
-		"unit_value": 0.20
+var infuser_slots: Dictionary = {} # { "slot_id": { "level": int, "progress": float, "active": bool } }
+var infuser_total_cp: float = 0.0
+var _infuser_cps_history: Array = [] # [ {"time": float, "amount": float} ]
+
+const INFUSER_SLOTS: Dictionary = {
+	"speed_infusion": {
+		"id": "speed_infusion",
+		"name": "速度強化",
+		"desc": "ロゴの移動速度 +1% / Lv",
+		"base_cost": 20.0,
+		"cost_mult": 1.15,
+		"unit_value": 0.01
 	},
-	"kinetic_absorption": {
-		"id": "kinetic_absorption",
-		"name": "運動回収",
-		"desc": "1衝突ごとの獲得エネルギー +1",
-		"base_cost": 25.0,
-		"cost_mult": 1.35,
-		"unit_value": 1.0
+	"treasure_infusion": {
+		"id": "treasure_infusion",
+		"name": "装備強化",
+		"desc": "ドロップ率 +0.5% / Lv、基準装備Lv +1 / 10Lv",
+		"base_cost": 30.0,
+		"cost_mult": 1.16,
+		"unit_value": 0.005
 	},
-	"elastic_acceleration": {
-		"id": "elastic_acceleration",
-		"name": "弾性加速",
-		"desc": "ロゴの移動速度 +5%",
+	"crit_infusion": {
+		"id": "crit_infusion",
+		"name": "会心強化",
+		"desc": "クリティカル率 +0.5% / Lv、倍率 +2% / Lv",
+		"base_cost": 40.0,
+		"cost_mult": 1.16,
+		"unit_value": 0.005
+	},
+	"corner_infusion": {
+		"id": "corner_infusion",
+		"name": "角ヒット強化",
+		"desc": "角ヒット報酬 +3% / Lv",
 		"base_cost": 50.0,
-		"cost_mult": 1.30,
+		"cost_mult": 1.18,
+		"unit_value": 0.03
+	},
+	"harvest_infusion": {
+		"id": "harvest_infusion",
+		"name": "ゴールド/トークン強化",
+		"desc": "衝突ゴールド・トークン +2% / Lv",
+		"base_cost": 25.0,
+		"cost_mult": 1.15,
+		"unit_value": 0.02
+	},
+	"efficiency_infusion": {
+		"id": "efficiency_infusion",
+		"name": "CP効率強化",
+		"desc": "衝突ごとのCP獲得量 +5% / Lv",
+		"base_cost": 35.0,
+		"cost_mult": 1.17,
 		"unit_value": 0.05
-	},
-	"resonance_tokens": {
-		"id": "resonance_tokens",
-		"name": "反響増殖",
-		"desc": "角ヒット時のトークン獲得量 +15%",
-		"base_cost": 100.0,
-		"cost_mult": 1.40,
-		"unit_value": 0.15
-	},
-	"critical_charge": {
-		"id": "critical_charge",
-		"name": "臨界チャージ",
-		"desc": "クリティカル発生確率 +1%",
-		"base_cost": 250.0,
-		"cost_mult": 1.45,
-		"unit_value": 1.0
-	},
-	"corner_yield": {
-		"id": "corner_yield",
-		"name": "衝撃波集積",
-		"desc": "角ヒット時のゴールド獲得量 +25%",
-		"base_cost": 500.0,
-		"cost_mult": 1.50,
-		"unit_value": 0.25
 	}
 }
 
+# 後方互換用定義
+const REACTOR_UPGRADES: Dictionary = INFUSER_SLOTS
 
-func add_impact_energy(amount: float) -> void:
+
+func _init_infuser_slots() -> void:
+	for slot_id in INFUSER_SLOTS:
+		if not infuser_slots.has(slot_id) or not (infuser_slots[slot_id] is Dictionary):
+			infuser_slots[slot_id] = {
+				"level": 0,
+				"progress": 0.0,
+				"active": true,
+				"weight": 1
+			}
+		else:
+			var s_data: Dictionary = infuser_slots[slot_id]
+			if not s_data.has("weight"):
+				s_data["weight"] = 1 if bool(s_data.get("active", true)) else 0
+
+
+func get_infuser_level(slot_id: String) -> int:
+	_init_infuser_slots()
+	return int(infuser_slots.get(slot_id, {}).get("level", 0))
+
+
+func get_infuser_progress(slot_id: String) -> float:
+	_init_infuser_slots()
+	return float(infuser_slots.get(slot_id, {}).get("progress", 0.0))
+
+
+func get_infuser_slot_weight(slot_id: String) -> int:
+	_init_infuser_slots()
+	var s_data: Dictionary = infuser_slots.get(slot_id, {})
+	return clampi(int(s_data.get("weight", 1 if s_data.get("active", true) else 0)), 0, 100)
+
+
+func set_infuser_slot_weight(slot_id: String, weight: int) -> void:
+	_init_infuser_slots()
+	if infuser_slots.has(slot_id):
+		var w := clampi(weight, 0, 100)
+		infuser_slots[slot_id]["weight"] = w
+		infuser_slots[slot_id]["active"] = (w > 0)
+		infuser_updated.emit()
+
+
+func get_infuser_total_weight() -> int:
+	_init_infuser_slots()
+	var total := 0
+	for s_id in INFUSER_SLOTS:
+		total += get_infuser_slot_weight(s_id)
+	return total
+
+
+func is_infuser_slot_active(slot_id: String) -> bool:
+	return get_infuser_slot_weight(slot_id) > 0
+
+
+func get_infuser_slot_cost(slot_id: String, level: int = -1) -> float:
+	if not INFUSER_SLOTS.has(slot_id):
+		return INF
+	var def: Dictionary = INFUSER_SLOTS[slot_id]
+	var cur_lvl := get_infuser_level(slot_id) if level < 0 else level
+	var base_cost: float = float(def.get("base_cost", 20.0))
+	var cost_mult: float = float(def.get("cost_mult", 1.15))
+	return base_cost * pow(cost_mult, float(cur_lvl))
+
+
+func get_bounce_cp_gain() -> float:
+	var base := 1.0
+	var eff_lvl := get_infuser_level("efficiency_infusion")
+	return base * (1.0 + float(eff_lvl) * 0.05)
+
+
+func get_corner_cp_gain() -> float:
+	return get_bounce_cp_gain() * 50.0
+
+
+func inject_infuser_cp(amount: float, is_corner: bool) -> void:
 	if amount <= 0.0 or is_nan(amount) or is_inf(amount):
 		return
-	impact_energy += amount
-	total_impact_energy += amount
-	impact_energy_changed.emit(impact_energy)
+	_init_infuser_slots()
+	infuser_total_cp += amount
 
+	# 秒間レート記録
+	var now := float(Time.get_ticks_msec()) / 1000.0
+	_infuser_cps_history.append({"time": now, "amount": amount})
+	_clean_infuser_cps_history(now)
 
-func use_impact_energy(amount: float) -> bool:
-	if is_inf(amount) or is_nan(amount) or amount <= 0.0:
-		return false
-	if impact_energy >= amount:
-		impact_energy -= amount
-		impact_energy_changed.emit(impact_energy)
-		return true
-	return false
+	var total_weight := get_infuser_total_weight()
+	if total_weight <= 0:
+		infuser_cp_gained.emit(amount, is_corner)
+		infuser_updated.emit()
+		return
 
+	var any_leveled_up := false
+	for slot_id in INFUSER_SLOTS:
+		var w := get_infuser_slot_weight(slot_id)
+		if w <= 0:
+			continue
+		var split_amount := amount * (float(w) / float(total_weight))
+		var slot_data: Dictionary = infuser_slots[slot_id]
+		var cur_lvl: int = int(slot_data.get("level", 0))
+		var cur_prog: float = float(slot_data.get("progress", 0.0)) + split_amount
+		var req_cost := get_infuser_slot_cost(slot_id, cur_lvl)
 
-func get_bounce_impact_energy_gain() -> float:
-	var base := 1.0
-	var absorb_lvl := get_reactor_upgrade_level("kinetic_absorption")
-	return base + float(absorb_lvl) * 1.0
+		while cur_prog >= req_cost and not is_inf(req_cost) and req_cost > 0.0:
+			cur_prog -= req_cost
+			cur_lvl += 1
+			any_leveled_up = true
+			req_cost = get_infuser_slot_cost(slot_id, cur_lvl)
+			infuser_leveled_up.emit(slot_id, cur_lvl)
 
+		slot_data["level"] = cur_lvl
+		slot_data["progress"] = cur_prog
 
-func get_corner_impact_energy_gain() -> float:
-	return get_bounce_impact_energy_gain() * 50.0
-
-
-func get_reactor_upgrade_level(upgrade_id: String) -> int:
-	return reactor_upgrades.get(upgrade_id, 0)
-
-
-func get_reactor_upgrade_cost(upgrade_id: String, count: int = 1) -> float:
-	if not REACTOR_UPGRADES.has(upgrade_id) or count <= 0:
-		return 0.0
-	var def: Dictionary = REACTOR_UPGRADES[upgrade_id]
-	var base_cost: float = float(def.get("base_cost", 10.0))
-	var cost_mult: float = float(def.get("cost_mult", 1.25))
-	var cur_lvl := get_reactor_upgrade_level(upgrade_id)
-	return _calc_base_geometric_cost(base_cost, cost_mult, cur_lvl + 1, count, 1.0)
-
-
-func get_reactor_upgrade_max_count(upgrade_id: String) -> int:
-	if not REACTOR_UPGRADES.has(upgrade_id):
-		return 0
-	var def: Dictionary = REACTOR_UPGRADES[upgrade_id]
-	var base_cost: float = float(def.get("base_cost", 10.0))
-	var cost_mult: float = float(def.get("cost_mult", 1.25))
-	var cur_lvl := get_reactor_upgrade_level(upgrade_id)
-	return _calc_base_geometric_max_count(base_cost, cost_mult, cur_lvl + 1, impact_energy, 1.0)
-
-
-func buy_reactor_upgrade(upgrade_id: String, count: int = 1) -> bool:
-	if not REACTOR_UPGRADES.has(upgrade_id) or count <= 0:
-		return false
-	var cost := get_reactor_upgrade_cost(upgrade_id, count)
-	if use_impact_energy(cost):
-		var new_lvl := get_reactor_upgrade_level(upgrade_id) + count
-		reactor_upgrades[upgrade_id] = new_lvl
+	if any_leveled_up:
 		_recalculate_cached_multipliers()
 		upgrades_changed.emit()
-		reactor_upgraded.emit(upgrade_id, new_lvl)
-		return true
-	return false
+
+	infuser_cp_gained.emit(amount, is_corner)
+	infuser_updated.emit()
 
 
-func get_reactor_gold_multiplier() -> float:
-	var lvl := get_reactor_upgrade_level("impact_gold_boost")
-	return 1.0 + float(lvl) * 0.20
+func _clean_infuser_cps_history(now: float) -> void:
+	while not _infuser_cps_history.is_empty():
+		if now - float(_infuser_cps_history[0].get("time", 0.0)) > 2.0:
+			_infuser_cps_history.pop_front()
+		else:
+			break
 
 
-func get_reactor_token_multiplier() -> float:
-	var lvl := get_reactor_upgrade_level("resonance_tokens")
-	return 1.0 + float(lvl) * 0.15
+func get_infuser_cps() -> float:
+	var now := float(Time.get_ticks_msec()) / 1000.0
+	_clean_infuser_cps_history(now)
+	if _infuser_cps_history.is_empty():
+		return 0.0
+	var sum := 0.0
+	for entry in _infuser_cps_history:
+		sum += float(entry.get("amount", 0.0))
+	return sum / 2.0
 
 
-func get_reactor_corner_gold_multiplier() -> float:
-	var lvl := get_reactor_upgrade_level("corner_yield")
-	return 1.0 + float(lvl) * 0.25
+func set_infuser_slot_active(slot_id: String, active: bool) -> void:
+	set_infuser_slot_weight(slot_id, 1 if active else 0)
 
 
-func get_reactor_speed_multiplier() -> float:
-	var lvl := get_reactor_upgrade_level("elastic_acceleration")
-	return 1.0 + float(lvl) * 0.05
+func set_infuser_solo(slot_id: String) -> void:
+	_init_infuser_slots()
+	for s_id in INFUSER_SLOTS:
+		var w := 1 if s_id == slot_id else 0
+		infuser_slots[s_id]["weight"] = w
+		infuser_slots[s_id]["active"] = (w > 0)
+	infuser_updated.emit()
 
 
-func get_reactor_crit_rate_bonus() -> float:
-	var lvl := get_reactor_upgrade_level("critical_charge")
-	return float(lvl) * 1.0
+func set_infuser_all_active(active: bool) -> void:
+	set_infuser_all_weights(1 if active else 0)
+
+
+func set_infuser_all_weights(weight: int) -> void:
+	_init_infuser_slots()
+	var w := clampi(weight, 0, 100)
+	for s_id in INFUSER_SLOTS:
+		infuser_slots[s_id]["weight"] = w
+		infuser_slots[s_id]["active"] = (w > 0)
+	infuser_updated.emit()
+
+
+# --- 各種ステータス反映API ---
+func get_infuser_speed_multiplier() -> float:
+	var lvl := get_infuser_level("speed_infusion")
+	return 1.0 + float(lvl) * 0.01
+
+
+func get_infuser_gold_multiplier() -> float:
+	var lvl := get_infuser_level("harvest_infusion")
+	return 1.0 + float(lvl) * 0.02
+
+
+func get_infuser_token_multiplier() -> float:
+	var lvl := get_infuser_level("harvest_infusion")
+	return 1.0 + float(lvl) * 0.02
+
+
+func get_infuser_corner_gold_mult() -> float:
+	var lvl := get_infuser_level("corner_infusion")
+	return 1.0 + float(lvl) * 0.03
+
+
+func get_infuser_corner_token_mult() -> float:
+	var lvl := get_infuser_level("corner_infusion")
+	return 1.0 + float(lvl) * 0.03
+
+
+func get_infuser_crit_rate_bonus() -> float:
+	var lvl := get_infuser_level("crit_infusion")
+	return float(lvl) * 0.5
+
+
+func get_infuser_crit_damage_bonus() -> float:
+	var lvl := get_infuser_level("crit_infusion")
+	return float(lvl) * 2.0
+
+
+func get_infuser_equip_drop_prob_bonus() -> float:
+	var lvl := get_infuser_level("treasure_infusion")
+	return float(lvl) * 0.5
+
+
+func get_infuser_equip_level_bonus() -> int:
+	var lvl := get_infuser_level("treasure_infusion")
+	return int(float(lvl) / 10.0)
+
+
+# --- 後方互換ラッパー ---
+func get_reactor_gold_multiplier() -> float: return get_infuser_gold_multiplier()
+func get_reactor_token_multiplier() -> float: return get_infuser_token_multiplier()
+func get_reactor_corner_gold_multiplier() -> float: return get_infuser_corner_gold_mult()
+func get_reactor_speed_multiplier() -> float: return get_infuser_speed_multiplier()
+func get_reactor_crit_rate_bonus() -> float: return get_infuser_crit_rate_bonus()
+func get_bounce_impact_energy_gain() -> float: return get_bounce_cp_gain()
+func get_corner_impact_energy_gain() -> float: return get_corner_cp_gain()
+func get_reactor_upgrade_level(upgrade_id: String) -> int: return get_infuser_level(upgrade_id)
+func buy_reactor_upgrade(_u_id: String, _count: int = 1) -> bool: return false
+func get_reactor_upgrade_cost(_u_id: String, _count: int = 1) -> float: return 0.0
+func get_reactor_upgrade_max_count(_u_id: String) -> int: return 0
 
 func get_logo_upgrade_cost() -> float:
 	var base := 100.0 * pow(2.0, float(logo_count - 1))
@@ -1566,7 +1707,8 @@ func calculate_crit_result(crit_factor: float) -> Dictionary:
 	if weight <= 0:
 		return {"multiplier": 1.0, "is_crit": false, "weight": 0}
 		
-	var base_crit_bonus := 0.05 * crit_factor + equip_crit_yield * 0.01
+	var infuser_damage_bonus := get_infuser_crit_damage_bonus() * 0.01
+	var base_crit_bonus := 0.05 * crit_factor + equip_crit_yield * 0.01 + infuser_damage_bonus
 	var mult := (1.0 + float(weight) * base_crit_bonus) * get_challenge_crit_multiplier()
 	return {"multiplier": mult, "is_crit": true, "weight": weight}
 
@@ -2652,7 +2794,8 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	var rand_factor := randf_range(0.9, 1.1)
 	var tree_level_bonus := float(get_tree_equip_drop_level_bonus())
 	var reinc_level_bonus := float(get_base_equip_level_bonus())
-	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus
+	var infuser_level_bonus := float(get_infuser_equip_level_bonus() * 10)
+	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus + infuser_level_bonus
 	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
 	
 	# 乱数幅 (0.9 ~ 1.1) の3分割判定 (Low: 0.90~0.9667, Medium: 0.9667~1.0333, High: 1.0333~1.10)
@@ -3523,6 +3666,7 @@ func roll_equipment_drop(is_corner: bool) -> Dictionary:
 	var base_drop_chance := 0.15 if is_corner else 0.02
 	base_drop_chance += get_tree_equip_drop_probability_bonus()
 	base_drop_chance += get_challenge_drop_rate_bonus()
+	base_drop_chance += get_infuser_equip_drop_prob_bonus() * 0.01
 	var drop_chance := 1.0 - (1.0 - base_drop_chance) / (1.0 + 0.03 * L)
 	# 装備スキル「装備ドロップ率」ボーナス (+1.2n%)
 	var equip_drop_rate_bonus := get_equipped_skill_total_val("drop_rate") * 0.01
@@ -5173,7 +5317,10 @@ func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dic
 		"auto_ascend_wait_seconds": auto_ascend_wait_seconds,
 		# 装備ドロップフィルター
 		"equipment_filter_settings": equipment_filter_settings.duplicate(true),
-		# 衝撃炉
+		# 注入器
+		"infuser_total_cp": infuser_total_cp,
+		"infuser_slots": infuser_slots.duplicate(true),
+		# 衝撃炉（互換）
 		"impact_energy": impact_energy,
 		"total_impact_energy": total_impact_energy,
 		"reactor_upgrades": reactor_upgrades.duplicate()
@@ -5474,7 +5621,17 @@ func _apply_save_data(data: Dictionary) -> void:
 	else:
 		reset_equipment_filter_settings()
 
-	# 10. 衝撃炉
+	# 10. 注入器
+	infuser_total_cp = float(data.get("infuser_total_cp", 0.0))
+	var raw_infuser = data.get("infuser_slots", null)
+	if raw_infuser is Dictionary:
+		infuser_slots = raw_infuser.duplicate(true)
+	else:
+		infuser_slots.clear()
+	_init_infuser_slots()
+	infuser_updated.emit()
+
+	# 衝撃炉（互換）
 	impact_energy = float(data.get("impact_energy", 0.0))
 	total_impact_energy = float(data.get("total_impact_energy", 0.0))
 	var raw_reactor_upgrades = data.get("reactor_upgrades", {})
@@ -5578,6 +5735,12 @@ func reset_all_data() -> void:
 	amp_token_pow_level = 0
 
 	reset_equipment_filter_settings()
+
+	infuser_total_cp = 0.0
+	infuser_slots.clear()
+	_init_infuser_slots()
+	_infuser_cps_history.clear()
+	infuser_updated.emit()
 
 	impact_energy = 0.0
 	total_impact_energy = 0.0

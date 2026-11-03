@@ -8,7 +8,7 @@
 [ext_resource type="PackedScene" uid="uid://c8closebtn001" path="res://scenes/ui/close_button.tscn" id="6_close_scene"]
 [ext_resource type="Script" uid="uid://cv2ftlcsc1l4n" path="res://scripts/ui/base_window.gd" id="7_base_window_script"]
 [ext_resource type="PackedScene" uid="uid://ypt4uxh84fvc" path="res://scenes/ui/challenge_window.tscn" id="8_challenge_scene"]
-[ext_resource type="PackedScene" path="res://scenes/ui/impact_reactor_window.tscn" id="9_reactor_scene"]
+[ext_resource type="PackedScene" path="res://scenes/ui/infuser_window.tscn" id="9_infuser_scene"]
 [ext_resource type="PackedScene" uid="uid://bn614xlh8t5m7" path="res://scenes/ui/reinc_tree_window.tscn" id="10_reinc_tree_scene"]
 [ext_resource type="PackedScene" uid="uid://bn6hn2r3gg5m7" path="res://scenes/ui/reinc_ability_window.tscn" id="11_reinc_ability_scene"]
 [ext_resource type="PackedScene" uid="uid://cfhojkdlop3c" path="res://scenes/ui/amplifier_window.tscn" id="12_amplifier_scene"]
@@ -764,7 +764,7 @@ visible = false
 z_index = 10
 separator_color = Color(0, 0, 0, 1)
 
-[node name="ReactorWindow" parent="." instance=ExtResource("9_reactor_scene")]
+[node name="InfuserWindow" parent="." instance=ExtResource("9_infuser_scene")]
 unique_name_in_owner = true
 visible = false
 z_index = 10
@@ -1328,12 +1328,12 @@ size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
 text = "🏆 チャレンジ"
 
-[node name="ReactorTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
+[node name="InfuserTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 14
-text = "衝撃炉"
+text = "注入器"
 
 [node name="AmplifierTabBtn" type="Button" parent="TopNavigationArea/SubNavContainer/MarginContainer/SubTabButtons"]
 unique_name_in_owner = true
