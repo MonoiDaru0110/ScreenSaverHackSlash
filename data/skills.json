@@ -118,7 +118,7 @@
 			"y": 320.0
 		},
 		"challange_bonus_boost_4": {
-			"base_cost": 9999999999999999900000000000000000000000000000.0,
+			"base_cost": 100000000000000010000000000000000000000000000.0,
 			"cost_multiplier": 1.5,
 			"description": "チャレンジクリア後のボーナス x1.1。",
 			"icon": "res://images/skill_icon/challange/challange_bonus_boost.png",
@@ -198,7 +198,7 @@
 		"challange_max_level_bonus": {
 			"base_cost": 100000000000000050000000000000000000000000000000000.0,
 			"cost_multiplier": 1.5,
-			"description": "レベル5までクリアしたチャレンジ一つにつき、入手ゴールド/トークン x2。",
+			"description": "レベル5までクリアしたチャレンジ一つにつき、入手ゴールド/トークン x1.5。",
 			"icon": "res://images/skill_icon/challange/challange_max_level_bonus.png",
 			"is_unlimited": false,
 			"name": "完全クリアボーナス",
@@ -701,6 +701,357 @@
 			],
 			"x": 0.0,
 			"y": -1280.0
+		},
+		"infuser_booster_boost_1": {
+			"base_cost": 10000000000000004000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ブースター倍率計算式の底 -2。",
+			"icon": "res://images/skill_icon/infuser/infuser_booster_boost.png",
+			"is_unlimited": false,
+			"name": "ブースター強化Ⅰ",
+			"prerequisites": [
+				"infuser_booster_unlock"
+			],
+			"x": 160.0,
+			"y": 800.0
+		},
+		"infuser_booster_boost_2": {
+			"base_cost": 99999999999999990000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ブースター倍率計算式の底 -2。",
+			"icon": "res://images/skill_icon/infuser/infuser_booster_boost.png",
+			"is_unlimited": false,
+			"name": "ブースター強化Ⅱ",
+			"prerequisites": [
+				"infuser_cost_onus_4"
+			],
+			"x": 320.0,
+			"y": 1120.0
+		},
+		"infuser_booster_boost_3": {
+			"base_cost": 999999999999999930000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ブースター倍率計算式の底 -2。",
+			"icon": "res://images/skill_icon/infuser/infuser_booster_boost.png",
+			"is_unlimited": false,
+			"name": "ブースター強化Ⅲ",
+			"prerequisites": [
+				"infuser_split_precisely"
+			],
+			"x": 160.0,
+			"y": 1120.0
+		},
+		"infuser_booster_boost_4": {
+			"base_cost": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "ブースター倍率計算式の底 -2。",
+			"icon": "res://images/skill_icon/infuser/infuser_booster_boost.png",
+			"is_unlimited": false,
+			"name": "ブースター強化Ⅳ",
+			"prerequisites": [
+				"infuser_slot_unlock_4"
+			],
+			"x": 160.0,
+			"y": 1280.0
+		},
+		"infuser_booster_unlock": {
+			"base_cost": 99999999999999999000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CPをブーストするブースターを解放する。入手CP x10。",
+			"icon": "res://images/skill_icon/infuser/infuser_booster_unlock.png",
+			"is_unlimited": false,
+			"name": "ブースター解放",
+			"prerequisites": [
+				"infuser_slot_unlock_1"
+			],
+			"x": 0.0,
+			"y": 800.0
+		},
+		"infuser_cost_onus_1": {
+			"base_cost": 49999999999999992000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "スロットレベルアップに必要なCP x0.8。",
+			"icon": "res://images/skill_icon/infuser/infuser_cost_onus.png",
+			"is_unlimited": false,
+			"name": "注入コスト緩和Ⅰ",
+			"prerequisites": [
+				"infuser_unlock"
+			],
+			"x": -160.0,
+			"y": 320.0
+		},
+		"infuser_cost_onus_2": {
+			"base_cost": 20000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "スロットレベルアップに必要なCP x0.8。",
+			"icon": "res://images/skill_icon/infuser/infuser_cost_onus.png",
+			"is_unlimited": false,
+			"name": "注入コスト緩和Ⅱ",
+			"prerequisites": [
+				"infuser_slot_unlock_1"
+			],
+			"x": -160.0,
+			"y": 480.0
+		},
+		"infuser_cost_onus_3": {
+			"base_cost": 1000000000000000100000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "スロットレベルアップに必要なCP x0.8。",
+			"icon": "res://images/skill_icon/infuser/infuser_cost_onus.png",
+			"is_unlimited": false,
+			"name": "注入コスト緩和Ⅲ",
+			"prerequisites": [
+				"infuser_cp_boost_3"
+			],
+			"x": -320.0,
+			"y": 800.0
+		},
+		"infuser_cost_onus_4": {
+			"base_cost": 100000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "スロットレベルアップに必要なCP x0.8。",
+			"icon": "res://images/skill_icon/infuser/infuser_cost_onus.png",
+			"is_unlimited": false,
+			"name": "注入コスト緩和Ⅳ",
+			"prerequisites": [
+				"infuser_slot_unlock_3"
+			],
+			"x": 160.0,
+			"y": 960.0
+		},
+		"infuser_cost_onus_5": {
+			"base_cost": 1000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "スロットレベルアップに必要なCP x0.8。",
+			"icon": "res://images/skill_icon/infuser/infuser_cost_onus.png",
+			"is_unlimited": false,
+			"name": "注入コスト緩和Ⅴ",
+			"prerequisites": [
+				"infuser_booster_boost_4"
+			],
+			"x": 160.0,
+			"y": 1440.0
+		},
+		"infuser_cp_boost_1": {
+			"base_cost": 10000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CP x2。",
+			"icon": "res://images/skill_icon/infuser/infuser_cp_boost.png",
+			"is_unlimited": false,
+			"name": "入手CPボーナスⅠ",
+			"prerequisites": [
+				"infuser_unlock"
+			],
+			"x": 0.0,
+			"y": 320.0
+		},
+		"infuser_cp_boost_2": {
+			"base_cost": 10000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CP x2。",
+			"icon": "res://images/skill_icon/infuser/infuser_cp_boost.png",
+			"is_unlimited": false,
+			"name": "入手CPボーナスⅡ",
+			"prerequisites": [
+				"infuser_slot_unlock_1"
+			],
+			"x": 160.0,
+			"y": 480.0
+		},
+		"infuser_cp_boost_3": {
+			"base_cost": 1000000000000000100000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CP x2。",
+			"icon": "res://images/skill_icon/infuser/infuser_cp_boost.png",
+			"is_unlimited": false,
+			"name": "入手CPボーナスⅢ",
+			"prerequisites": [
+				"infuser_booster_unlock"
+			],
+			"x": -160.0,
+			"y": 800.0
+		},
+		"infuser_cp_boost_4": {
+			"base_cost": 1999999999999999800000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CP x2。",
+			"icon": "res://images/skill_icon/infuser/infuser_cp_boost.png",
+			"is_unlimited": false,
+			"name": "入手CPボーナスⅣ",
+			"prerequisites": [
+				"infuser_slot_unlock_3"
+			],
+			"x": -160.0,
+			"y": 960.0
+		},
+		"infuser_cp_boost_5": {
+			"base_cost": 999999999999999980000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "入手CP x2。",
+			"icon": "res://images/skill_icon/infuser/infuser_cp_boost.png",
+			"is_unlimited": false,
+			"name": "入手CPボーナスⅤ",
+			"prerequisites": [
+				"infuser_slot_unlock_4"
+			],
+			"x": -160.0,
+			"y": 1280.0
+		},
+		"infuser_effect_bonus_1": {
+			"base_cost": 9999999999999999900000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットの効果量 +20%。",
+			"icon": "res://images/skill_icon/infuser/infuser_effect_bonus.png",
+			"is_unlimited": false,
+			"name": "スロット効果量上昇Ⅰ",
+			"prerequisites": [
+				"infuser_unlock"
+			],
+			"x": 160.0,
+			"y": 320.0
+		},
+		"infuser_effect_bonus_2": {
+			"base_cost": 1000000000000000100000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットの効果量 +20%。",
+			"icon": "res://images/skill_icon/infuser/infuser_effect_bonus.png",
+			"is_unlimited": false,
+			"name": "スロット効果量上昇Ⅱ",
+			"prerequisites": [
+				"infuser_cp_boost_2"
+			],
+			"x": 320.0,
+			"y": 640.0
+		},
+		"infuser_effect_bonus_3": {
+			"base_cost": 10000000000000002000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットの効果量 +20%。",
+			"icon": "res://images/skill_icon/infuser/infuser_effect_bonus.png",
+			"is_unlimited": false,
+			"name": "スロット効果量上昇Ⅲ",
+			"prerequisites": [
+				"infuser_booster_boost_1"
+			],
+			"x": 320.0,
+			"y": 800.0
+		},
+		"infuser_effect_bonus_4": {
+			"base_cost": 2000000000000000100000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットの効果量 +20%。",
+			"icon": "res://images/skill_icon/infuser/infuser_effect_bonus.png",
+			"is_unlimited": false,
+			"name": "スロット効果量上昇Ⅳ",
+			"prerequisites": [
+				"infuser_cp_boost_4"
+			],
+			"x": -320.0,
+			"y": 1120.0
+		},
+		"infuser_effect_bonus_5": {
+			"base_cost": 10000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットの効果量 +20%。",
+			"icon": "res://images/skill_icon/infuser/infuser_effect_bonus.png",
+			"is_unlimited": false,
+			"name": "スロット効果量上昇Ⅴ",
+			"prerequisites": [
+				"infuser_cp_boost_5"
+			],
+			"x": -160.0,
+			"y": 1440.0
+		},
+		"infuser_perfect_parallelization": {
+			"base_cost": 500000000000000050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットにCP総出力がそのまま入力されるようになる。",
+			"icon": "res://images/skill_icon/infuser/infuser_perfect_parallelization.png",
+			"is_unlimited": false,
+			"name": "完全並列化",
+			"prerequisites": [
+				"infuser_slot_unlock_4"
+			],
+			"x": 0.0,
+			"y": 1600.0
+		},
+		"infuser_slot_unlock_1": {
+			"base_cost": 1000000000000000200000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "注入スロットが一つ解放される。",
+			"icon": "res://images/skill_icon/infuser/infuser_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "注入スロット拡張Ⅰ",
+			"prerequisites": [
+				"infuser_cp_boost_1"
+			],
+			"x": 0.0,
+			"y": 480.0
+		},
+		"infuser_slot_unlock_2": {
+			"base_cost": 1999999999999999900000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "注入スロットが一つ解放される。",
+			"icon": "res://images/skill_icon/infuser/infuser_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "注入スロット拡張Ⅱ",
+			"prerequisites": [
+				"infuser_cost_onus_2"
+			],
+			"x": -320.0,
+			"y": 640.0
+		},
+		"infuser_slot_unlock_3": {
+			"base_cost": 1000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "注入スロットが一つ解放される。",
+			"icon": "res://images/skill_icon/infuser/infuser_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "注入スロット拡張Ⅲ",
+			"prerequisites": [
+				"infuser_booster_unlock"
+			],
+			"x": 0.0,
+			"y": 960.0
+		},
+		"infuser_slot_unlock_4": {
+			"base_cost": 99999999999999998000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "注入スロットが一つ解放される。",
+			"icon": "res://images/skill_icon/infuser/infuser_slot_unlock.png",
+			"is_unlimited": false,
+			"name": "注入スロット拡張Ⅳ",
+			"prerequisites": [
+				"infuser_split_precisely"
+			],
+			"x": 0.0,
+			"y": 1280.0
+		},
+		"infuser_split_precisely": {
+			"base_cost": 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "各スロットへの分配割合を調整できるようになる。入手CP x10。",
+			"icon": "res://images/skill_icon/infuser/infuser_split_precisely.png",
+			"is_unlimited": false,
+			"name": "分配精密化解放",
+			"prerequisites": [
+				"infuser_slot_unlock_3"
+			],
+			"x": 0.0,
+			"y": 1120.0
+		},
+		"infuser_unlock": {
+			"base_cost": 1000000000000000000000000000000000000000000.0,
+			"cost_multiplier": 1.5,
+			"description": "注入器ウィンドウが解放される。",
+			"icon": "res://images/skill_icon/infuser/infuser_unlock.png",
+			"is_unlimited": false,
+			"name": "注入器解放",
+			"prerequisites": [
+				"root_node"
+			],
+			"x": 0.0,
+			"y": 160.0
 		},
 		"inventory_expand_1": {
 			"base_cost": 50.0,

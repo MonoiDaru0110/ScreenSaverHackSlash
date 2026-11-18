@@ -8,7 +8,7 @@ extends BaseWindow
 @onready var hub_panel: PanelContainer = %HubPanel
 @onready var hub_water_canvas: Control = %HubWaterCanvas
 @onready var cps_label: Label = %CpsLabel
-@onready var total_cp_label: Label = %TotalCpLabel
+@onready var booster_formula_label: Label = %BoosterFormulaLabel
 @onready var total_bounces_label: Label = %TotalBouncesLabel
 @onready var pop_container: Control = %PopContainer
 @onready var pipe_canvas: Control = %PipeCanvas
@@ -17,16 +17,18 @@ extends BaseWindow
 @onready var center_pipe_area: Control = %CenterPipeArea
 
 const LEFT_SLOT_KEYS: Array[String] = [
-	"speed_infusion",
-	"crit_infusion",
-	"harvest_infusion"
+	"harvest_infusion",
+	"efficiency_infusion",
+	"treasure_infusion"
 ]
 
 const RIGHT_SLOT_KEYS: Array[String] = [
-	"treasure_infusion",
-	"corner_infusion",
-	"efficiency_infusion"
+	"crit_infusion",
+	"speed_infusion",
+	"corner_infusion"
 ]
+
+var _is_committing_weight: bool = false
 
 # スロットごとのUIノードキャッシュ
 var _slot_cards: Dictionary = {} # { "slot_id": CardNodesDictionary }
@@ -60,6 +62,7 @@ func _ready() -> void:
 	GameData.infuser_updated.connect(_on_infuser_updated)
 	GameData.infuser_leveled_up.connect(_on_leveled_up)
 	GameData.stats_changed.connect(_on_stats_changed)
+	GameData.skill_upgraded.connect(_on_skill_upgraded)
 
 
 func _input(event: InputEvent) -> void:
@@ -83,6 +86,17 @@ func _process(delta: float) -> void:
 	if _update_timer >= UPDATE_INTERVAL:
 		_update_timer = 0.0
 		_refresh_runtime_values()
+
+	# 完全並列化解放時は各スロットのバー下流量テキストを虹色に変化（同期発光）
+	if GameData.is_infuser_perfect_parallelization_unlocked():
+		var time_now := float(Time.get_ticks_msec()) * 0.001
+		var hue := fposmod(time_now * 0.35, 1.0)
+		for slot_id in GameData.ORDERED_INFUSER_SLOTS:
+			if _slot_cards.has(slot_id):
+				var nodes: Dictionary = _slot_cards[slot_id]
+				var rate_lbl: Label = nodes.get("rate_lbl")
+				if rate_lbl and GameData.is_infuser_slot_unlocked(slot_id):
+					rate_lbl.add_theme_color_override("font_color", Color.from_hsv(hue, 0.75, 1.0))
 
 	# ポップアップ出現の波を平滑化
 	if _pop_cooldown > 0.0:
@@ -109,12 +123,23 @@ func _notification(what: int) -> void:
 
 
 func _commit_weight_edit(slot_id: String) -> void:
+	if _is_committing_weight:
+		return
 	if not _slot_cards.has(slot_id):
 		return
 	var nodes: Dictionary = _slot_cards[slot_id]
 	var weight_edit: LineEdit = nodes.get("weight_edit")
 	if not is_instance_valid(weight_edit):
 		return
+
+	if not GameData.is_infuser_slot_unlocked(slot_id) or not GameData.is_infuser_split_precisely_unlocked():
+		if _active_editing_slot_id == slot_id:
+			_active_editing_slot_id = ""
+		if weight_edit.has_focus():
+			weight_edit.call_deferred("release_focus")
+		return
+
+	_is_committing_weight = true
 
 	var raw_text := weight_edit.text.strip_edges()
 	var val := clampi(int(raw_text), 0, 100) if raw_text.is_valid_int() else GameData.get_infuser_slot_weight(slot_id)
@@ -125,14 +150,19 @@ func _commit_weight_edit(slot_id: String) -> void:
 	if empty_sb:
 		weight_edit.add_theme_stylebox_override("normal", empty_sb)
 	weight_edit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	weight_edit.release_focus()
+	if weight_edit.has_focus():
+		weight_edit.call_deferred("release_focus")
 	weight_edit.deselect()
 
 	var is_active: bool = (val > 0)
-	weight_edit.add_theme_color_override("font_color", Color(0.28, 0.94, 0.80, 1.0) if is_active else Color(0.55, 0.70, 0.65, 0.7))
+	var c := Color(0.22, 1.0, 0.84, 1.0) if is_active else Color(0.50, 0.58, 0.56, 0.55)
+	weight_edit.add_theme_color_override("font_color", c)
+	weight_edit.add_theme_color_override("font_uneditable_color", c)
 
 	if _active_editing_slot_id == slot_id:
 		_active_editing_slot_id = ""
+
+	_is_committing_weight = false
 
 
 func _create_slot_cards() -> void:
@@ -170,12 +200,12 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	panel_style.border_width_top = 2
 	panel_style.border_width_right = 2
 	panel_style.border_width_bottom = 2
-	panel_style.border_color = Color(0.25, 0.92, 0.78, 0.95)
+	panel_style.border_color = Color(0.22, 0.98, 0.84, 0.98)
 	panel_style.corner_radius_top_left = 6
 	panel_style.corner_radius_top_right = 6
 	panel_style.corner_radius_bottom_right = 6
 	panel_style.corner_radius_bottom_left = 6
-	panel_style.shadow_color = Color(0.12, 0.80, 0.66, 0.35)
+	panel_style.shadow_color = Color(0.12, 0.92, 0.76, 0.40)
 	panel_style.shadow_size = 8
 	panel_style.shadow_offset = Vector2.ZERO
 	panel_style.content_margin_left = 0.0
@@ -197,7 +227,7 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	header_style.border_width_top = 2
 	header_style.border_width_right = 2
 	header_style.border_width_bottom = 0
-	header_style.border_color = Color(0.25, 0.92, 0.78, 0.95)
+	header_style.border_color = Color(0.22, 0.98, 0.84, 0.98)
 	header_style.corner_radius_top_left = 6
 	header_style.corner_radius_top_right = 6
 	header_style.content_margin_left = 12.0
@@ -232,7 +262,7 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	v_sep.custom_minimum_size = Vector2(1, 0)
 	v_sep.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v_sep.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	v_sep.color = Color(0.20, 0.85, 0.72, 0.75)
+	v_sep.color = Color(0.20, 0.95, 0.80, 0.80)
 	top_hbox.add_child(v_sep)
 
 	# 右側: 重み入力エリア（ホバーで淡く発光、クリックで入力モードへ移行、入力時の位置・フォントサイズと完全一致）
@@ -246,7 +276,7 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	var empty_sb := StyleBoxEmpty.new()
 
 	var hover_sb := StyleBoxFlat.new()
-	hover_sb.bg_color = Color(0.20, 0.60, 0.50, 0.25)
+	hover_sb.bg_color = Color(0.20, 0.75, 0.62, 0.30)
 	hover_sb.corner_radius_top_left = 0
 	hover_sb.corner_radius_top_right = 5
 	hover_sb.corner_radius_bottom_right = 0
@@ -265,15 +295,16 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	weight_edit.add_theme_stylebox_override("focus", empty_sb)
 	weight_edit.add_theme_stylebox_override("read_only", empty_sb)
 	weight_edit.add_theme_font_size_override("font_size", 20)
-	weight_edit.add_theme_color_override("font_color", Color(0.28, 0.94, 0.80, 1.0))
-	weight_edit.add_theme_color_override("selection_color", Color(0.20, 0.60, 0.50, 0.45))
-	weight_edit.add_theme_color_override("caret_color", Color(0.35, 0.98, 0.82, 1.0))
+	weight_edit.add_theme_color_override("font_color", Color(0.22, 1.0, 0.84, 1.0))
+	weight_edit.add_theme_color_override("font_uneditable_color", Color(0.22, 1.0, 0.84, 1.0))
+	weight_edit.add_theme_color_override("selection_color", Color(0.20, 0.75, 0.62, 0.50))
+	weight_edit.add_theme_color_override("caret_color", Color(0.30, 1.0, 0.86, 1.0))
 	weight_container.add_child(weight_edit)
 
 	# --- 水平セパレータ（1pxに細線化） ---
 	var h_sep := ColorRect.new()
 	h_sep.custom_minimum_size = Vector2(0, 1)
-	h_sep.color = Color(0.20, 0.85, 0.72, 0.75)
+	h_sep.color = Color(0.20, 0.95, 0.80, 0.80)
 	main_vbox.add_child(h_sep)
 
 	# --- 下部ボディセクション ---
@@ -298,13 +329,13 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	var cur_val_lbl := Label.new()
 	cur_val_lbl.text = "-"
 	cur_val_lbl.add_theme_font_size_override("font_size", 19)
-	cur_val_lbl.add_theme_color_override("font_color", Color(0.35, 0.96, 0.75, 1.0))
+	cur_val_lbl.add_theme_color_override("font_color", Color(0.28, 1.0, 0.80, 1.0))
 	effect_vbox.add_child(cur_val_lbl)
 
 	var desc_lbl := Label.new()
-	desc_lbl.text = str(def.get("desc", ""))
+	desc_lbl.text = _format_slot_per_level_desc(slot_id)
 	desc_lbl.add_theme_font_size_override("font_size", 12)
-	desc_lbl.add_theme_color_override("font_color", Color(0.60, 0.78, 0.74, 0.95))
+	desc_lbl.add_theme_color_override("font_color", Color(0.58, 0.88, 0.82, 1.0))
 	effect_vbox.add_child(desc_lbl)
 
 	# --- 中間: 伸縮スペーサー（空きスペースを広げて上下端へ押し出す） ---
@@ -331,7 +362,7 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	bar_bg.border_width_top = 1
 	bar_bg.border_width_right = 1
 	bar_bg.border_width_bottom = 1
-	bar_bg.border_color = Color(0.12, 0.42, 0.36, 0.7)
+	bar_bg.border_color = Color(0.14, 0.54, 0.46, 0.75)
 	bar_bg.corner_radius_top_left = 4
 	bar_bg.corner_radius_top_right = 4
 	bar_bg.corner_radius_bottom_right = 4
@@ -339,7 +370,7 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.10, 0.76, 0.60, 1.0)
+	bar_fill.bg_color = Color(0.08, 0.88, 0.70, 1.0)
 	bar_fill.corner_radius_top_left = 4
 	bar_fill.corner_radius_top_right = 4
 	bar_fill.corner_radius_bottom_right = 4
@@ -355,29 +386,47 @@ func _build_slot_card(slot_id: String, _is_left: bool) -> PanelContainer:
 	var rate_lbl := Label.new()
 	rate_lbl.text = "流量: 0 CP/s (0%)"
 	rate_lbl.add_theme_font_size_override("font_size", 12)
-	rate_lbl.add_theme_color_override("font_color", Color(0.48, 0.88, 0.76, 1.0))
+	rate_lbl.add_theme_color_override("font_color", Color(0.42, 0.96, 0.84, 1.0))
 	rate_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rate_prog_hbox.add_child(rate_lbl)
 
 	var prog_lbl := Label.new()
 	prog_lbl.text = "0 / 0 CP (あと --秒)"
 	prog_lbl.add_theme_font_size_override("font_size", 12)
-	prog_lbl.add_theme_color_override("font_color", Color(0.72, 0.86, 0.82, 1.0))
+	prog_lbl.add_theme_color_override("font_color", Color(0.70, 0.92, 0.88, 1.0))
 	prog_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	prog_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rate_prog_hbox.add_child(prog_lbl)
 
-	# イベント接続（ホバーで淡く変化、クリックで全選択＆入力開始、Enterや外側クリックで確定）
+	# イベント接続（ホバーで淡く変化、精密解放時は入力、未解放時はON/OFFトグル）
 	weight_edit.mouse_entered.connect(func():
+		if not GameData.is_infuser_slot_unlocked(slot_id):
+			return
 		if _active_editing_slot_id != slot_id:
 			weight_edit.add_theme_stylebox_override("normal", hover_sb)
+			weight_edit.add_theme_stylebox_override("read_only", hover_sb)
 	)
 	weight_edit.mouse_exited.connect(func():
 		if _active_editing_slot_id != slot_id:
 			weight_edit.add_theme_stylebox_override("normal", empty_sb)
+			weight_edit.add_theme_stylebox_override("read_only", empty_sb)
+	)
+
+	weight_edit.gui_input.connect(func(event: InputEvent):
+		if not GameData.is_infuser_slot_unlocked(slot_id):
+			return
+		if not GameData.is_infuser_split_precisely_unlocked():
+			if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				weight_edit.accept_event()
+				var cur_w := GameData.get_infuser_slot_weight(slot_id)
+				var new_w := 0 if cur_w > 0 else 1
+				GameData.set_infuser_slot_weight(slot_id, new_w)
 	)
 
 	weight_edit.focus_entered.connect(func():
+		if not GameData.is_infuser_slot_unlocked(slot_id) or not GameData.is_infuser_split_precisely_unlocked():
+			weight_edit.call_deferred("release_focus")
+			return
 		if not _active_editing_slot_id.is_empty() and _active_editing_slot_id != slot_id:
 			_commit_weight_edit(_active_editing_slot_id)
 		_active_editing_slot_id = slot_id
@@ -418,76 +467,129 @@ func _update_slot_card(slot_id: String) -> void:
 	if not _slot_cards.has(slot_id):
 		return
 	var nodes: Dictionary = _slot_cards[slot_id]
+	var is_slot_unlocked := GameData.is_infuser_slot_unlocked(slot_id)
+	var is_precise := GameData.is_infuser_split_precisely_unlocked()
 	var lvl: int = GameData.get_infuser_level(slot_id)
 	var prog: float = GameData.get_infuser_progress(slot_id)
 	var cost: float = GameData.get_infuser_slot_cost(slot_id, lvl)
 	var w: int = GameData.get_infuser_slot_weight(slot_id)
-	var is_active: bool = (w > 0)
+	var is_active: bool = (w > 0) and is_slot_unlocked
 
-	# 重み表示の同期（入力中以外の場合に値を反映し、アクティブ状態のフォント色を適用）
+	# 重み / トグル表示の同期
 	var weight_edit: LineEdit = nodes.get("weight_edit")
 	if weight_edit:
-		if not weight_edit.has_focus() and int(weight_edit.text) != w:
-			weight_edit.text = str(w)
-		if _active_editing_slot_id != slot_id:
-			weight_edit.add_theme_color_override("font_color", Color(0.28, 0.94, 0.80, 1.0) if is_active else Color(0.55, 0.70, 0.65, 0.7))
+		if not is_slot_unlocked:
+			weight_edit.editable = false
+			weight_edit.focus_mode = Control.FOCUS_NONE
+			weight_edit.text = "---"
+			weight_edit.mouse_default_cursor_shape = Control.CURSOR_ARROW
+			var c_dis := Color(0.40, 0.45, 0.45, 0.50)
+			weight_edit.add_theme_color_override("font_color", c_dis)
+			weight_edit.add_theme_color_override("font_uneditable_color", c_dis)
+		elif not is_precise:
+			weight_edit.editable = false
+			weight_edit.focus_mode = Control.FOCUS_NONE
+			weight_edit.text = "ON" if is_active else "OFF"
+			weight_edit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var c := Color(0.22, 1.0, 0.84, 1.0) if is_active else Color(0.50, 0.58, 0.56, 0.55)
+			weight_edit.add_theme_color_override("font_color", c)
+			weight_edit.add_theme_color_override("font_uneditable_color", c)
 		else:
-			weight_edit.add_theme_color_override("font_color", Color(0.28, 0.94, 0.80, 1.0))
+			weight_edit.editable = true
+			weight_edit.focus_mode = Control.FOCUS_ALL
+			if not weight_edit.has_focus() and int(weight_edit.text) != w:
+				weight_edit.text = str(w)
+			weight_edit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var c := Color(0.22, 1.0, 0.84, 1.0) if is_active else Color(0.50, 0.58, 0.56, 0.55)
+			if _active_editing_slot_id == slot_id:
+				c = Color(0.22, 1.0, 0.84, 1.0)
+			weight_edit.add_theme_color_override("font_color", c)
+			weight_edit.add_theme_color_override("font_uneditable_color", c)
 
-	# 現在効果テキスト（末尾にレベルを統合）
 	var cur_val_lbl: Label = nodes["cur_val_lbl"]
-	cur_val_lbl.text = "%s (Lv. %s)" % [_format_current_effect(slot_id, lvl), GameData.format_num(float(lvl))]
-
-	# プログレスバー
+	var desc_lbl: Label = nodes.get("desc_lbl")
+	if desc_lbl:
+		desc_lbl.text = _format_slot_per_level_desc(slot_id)
 	var bar: ProgressBar = nodes["bar"]
-	bar.max_value = cost
-	bar.value = clampf(prog, 0.0, cost)
-
-	# 停止中のカードは少し半透明にし、発光枠を減光して休止状態を明示
 	var panel: PanelContainer = nodes["panel"]
-	panel.modulate.a = 1.0 if is_active else 0.65
 	var panel_style: StyleBoxFlat = nodes.get("panel_style")
 	var header_style: StyleBoxFlat = nodes.get("header_style")
 	var h_sep: ColorRect = nodes.get("h_sep")
 	var v_sep: ColorRect = nodes.get("v_sep")
-	if panel_style and header_style:
-		if is_active:
-			panel_style.border_color = Color(0.25, 0.92, 0.78, 0.95)
-			panel_style.shadow_color = Color(0.12, 0.80, 0.66, 0.35)
-			panel_style.shadow_size = 8
-			header_style.border_color = Color(0.25, 0.92, 0.78, 0.95)
-			if h_sep:
-				h_sep.color = Color(0.20, 0.85, 0.72, 0.75)
-			if v_sep:
-				v_sep.color = Color(0.20, 0.85, 0.72, 0.75)
-		else:
-			panel_style.border_color = Color(0.10, 0.28, 0.25, 0.6)
-			panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.0)
+
+	if not is_slot_unlocked:
+		cur_val_lbl.text = "未解放 (スロット解放スキルで解放)"
+		cur_val_lbl.add_theme_color_override("font_color", Color(0.45, 0.55, 0.52, 0.70))
+		bar.max_value = 1.0
+		bar.value = 0.0
+		panel.modulate.a = 0.38
+		if panel_style and header_style:
+			panel_style.border_color = Color(0.12, 0.22, 0.20, 0.45)
 			panel_style.shadow_size = 0
-			header_style.border_color = Color(0.10, 0.28, 0.25, 0.6)
+			header_style.border_color = Color(0.12, 0.22, 0.20, 0.45)
 			if h_sep:
-				h_sep.color = Color(0.10, 0.28, 0.25, 0.5)
+				h_sep.color = Color(0.12, 0.22, 0.20, 0.35)
 			if v_sep:
-				v_sep.color = Color(0.10, 0.28, 0.25, 0.5)
+				v_sep.color = Color(0.12, 0.22, 0.20, 0.35)
+	else:
+		cur_val_lbl.text = "%s (Lv. %s)" % [_format_current_effect(slot_id, lvl), GameData.format_num(float(lvl))]
+		cur_val_lbl.add_theme_color_override("font_color", Color(0.28, 1.0, 0.80, 1.0))
+		bar.max_value = cost
+		bar.value = clampf(prog, 0.0, cost)
+		panel.modulate.a = 1.0 if is_active else 0.65
+		if panel_style and header_style:
+			if is_active:
+				panel_style.border_color = Color(0.22, 0.98, 0.84, 0.98)
+				panel_style.shadow_color = Color(0.12, 0.92, 0.76, 0.40)
+				panel_style.shadow_size = 8
+				header_style.border_color = Color(0.22, 0.98, 0.84, 0.98)
+				if h_sep:
+					h_sep.color = Color(0.20, 0.95, 0.80, 0.80)
+				if v_sep:
+					v_sep.color = Color(0.20, 0.95, 0.80, 0.80)
+			else:
+				panel_style.border_color = Color(0.12, 0.35, 0.30, 0.65)
+				panel_style.shadow_color = Color(0.0, 0.0, 0.0, 0.0)
+				panel_style.shadow_size = 0
+				header_style.border_color = Color(0.12, 0.35, 0.30, 0.65)
+				if h_sep:
+					h_sep.color = Color(0.12, 0.35, 0.30, 0.55)
+				if v_sep:
+					v_sep.color = Color(0.12, 0.35, 0.30, 0.55)
 
 	# 流量と進捗の更新
 	_update_slot_runtime_text(slot_id, nodes, lvl, prog, cost, w, is_active)
 
 
 func _update_slot_runtime_text(slot_id: String, nodes: Dictionary, _lvl: int, prog: float, cost: float, w: int, is_active: bool) -> void:
+	var is_slot_unlocked := GameData.is_infuser_slot_unlocked(slot_id)
+	var rate_lbl: Label = nodes["rate_lbl"]
+	var prog_lbl: Label = nodes["prog_lbl"]
+
+	if not is_slot_unlocked:
+		rate_lbl.text = "流量: ---"
+		rate_lbl.add_theme_color_override("font_color", Color(0.40, 0.50, 0.48, 0.60))
+		prog_lbl.text = "--- / --- CP"
+		prog_lbl.add_theme_color_override("font_color", Color(0.40, 0.50, 0.48, 0.60))
+		return
+
 	var total_cps: float = GameData.get_infuser_cps()
 	var total_weight: int = GameData.get_infuser_total_weight()
 
 	var slot_cps := 0.0
 	var pct := 0.0
-	if is_active and total_weight > 0:
-		pct = (float(w) / float(total_weight)) * 100.0
-		slot_cps = total_cps * (float(w) / float(total_weight))
+	if is_active:
+		if GameData.is_infuser_perfect_parallelization_unlocked():
+			slot_cps = total_cps
+			pct = 100.0
+		elif total_weight > 0:
+			pct = (float(w) / float(total_weight)) * 100.0
+			slot_cps = total_cps * (float(w) / float(total_weight))
 
-	var rate_lbl: Label = nodes["rate_lbl"]
 	rate_lbl.text = "流量: %s CP/s (%.0f%%)" % [GameData.format_num(slot_cps), pct]
+	if not GameData.is_infuser_perfect_parallelization_unlocked():
+		rate_lbl.add_theme_color_override("font_color", Color(0.42, 0.96, 0.84, 1.0))
 
-	var prog_lbl: Label = nodes["prog_lbl"]
 	var remain_cp := maxf(0.0, cost - prog)
 	var eta_str := "--"
 	if slot_cps > 0.0:
@@ -504,6 +606,7 @@ func _update_slot_runtime_text(slot_id: String, nodes: Dictionary, _lvl: int, pr
 		GameData.format_num(cost),
 		eta_str
 	]
+	prog_lbl.add_theme_color_override("font_color", Color(0.70, 0.92, 0.88, 1.0))
 
 
 func _format_current_effect(slot_id: String, lvl: int) -> String:
@@ -516,25 +619,69 @@ func _format_current_effect(slot_id: String, lvl: int) -> String:
 			var eq_lvl := GameData.get_infuser_equip_level_bonus() * 10
 			return "装備ドロップ率 +%s%% / 装備Lv +%d" % [GameData.format_num(prob), eq_lvl]
 		"crit_infusion":
-			var rate := GameData.get_infuser_crit_rate_bonus()
 			var dmg := GameData.get_infuser_crit_damage_bonus()
-			return "クリティカル率 +%s%% / 倍率 +%s%%" % [GameData.format_num(rate), GameData.format_num(dmg)]
+			return "クリティカル/ダイレクト倍率 +%s%%" % GameData.format_num(dmg)
 		"corner_infusion":
 			var mult := (GameData.get_infuser_corner_gold_mult() - 1.0) * 100.0
 			return "角衝突報酬 +%s%%" % GameData.format_num(mult)
 		"harvest_infusion":
-			var gold_mult := (GameData.get_infuser_gold_multiplier() - 1.0) * 100.0
-			return "衝突ゴールド・トークン +%s%%" % GameData.format_num(gold_mult)
+			var gold_mult := GameData.get_infuser_gold_multiplier()
+			return "衝突ゴールド・トークン x%s" % GameData.format_mult(gold_mult)
 		"efficiency_infusion":
-			var eff := float(lvl) * 5.0
-			return "1衝突あたりのCP獲得量 +%s%%" % GameData.format_num(eff)
+			var eff_mult := GameData.get_infuser_efficiency_multiplier()
+			return "1衝突あたりのCP獲得量 x%s" % GameData.format_mult(eff_mult)
 	return ""
+
+
+func _format_slot_per_level_desc(slot_id: String) -> String:
+	var mult := GameData.get_infuser_effect_bonus_multiplier()
+	match slot_id:
+		"harvest_infusion":
+			var harvest_rate := GameData.get_infuser_harvest_per_level()
+			return "衝突ゴールド・トークン x%s / Lv" % GameData.format_mult(harvest_rate)
+		"efficiency_infusion":
+			var eff_rate := GameData.get_infuser_efficiency_per_level()
+			return "衝突ごとのCP獲得量 x%s / Lv" % GameData.format_mult(eff_rate)
+		"speed_infusion":
+			return "ロゴの移動速度 +%s%% / Lv" % GameData.format_num(1.0 * mult)
+		"treasure_infusion":
+			return "ドロップ率 +%s%% / Lv、基準装備Lv +1 / 10Lv" % GameData.format_num(0.5 * mult)
+		"crit_infusion":
+			return "クリティカル/ダイレクト倍率 +%s%% / Lv" % GameData.format_num(2.0 * mult)
+		"corner_infusion":
+			return "角ヒット報酬 +%s%% / Lv" % GameData.format_num(3.0 * mult)
+	return ""
+
+
+func _to_subscript(num: int) -> String:
+	const SUB_MAP := {
+		"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+		"5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉"
+	}
+	var s := str(num)
+	var res := ""
+	for i in range(s.length()):
+		var ch := s[i]
+		res += SUB_MAP.get(ch, ch)
+	return res
 
 
 func _refresh_runtime_values() -> void:
 	if cps_label:
 		var cps := GameData.get_infuser_cps()
-		cps_label.text = "総出力: %s CP/s" % GameData.format_num(cps)
+		if GameData.is_infuser_booster_unlocked():
+			var booster_mult := GameData.get_infuser_booster_multiplier()
+			var base_cps := cps / maxf(1.0, booster_mult)
+			cps_label.text = "%s CP/s*ブースター:%.2f\n＝総出力：%s CP/s" % [GameData.format_num(base_cps), booster_mult, GameData.format_num(cps)]
+			cps_label.add_theme_font_size_override("font_size", 28)
+		else:
+			cps_label.text = "総出力: %s CP/s" % GameData.format_num(cps)
+			cps_label.add_theme_font_size_override("font_size", 38)
+		cps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	if booster_formula_label and GameData.is_infuser_booster_unlocked():
+		var n := int(round(GameData.get_infuser_booster_base()))
+		booster_formula_label.text = "ブースター倍率＝log%s(総衝突数)" % _to_subscript(n)
 
 	for slot_id in _slot_cards:
 		var nodes: Dictionary = _slot_cards[slot_id]
@@ -542,16 +689,29 @@ func _refresh_runtime_values() -> void:
 		var prog: float = GameData.get_infuser_progress(slot_id)
 		var cost: float = GameData.get_infuser_slot_cost(slot_id, lvl)
 		var w: int = GameData.get_infuser_slot_weight(slot_id)
-		var is_active: bool = (w > 0)
+		var is_active: bool = (w > 0) and GameData.is_infuser_slot_unlocked(slot_id)
 		_update_slot_runtime_text(slot_id, nodes, lvl, prog, cost, w, is_active)
 
 
 func _update_hub_info() -> void:
 	if cps_label:
 		var cps := GameData.get_infuser_cps()
-		cps_label.text = "総出力: %s CP/s" % GameData.format_num(cps)
-	if total_cp_label:
-		total_cp_label.text = "累計注入CP: %s" % GameData.format_num(GameData.infuser_total_cp)
+		if GameData.is_infuser_booster_unlocked():
+			var booster_mult := GameData.get_infuser_booster_multiplier()
+			var base_cps := cps / maxf(1.0, booster_mult)
+			cps_label.text = "%s CP/s*ブースター:%.2f\n＝総出力：%s CP/s" % [GameData.format_num(base_cps), booster_mult, GameData.format_num(cps)]
+			cps_label.add_theme_font_size_override("font_size", 28)
+		else:
+			cps_label.text = "総出力: %s CP/s" % GameData.format_num(cps)
+			cps_label.add_theme_font_size_override("font_size", 38)
+		cps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if booster_formula_label:
+		if GameData.is_infuser_booster_unlocked():
+			booster_formula_label.visible = true
+			var n := int(round(GameData.get_infuser_booster_base()))
+			booster_formula_label.text = "ブースター倍率＝log%s(総衝突数)" % _to_subscript(n)
+		else:
+			booster_formula_label.visible = false
 	if total_bounces_label:
 		total_bounces_label.text = "総衝突数: %s" % GameData.format_num(float(GameData.total_bounces))
 
@@ -571,10 +731,11 @@ func _on_cp_gained(amount: float, is_corner: bool) -> void:
 
 	# 即時進行バー反映
 	for slot_id in _slot_cards:
-		var nodes: Dictionary = _slot_cards[slot_id]
-		var prog: float = GameData.get_infuser_progress(slot_id)
-		var bar: ProgressBar = nodes["bar"]
-		bar.value = prog
+		if GameData.is_infuser_slot_unlocked(slot_id):
+			var nodes: Dictionary = _slot_cards[slot_id]
+			var prog: float = GameData.get_infuser_progress(slot_id)
+			var bar: ProgressBar = nodes["bar"]
+			bar.value = prog
 
 	# 出現に波が出来ないようにバッファリング＆レートリミット管理
 	_pending_cp_amount += amount
@@ -605,7 +766,7 @@ func _spawn_cp_popup(amount: float, is_corner: bool) -> void:
 		lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.35, 1.0)) # 金色
 	else:
 		lbl.add_theme_font_size_override("font_size", 13)
-		lbl.add_theme_color_override("font_color", Color(0.35, 0.96, 0.78, 1.0)) # ティールグリーン
+		lbl.add_theme_color_override("font_color", Color(0.28, 1.0, 0.82, 1.0)) # 鮮やかなティールグリーン
 
 	lbl.text = text_str
 	pop_container.add_child(lbl)
@@ -646,6 +807,11 @@ func _on_stats_changed() -> void:
 	if is_visible_in_tree():
 		if total_bounces_label:
 			total_bounces_label.text = "総衝突数: %s" % GameData.format_num(float(GameData.total_bounces))
+
+
+func _on_skill_upgraded(_skill_id: String, _new_level: int) -> void:
+	if is_visible_in_tree():
+		_update_all_ui()
 
 
 func update_ui() -> void:
@@ -725,22 +891,26 @@ func _draw_side_pipes(
 		if path_points.size() < 2:
 			continue
 
-		var is_active: bool = GameData.is_infuser_slot_active(slot_id)
+		var is_unlocked: bool = GameData.is_infuser_slot_unlocked(slot_id)
+		var is_active: bool = is_unlocked and GameData.is_infuser_slot_active(slot_id)
 
-		if is_active:
+		if not is_unlocked:
+			# 未解放スロットの管（非常に淡い暗色、ノズル・パルスなし）
+			pipe_canvas.draw_polyline(path_points, Color(0.02, 0.10, 0.08, 0.25), 3.0, true)
+		elif is_active:
 			# 外枠ベース管
-			pipe_canvas.draw_polyline(path_points, Color(0.03, 0.22, 0.18, 0.85), 7.0, true)
+			pipe_canvas.draw_polyline(path_points, Color(0.03, 0.26, 0.22, 0.90), 7.0, true)
 			# グロー（発光管）
-			pipe_canvas.draw_polyline(path_points, Color(0.10, 0.70, 0.56, 0.75), 3.5, true)
+			pipe_canvas.draw_polyline(path_points, Color(0.10, 0.84, 0.68, 0.82), 3.5, true)
 			# エナジーコア（明るいティール）
-			pipe_canvas.draw_polyline(path_points, Color(0.45, 0.98, 0.82, 1.0), 1.6, true)
+			pipe_canvas.draw_polyline(path_points, Color(0.42, 1.0, 0.86, 1.0), 1.6, true)
 
 			# ハブ側ノズル
-			pipe_canvas.draw_circle(p_start, 3.5, Color(0.12, 0.80, 0.66, 1.0))
+			pipe_canvas.draw_circle(p_start, 3.5, Color(0.12, 0.92, 0.76, 1.0))
 			pipe_canvas.draw_circle(p_start, 1.5, Color.WHITE)
 
 			# スロット側ノズル
-			pipe_canvas.draw_circle(p_end, 3.5, Color(0.12, 0.80, 0.66, 1.0))
+			pipe_canvas.draw_circle(p_end, 3.5, Color(0.12, 0.92, 0.76, 1.0))
 			pipe_canvas.draw_circle(p_end, 1.5, Color.WHITE)
 
 			# パルス/エナジーフロー粒子
@@ -749,10 +919,10 @@ func _draw_side_pipes(
 			_draw_flow_pulses(path_points, flow_time + float(i) * 0.25, pulse_speed)
 		else:
 			# 停止時（休止管）
-			pipe_canvas.draw_polyline(path_points, Color(0.03, 0.12, 0.11, 0.6), 5.0, true)
-			pipe_canvas.draw_polyline(path_points, Color(0.08, 0.28, 0.26, 0.45), 2.0, true)
-			pipe_canvas.draw_circle(p_start, 2.5, Color(0.08, 0.26, 0.24, 0.5))
-			pipe_canvas.draw_circle(p_end, 2.5, Color(0.08, 0.26, 0.24, 0.5))
+			pipe_canvas.draw_polyline(path_points, Color(0.04, 0.16, 0.14, 0.65), 5.0, true)
+			pipe_canvas.draw_polyline(path_points, Color(0.10, 0.36, 0.32, 0.50), 2.0, true)
+			pipe_canvas.draw_circle(p_start, 2.5, Color(0.10, 0.34, 0.30, 0.55))
+			pipe_canvas.draw_circle(p_end, 2.5, Color(0.10, 0.34, 0.30, 0.55))
 
 
 func _build_rounded_l_path(start: Vector2, corner: Vector2, end: Vector2, radius: float, is_left: bool) -> PackedVector2Array:
@@ -812,8 +982,8 @@ func _draw_flow_pulses(points: PackedVector2Array, time_offset: float, speed: fl
 				break
 			cur_d += d_seg
 
-		pipe_canvas.draw_circle(pulse_pos, 4.0, Color(0.20, 0.90, 0.75, 0.35))
-		pipe_canvas.draw_circle(pulse_pos, 2.4, Color(0.50, 0.98, 0.85, 0.95))
+		pipe_canvas.draw_circle(pulse_pos, 4.0, Color(0.20, 0.98, 0.82, 0.40))
+		pipe_canvas.draw_circle(pulse_pos, 2.4, Color(0.48, 1.0, 0.88, 0.98))
 		pipe_canvas.draw_circle(pulse_pos, 1.2, Color.WHITE)
 
 
@@ -863,7 +1033,7 @@ func _on_hub_water_draw() -> void:
 	poly_back.append(Vector2(x_left + 2.0, y_bottom - 2.0))
 	poly_back.append(Vector2(x_left, y_bottom - 6.0))
 	hub_water_canvas.draw_colored_polygon(poly_back, Color(0.04, 0.20, 0.17, 0.04))
-	hub_water_canvas.draw_polyline(pts_back, Color(0.12, 0.55, 0.45, 0.07), 1.2, true)
+	hub_water_canvas.draw_polyline(pts_back, Color(0.14, 0.68, 0.55, 0.08), 1.2, true)
 
 	# --- 第2層: 手前の大きな主水面（極薄で文字可読性を優先） ---
 	var pts_front := PackedVector2Array()
@@ -883,5 +1053,5 @@ func _on_hub_water_draw() -> void:
 	hub_water_canvas.draw_colored_polygon(poly_front, Color(0.06, 0.30, 0.25, 0.06))
 
 	# 水面ライン（文字の邪魔にならない淡い光筋）
-	hub_water_canvas.draw_polyline(pts_front, Color(0.22, 0.85, 0.72, 0.15), 1.8, true)
-	hub_water_canvas.draw_polyline(pts_front, Color(0.55, 0.95, 0.85, 0.22), 1.0, true)
+	hub_water_canvas.draw_polyline(pts_front, Color(0.22, 0.95, 0.80, 0.18), 1.8, true)
+	hub_water_canvas.draw_polyline(pts_front, Color(0.55, 1.0, 0.88, 0.26), 1.0, true)

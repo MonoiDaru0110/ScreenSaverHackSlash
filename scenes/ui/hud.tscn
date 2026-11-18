@@ -762,7 +762,6 @@ columns = 5
 unique_name_in_owner = true
 visible = false
 z_index = 10
-separator_color = Color(0, 0, 0, 1)
 
 [node name="InfuserWindow" parent="." instance=ExtResource("9_infuser_scene")]
 unique_name_in_owner = true

@@ -85,6 +85,34 @@ func format_num(val: float) -> String:
 		return "%s%se%d" % [sign_str, m_str, exp_val]
 
 
+func format_mult(val: float) -> String:
+	if is_nan(val):
+		return "0"
+	if is_inf(val):
+		return "-INF" if val < 0.0 else "INF"
+	var abs_v := absf(val)
+	if abs_v >= 1e10:
+		return format_num(val)
+
+	var sign_str := "-" if val < 0.0 else ""
+	if abs_v >= 1000.0:
+		var rounded := roundf(abs_v)
+		if absf(abs_v - rounded) < 0.005:
+			return "%s%s" % [sign_str, add_commas("%d" % int(rounded))]
+		var int_part := int(abs_v)
+		var dec_part := abs_v - float(int_part)
+		var dec_str := ("%.2f" % dec_part).substr(1).rstrip("0")
+		if dec_str == ".":
+			dec_str = ""
+		return "%s%s%s" % [sign_str, add_commas("%d" % int_part), dec_str]
+
+	var rounded := roundf(abs_v)
+	if absf(abs_v - rounded) < 0.005:
+		return "%s%d" % [sign_str, int(rounded)]
+	var s := ("%.2f" % abs_v).rstrip("0").rstrip(".")
+	return "%s%s" % [sign_str, s]
+
+
 func format_crit_marks(weight: int) -> String:
 	if weight <= 0:
 		return ""
@@ -822,11 +850,12 @@ func is_window_unlocked(window_id: String) -> bool:
 			return get_skill_level("equip_drop_unlock") > 0
 		"challenge":
 			return is_challenge_unlocked()
-		"reactor", "blacksmith", "infuser":
-			return true
+		"infuser", "reactor", "blacksmith":
+			return get_skill_level("infuser_unlock") > 0
 		"amplifier":
+			return amp_gold_base_unlocked or amp_token_base_unlocked or get_skill_level("amplifier_unlock") > 0
+		_:
 			return true
-	return false
 
 # --- Signals ---
 signal gold_changed(new_amount: float)
@@ -1098,6 +1127,8 @@ func use_gold(amount: float) -> bool:
 
 func record_bounce(is_corner: bool) -> void:
 	total_bounces += 1
+	if is_infuser_booster_unlocked():
+		infuser_booster_bounces += 1
 	var cp_amount := get_corner_cp_gain() if is_corner else get_bounce_cp_gain()
 	if is_corner and not is_corner_hit_disabled_challenge_active():
 		corner_hits += 1
@@ -1113,14 +1144,40 @@ func record_bounce(is_corner: bool) -> void:
 var infuser_slots: Dictionary = {} # { "slot_id": { "level": int, "progress": float, "active": bool } }
 var infuser_total_cp: float = 0.0
 var _infuser_cps_history: Array = [] # [ {"time": float, "amount": float} ]
+var infuser_booster_bounces: int = 0
+
+const ORDERED_INFUSER_SLOTS: Array[String] = [
+	"harvest_infusion",
+	"crit_infusion",
+	"efficiency_infusion",
+	"speed_infusion",
+	"treasure_infusion",
+	"corner_infusion"
+]
 
 const INFUSER_SLOTS: Dictionary = {
+	"harvest_infusion": {
+		"id": "harvest_infusion",
+		"name": "ゴールド/トークン強化",
+		"desc": "衝突ゴールド・トークン x1.1 / Lv",
+		"base_cost": 25.0,
+		"cost_mult": 1.3,
+		"unit_value": 1.10
+	},
+	"efficiency_infusion": {
+		"id": "efficiency_infusion",
+		"name": "CP効率強化",
+		"desc": "衝突ごとのCP獲得量 x1.05 / Lv",
+		"base_cost": 35.0,
+		"cost_mult": 1.3,
+		"unit_value": 1.05
+	},
 	"speed_infusion": {
 		"id": "speed_infusion",
 		"name": "速度強化",
 		"desc": "ロゴの移動速度 +1% / Lv",
 		"base_cost": 20.0,
-		"cost_mult": 1.15,
+		"cost_mult": 1.3,
 		"unit_value": 0.01
 	},
 	"treasure_infusion": {
@@ -1128,45 +1185,125 @@ const INFUSER_SLOTS: Dictionary = {
 		"name": "装備強化",
 		"desc": "ドロップ率 +0.5% / Lv、基準装備Lv +1 / 10Lv",
 		"base_cost": 30.0,
-		"cost_mult": 1.16,
+		"cost_mult": 1.3,
 		"unit_value": 0.005
 	},
 	"crit_infusion": {
 		"id": "crit_infusion",
-		"name": "会心強化",
-		"desc": "クリティカル率 +0.5% / Lv、倍率 +2% / Lv",
+		"name": "会心ダイレクト強化",
+		"desc": "クリティカル/ダイレクト倍率 +2% / Lv",
 		"base_cost": 40.0,
-		"cost_mult": 1.16,
-		"unit_value": 0.005
+		"cost_mult": 1.3,
+		"unit_value": 0.02
 	},
 	"corner_infusion": {
 		"id": "corner_infusion",
 		"name": "角ヒット強化",
 		"desc": "角ヒット報酬 +3% / Lv",
 		"base_cost": 50.0,
-		"cost_mult": 1.18,
+		"cost_mult": 1.3,
 		"unit_value": 0.03
-	},
-	"harvest_infusion": {
-		"id": "harvest_infusion",
-		"name": "ゴールド/トークン強化",
-		"desc": "衝突ゴールド・トークン +2% / Lv",
-		"base_cost": 25.0,
-		"cost_mult": 1.15,
-		"unit_value": 0.02
-	},
-	"efficiency_infusion": {
-		"id": "efficiency_infusion",
-		"name": "CP効率強化",
-		"desc": "衝突ごとのCP獲得量 +5% / Lv",
-		"base_cost": 35.0,
-		"cost_mult": 1.17,
-		"unit_value": 0.05
 	}
 }
 
 # 後方互換用定義
 const REACTOR_UPGRADES: Dictionary = INFUSER_SLOTS
+
+
+func get_unlocked_infuser_slot_count() -> int:
+	var count := 2
+	for i in range(1, 5):
+		if get_skill_level("infuser_slot_unlock_%d" % i) > 0:
+			count += 1
+	return mini(6, count)
+
+
+func is_infuser_slot_unlocked(slot_id: String) -> bool:
+	var idx := ORDERED_INFUSER_SLOTS.find(slot_id)
+	if idx < 0:
+		return false
+	return idx < get_unlocked_infuser_slot_count()
+
+
+func is_infuser_split_precisely_unlocked() -> bool:
+	return get_skill_level("infuser_split_precisely") > 0
+
+
+func get_infuser_cost_onus_count() -> int:
+	var count := 0
+	for i in range(1, 6):
+		if get_skill_level("infuser_cost_onus_%d" % i) > 0:
+			count += 1
+	return count
+
+
+func get_infuser_effect_bonus_multiplier() -> float:
+	var count := 0
+	for i in range(1, 6):
+		if get_skill_level("infuser_effect_bonus_%d" % i) > 0:
+			count += 1
+	return 1.0 + 0.20 * float(count)
+
+
+func get_infuser_cp_boost_multiplier() -> float:
+	var count := 0
+	for i in range(1, 6):
+		if get_skill_level("infuser_cp_boost_%d" % i) > 0:
+			count += 1
+	var mult := pow(2.0, float(count))
+	if is_infuser_split_precisely_unlocked():
+		mult *= 10.0
+	return mult
+
+
+func is_infuser_booster_unlocked() -> bool:
+	return get_skill_level("infuser_booster_unlock") > 0
+
+
+func get_infuser_booster_base() -> float:
+	var boost_count := 0
+	for i in range(1, 5):
+		if get_skill_level("infuser_booster_boost_%d" % i) > 0:
+			boost_count += 1
+	return maxf(2.0, 10.0 - 2.0 * float(boost_count))
+
+
+func get_infuser_booster_multiplier() -> float:
+	if not is_infuser_booster_unlocked():
+		return 1.0
+	if infuser_booster_bounces <= 1:
+		return 1.0
+	var base := get_infuser_booster_base()
+	var mult := log(float(infuser_booster_bounces)) / log(base)
+	return maxf(1.0, mult)
+
+
+func is_infuser_perfect_parallelization_unlocked() -> bool:
+	return get_skill_level("infuser_perfect_parallelization") > 0
+
+
+func check_and_trigger_infuser_level_ups() -> void:
+	_init_infuser_slots()
+	var any_leveled_up := false
+	for slot_id in ORDERED_INFUSER_SLOTS:
+		if not is_infuser_slot_unlocked(slot_id):
+			continue
+		var slot_data: Dictionary = infuser_slots[slot_id]
+		var cur_lvl: int = int(slot_data.get("level", 0))
+		var cur_prog: float = float(slot_data.get("progress", 0.0))
+		var req_cost := get_infuser_slot_cost(slot_id, cur_lvl)
+		while cur_prog >= req_cost and not is_inf(req_cost) and req_cost > 0.0:
+			cur_prog -= req_cost
+			cur_lvl += 1
+			any_leveled_up = true
+			req_cost = get_infuser_slot_cost(slot_id, cur_lvl)
+			infuser_leveled_up.emit(slot_id, cur_lvl)
+		slot_data["level"] = cur_lvl
+		slot_data["progress"] = cur_prog
+	if any_leveled_up:
+		_recalculate_cached_multipliers()
+		upgrades_changed.emit()
+		infuser_updated.emit()
 
 
 func _init_infuser_slots() -> void:
@@ -1212,12 +1349,15 @@ func set_infuser_slot_weight(slot_id: String, weight: int) -> void:
 func get_infuser_total_weight() -> int:
 	_init_infuser_slots()
 	var total := 0
-	for s_id in INFUSER_SLOTS:
-		total += get_infuser_slot_weight(s_id)
+	for s_id in ORDERED_INFUSER_SLOTS:
+		if is_infuser_slot_unlocked(s_id):
+			total += get_infuser_slot_weight(s_id)
 	return total
 
 
 func is_infuser_slot_active(slot_id: String) -> bool:
+	if not is_infuser_slot_unlocked(slot_id):
+		return false
 	return get_infuser_slot_weight(slot_id) > 0
 
 
@@ -1227,14 +1367,25 @@ func get_infuser_slot_cost(slot_id: String, level: int = -1) -> float:
 	var def: Dictionary = INFUSER_SLOTS[slot_id]
 	var cur_lvl := get_infuser_level(slot_id) if level < 0 else level
 	var base_cost: float = float(def.get("base_cost", 20.0))
-	var cost_mult: float = float(def.get("cost_mult", 1.15))
-	return base_cost * pow(cost_mult, float(cur_lvl))
+	var cost_mult: float = float(def.get("cost_mult", 1.3))
+	var cost_onus := pow(0.8, float(get_infuser_cost_onus_count()))
+	return base_cost * pow(cost_mult, float(cur_lvl)) * cost_onus
+
+
+func get_infuser_efficiency_per_level() -> float:
+	return snappedf(1.0 + 0.05 * get_infuser_effect_bonus_multiplier(), 0.0001)
+
+
+func get_infuser_efficiency_multiplier() -> float:
+	var lvl := get_infuser_level("efficiency_infusion")
+	return pow(get_infuser_efficiency_per_level(), float(lvl))
 
 
 func get_bounce_cp_gain() -> float:
 	var base := 1.0
-	var eff_lvl := get_infuser_level("efficiency_infusion")
-	return base * (1.0 + float(eff_lvl) * 0.05)
+	var eff_mult := get_infuser_efficiency_multiplier()
+	var booster_mult := get_infuser_booster_multiplier()
+	return base * eff_mult * get_infuser_cp_boost_multiplier() * booster_mult
 
 
 func get_corner_cp_gain() -> float:
@@ -1252,18 +1403,20 @@ func inject_infuser_cp(amount: float, is_corner: bool) -> void:
 	_infuser_cps_history.append({"time": now, "amount": amount})
 	_clean_infuser_cps_history(now)
 
+	var is_parallel := is_infuser_perfect_parallelization_unlocked()
 	var total_weight := get_infuser_total_weight()
-	if total_weight <= 0:
+	if not is_parallel and total_weight <= 0:
 		infuser_cp_gained.emit(amount, is_corner)
-		infuser_updated.emit()
 		return
 
 	var any_leveled_up := false
-	for slot_id in INFUSER_SLOTS:
+	for slot_id in ORDERED_INFUSER_SLOTS:
+		if not is_infuser_slot_unlocked(slot_id):
+			continue
 		var w := get_infuser_slot_weight(slot_id)
 		if w <= 0:
 			continue
-		var split_amount := amount * (float(w) / float(total_weight))
+		var split_amount := amount if is_parallel else amount * (float(w) / float(total_weight))
 		var slot_data: Dictionary = infuser_slots[slot_id]
 		var cur_lvl: int = int(slot_data.get("level", 0))
 		var cur_prog: float = float(slot_data.get("progress", 0.0)) + split_amount
@@ -1282,9 +1435,9 @@ func inject_infuser_cp(amount: float, is_corner: bool) -> void:
 	if any_leveled_up:
 		_recalculate_cached_multipliers()
 		upgrades_changed.emit()
+		infuser_updated.emit()
 
 	infuser_cp_gained.emit(amount, is_corner)
-	infuser_updated.emit()
 
 
 func _clean_infuser_cps_history(now: float) -> void:
@@ -1335,47 +1488,50 @@ func set_infuser_all_weights(weight: int) -> void:
 # --- 各種ステータス反映API ---
 func get_infuser_speed_multiplier() -> float:
 	var lvl := get_infuser_level("speed_infusion")
-	return 1.0 + float(lvl) * 0.01
+	return 1.0 + float(lvl) * 0.01 * get_infuser_effect_bonus_multiplier()
+
+
+func get_infuser_harvest_per_level() -> float:
+	return snappedf(1.0 + 0.10 * get_infuser_effect_bonus_multiplier(), 0.0001)
 
 
 func get_infuser_gold_multiplier() -> float:
 	var lvl := get_infuser_level("harvest_infusion")
-	return 1.0 + float(lvl) * 0.02
+	return pow(get_infuser_harvest_per_level(), float(lvl))
 
 
 func get_infuser_token_multiplier() -> float:
 	var lvl := get_infuser_level("harvest_infusion")
-	return 1.0 + float(lvl) * 0.02
+	return pow(get_infuser_harvest_per_level(), float(lvl))
 
 
 func get_infuser_corner_gold_mult() -> float:
 	var lvl := get_infuser_level("corner_infusion")
-	return 1.0 + float(lvl) * 0.03
+	return 1.0 + float(lvl) * 0.03 * get_infuser_effect_bonus_multiplier()
 
 
 func get_infuser_corner_token_mult() -> float:
 	var lvl := get_infuser_level("corner_infusion")
-	return 1.0 + float(lvl) * 0.03
+	return 1.0 + float(lvl) * 0.03 * get_infuser_effect_bonus_multiplier()
 
 
 func get_infuser_crit_rate_bonus() -> float:
-	var lvl := get_infuser_level("crit_infusion")
-	return float(lvl) * 0.5
+	return 0.0
 
 
 func get_infuser_crit_damage_bonus() -> float:
 	var lvl := get_infuser_level("crit_infusion")
-	return float(lvl) * 2.0
+	return float(lvl) * 2.0 * get_infuser_effect_bonus_multiplier()
 
 
 func get_infuser_equip_drop_prob_bonus() -> float:
 	var lvl := get_infuser_level("treasure_infusion")
-	return float(lvl) * 0.5
+	return float(lvl) * 0.5 * get_infuser_effect_bonus_multiplier()
 
 
 func get_infuser_equip_level_bonus() -> int:
 	var lvl := get_infuser_level("treasure_infusion")
-	return int(float(lvl) / 10.0)
+	return int(float(lvl) * get_infuser_effect_bonus_multiplier() / 10.0)
 
 
 # --- 後方互換ラッパー ---
@@ -1735,7 +1891,8 @@ func calculate_direct_result(direct_factor: float) -> Dictionary:
 	if not is_direct:
 		return {"multiplier": 1.0, "is_direct": false}
 		
-	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0) + equip_direct_yield * 0.01
+	var infuser_damage_bonus := get_infuser_crit_damage_bonus() * 0.01
+	var base_direct_bonus := 0.01 * pow(direct_factor, 2.0) + equip_direct_yield * 0.01 + infuser_damage_bonus
 	var mult := (1.0 + base_direct_bonus) * get_challenge_direct_multiplier()
 	return {"multiplier": mult, "is_direct": true}
 
@@ -2202,7 +2359,7 @@ func calculate_corner_hit_token() -> Dictionary:
 	var token_direct := roll_token_direct()
 	var token_mult: float = token_crit.multiplier * token_direct.multiplier
 	var token_amount := base_tokens * token_mult
-	token_amount *= get_c7_corner_multiplier()
+	token_amount *= get_c7_corner_multiplier() * get_infuser_corner_token_mult()
 
 	return {
 		"amount": token_amount,
@@ -2375,7 +2532,7 @@ func _recalculate_cached_multipliers() -> void:
 	if get_skill_level("challange_max_level_bonus") > 0 and not is_challenge_bonus_disabled_challenge_active():
 		var max_lvl_ch_count := get_max_level_challenge_count()
 		if max_lvl_ch_count > 0:
-			var max_lvl_mult := pow(2.0, float(max_lvl_ch_count))
+			var max_lvl_mult := pow(1.5, float(max_lvl_ch_count))
 			tree_gold_mult *= max_lvl_mult
 			tree_token_mult *= max_lvl_mult
 
@@ -2494,6 +2651,11 @@ func buy_skill_upgrade(skill_id: String, cost: float, is_unlimited: bool = false
 				_recalculate_cached_multipliers()
 				equipment_changed.emit()
 				challenge_state_changed.emit()
+			elif skill_id.begins_with("infuser_cost_onus_"):
+				check_and_trigger_infuser_level_ups()
+				infuser_updated.emit()
+			elif skill_id.begins_with("infuser_slot_unlock_") or skill_id == "infuser_split_precisely" or skill_id.begins_with("infuser_effect_bonus_") or skill_id == "infuser_booster_unlock" or skill_id.begins_with("infuser_booster_boost_") or skill_id == "infuser_perfect_parallelization" or skill_id == "infuser_unlock":
+				infuser_updated.emit()
 				
 			if not is_free:
 				tokens_changed.emit(tokens)
@@ -2789,23 +2951,17 @@ func generate_random_equipment(is_corner: bool = false) -> Dictionary:
 	var icon_num := (randi() % 2) + 1
 	var icon_path := "res://images/equip_icon/equip_%s_%d.png" % [type, icon_num]
 	
-	# Generate level: 10の倍数補正 (アセンション10刻み切り上げ*乱数0.9~1.1 + ツリー補正+10/lvl)
+	# Generate level: 10の倍数補正 (アセンション10刻み切り上げ + ツリー補正+10/lvl) ※乱数による上振れ・下振れは廃止
 	var base_asc := float(ceili(float(maxi(1, ascension_level)) / 10.0) * 10)
-	var rand_factor := randf_range(0.9, 1.1)
+	var rand_factor := 1.0
 	var tree_level_bonus := float(get_tree_equip_drop_level_bonus())
 	var reinc_level_bonus := float(get_base_equip_level_bonus())
 	var infuser_level_bonus := float(get_infuser_equip_level_bonus() * 10)
-	var raw_level := (base_asc * rand_factor) + tree_level_bonus + reinc_level_bonus + infuser_level_bonus
+	var raw_level := base_asc + tree_level_bonus + reinc_level_bonus + infuser_level_bonus
 	var level := maxi(10, int(round(raw_level / 10.0)) * 10)
 	
-	# 乱数幅 (0.9 ~ 1.1) の3分割判定 (Low: 0.90~0.9667, Medium: 0.9667~1.0333, High: 1.0333~1.10)
-	var tier := "low"
-	if rand_factor >= 0.9 + (0.2 * 2.0 / 3.0):
-		tier = "high"
-	elif rand_factor >= 0.9 + (0.2 / 3.0):
-		tier = "medium"
-	else:
-		tier = "low"
+	# 乱数上振れ・下振れ廃止に伴い、tierは標準の "medium" 固定
+	var tier := "medium"
 	
 	# レア度抽選 (レアリティ係数が高くなるほど等確率に近づくテーブル方式)
 	var rarity_level := get_total_equip_drop_rarity_boost() + int(get_equipped_skill_total_val("drop_rarity") + get_equipped_skill_total_val("drop_luck"))
@@ -4363,10 +4519,8 @@ func get_tree_challenge_bonus_boost_multiplier() -> float:
 
 
 func get_c8_challenge_bonus_multiplier() -> float:
-	var a := get_c8_raw_challenge_bonus_multiplier()
-	var b := get_tree_challenge_bonus_boost_multiplier()
-	# チャレンジクリア無効クリアボーナスの効果量 A = 1 + b * (a - 1)
-	return 1.0 + b * (a - 1.0)
+	# C8にはスキルのチャレンジクリアボーナスを適用しない（素の効果量をそのまま使用）
+	return get_c8_raw_challenge_bonus_multiplier()
 
 
 func get_challenge_reward_type(ch_id: String) -> String:
@@ -4378,14 +4532,14 @@ func get_challenge_reward_type(ch_id: String) -> String:
 func apply_c8_mult_bonus(base_multiplier: float) -> float:
 	var A := get_c8_challenge_bonus_multiplier()
 	var b := get_tree_challenge_bonus_boost_multiplier()
-	# 乗算系：1 + (c - 1) * A * b
+	# 乗算系：1 + (c - 1) * A * b（C8効果Aとツリー強化bを各1回適用）
 	return 1.0 + (base_multiplier - 1.0) * A * b
 
 
 func apply_c8_add_bonus(base_addition: float) -> float:
 	var A := get_c8_challenge_bonus_multiplier()
 	var b := get_tree_challenge_bonus_boost_multiplier()
-	# 加算系：c * A * b
+	# 加算系：c * A * b（C8効果Aとツリー強化bを各1回適用）
 	return base_addition * A * b
 
 
@@ -4394,9 +4548,8 @@ func apply_challenge_bonus_boost(ch_id: String, base_val: float) -> float:
 	if c8_id.is_empty():
 		c8_id = get_challenge_id_by_name_contains("チャレンジボーナス")
 	if ch_id == c8_id or (c8_id.is_empty() and ch_id == "c8"):
-		# C8自身の効果量: 1 + b * (a - 1)
-		var b := get_tree_challenge_bonus_boost_multiplier()
-		return 1.0 + b * (base_val - 1.0)
+		# C8自身にはスキルのチャレンジクリアボーナスを適用しない
+		return base_val
 
 	var r_type := get_challenge_reward_type(ch_id)
 	if r_type == "mult":
@@ -5319,6 +5472,7 @@ func _build_save_dictionary(slot_id: String = "", slot_name: String = "") -> Dic
 		"equipment_filter_settings": equipment_filter_settings.duplicate(true),
 		# 注入器
 		"infuser_total_cp": infuser_total_cp,
+		"infuser_booster_bounces": infuser_booster_bounces,
 		"infuser_slots": infuser_slots.duplicate(true),
 		# 衝撃炉（互換）
 		"impact_energy": impact_energy,
@@ -5623,6 +5777,7 @@ func _apply_save_data(data: Dictionary) -> void:
 
 	# 10. 注入器
 	infuser_total_cp = float(data.get("infuser_total_cp", 0.0))
+	infuser_booster_bounces = int(data.get("infuser_booster_bounces", 0))
 	var raw_infuser = data.get("infuser_slots", null)
 	if raw_infuser is Dictionary:
 		infuser_slots = raw_infuser.duplicate(true)
@@ -5737,6 +5892,7 @@ func reset_all_data() -> void:
 	reset_equipment_filter_settings()
 
 	infuser_total_cp = 0.0
+	infuser_booster_bounces = 0
 	infuser_slots.clear()
 	_init_infuser_slots()
 	_infuser_cps_history.clear()
